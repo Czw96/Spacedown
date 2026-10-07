@@ -1,0 +1,413 @@
+/* ==========================================================================
+   Spacedown · 内容样式
+   --------------------------------------------------------------------------
+   一份文件同时覆盖浅色 / 深色：靠 color-scheme + prefers-color-scheme，
+   不重新渲染、不跑 JS（见 docs/技术方案.md §5）。
+
+   设计取向：
+   - 克制的中性色阶，全篇只有一个强调色，且只出现在「可交互 / 需注意」的元素上
+   - 行宽上限控制在 44rem（约 704px）——长行是阅读体验的头号杀手
+   - 层级靠字号 + 字重 + 留白表达，不靠边框和色块
+   - 中英混排：字体栈里 PingFang SC 必须排在 fallback 之前
+   ========================================================================== */
+
+:root {
+    color-scheme: light dark;
+
+    /* ---- 字体 ---- */
+    --font-content: -apple-system, "SF Pro Text", "Helvetica Neue",
+        "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo,
+        "PingFang SC", monospace;
+
+    /* ---- 排版尺度 ---- */
+    --fs-body: 16px;
+    --lh-body: 1.72;
+    --measure: 44rem;
+    --pad-x: 3rem;
+    --pad-y: 2.5rem;
+
+    /* ---- 浅色 ---- */
+    --bg: #ffffff;
+    --surface: #f7f7f8;
+    --surface-2: #f1f1f3;
+    --text: #1b1b1f;
+    --text-2: #6b6b70;
+    --text-3: #9a9aa0;
+    --hairline: rgba(0, 0, 0, 0.09);
+    --hairline-strong: rgba(0, 0, 0, 0.15);
+    --mark-bg: rgba(0, 0, 0, 0.045);
+    --accent: #4f46c9;
+    --accent-soft: rgba(79, 70, 201, 0.10);
+    --selection: rgba(79, 70, 201, 0.18);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg: #1b1b1d;          /* 不用纯黑：纯黑在 OLED 上会产生光晕感 */
+        --surface: #242427;
+        --surface-2: #2c2c30;
+        --text: #e9e9ec;        /* 也不用纯白 */
+        --text-2: #9a9aa0;
+        --text-3: #6e6e73;
+        --hairline: rgba(255, 255, 255, 0.10);
+        --hairline-strong: rgba(255, 255, 255, 0.17);
+        --mark-bg: rgba(255, 255, 255, 0.07);
+        --accent: #9b93f2;      /* 深色底上要提亮，否则对比度不够 */
+        --accent-soft: rgba(155, 147, 242, 0.14);
+        --selection: rgba(155, 147, 242, 0.26);
+    }
+}
+
+/* ---- 基础 ---- */
+
+* {
+    box-sizing: border-box;
+}
+
+html {
+    background: var(--bg);
+}
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-content);
+    font-size: var(--fs-body);
+    line-height: var(--lh-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+}
+
+::selection {
+    background: var(--selection);
+}
+
+/* ---- 版心 ---- */
+
+.content {
+    max-width: var(--measure);
+    margin: 0 auto;
+    padding: var(--pad-y) var(--pad-x) 6rem;
+    /* 中西文混排：避免 CJK 与拉丁之间出现过大间隙 */
+    line-break: strict;
+}
+
+/* ---- 段落与标题 ---- */
+
+p {
+    margin: 0 0 1.05em;
+    overflow-wrap: break-word;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    margin: 2em 0 0.6em;
+    font-weight: 600;
+    line-height: 1.28;
+    letter-spacing: -0.012em;
+    overflow-wrap: break-word;
+}
+
+/* 大字号要收字距，小字号要放字距——这是标题看起来「精」的关键 */
+h1 { font-size: 1.85rem; letter-spacing: -0.024em; line-height: 1.22; }
+h2 { font-size: 1.42rem; letter-spacing: -0.018em; }
+h3 { font-size: 1.16rem; letter-spacing: -0.010em; }
+h4 { font-size: 1rem;    letter-spacing: -0.005em; }
+h5 { font-size: 0.92rem; letter-spacing: 0; }
+h6 {
+    font-size: 0.85rem;
+    letter-spacing: 0.02em;
+    color: var(--text-2);
+    font-weight: 500;
+}
+
+/* 文档第一个标题不该有那么大的上边距 */
+.content > h1:first-child,
+.content > h2:first-child {
+    margin-top: 0.2em;
+}
+
+/* 标题后紧跟的段落收紧一点，视觉上才是一组 */
+h1 + p, h2 + p, h3 + p, h4 + p {
+    margin-top: 0;
+}
+
+/* ---- 行内 ---- */
+
+a {
+    color: var(--accent);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.18em;
+    text-decoration-color: var(--accent-soft);
+    transition: text-decoration-color 120ms ease;
+}
+
+a:hover {
+    text-decoration-color: var(--accent);
+}
+
+strong, b {
+    font-weight: 600;
+}
+
+em, i {
+    font-style: italic;
+}
+
+del, s {
+    color: var(--text-3);
+}
+
+/* 行内代码：轻底色 + 极小圆角，不做边框 */
+code {
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+    background: var(--mark-bg);
+    border-radius: 4px;
+    padding: 0.12em 0.36em;
+    /* 防止行内代码里的连字符破坏排版 */
+    font-variant-ligatures: none;
+}
+
+/* ---- 代码块 ---- */
+
+pre {
+    margin: 0 0 1.35em;
+    padding: 0.95rem 1.1rem;
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: 10px;
+    overflow-x: auto;
+    font-family: var(--font-mono);
+    font-size: 0.855rem;
+    line-height: 1.62;
+    -webkit-overflow-scrolling: touch;
+}
+
+pre code {
+    /* 在 pre 里时就不要再叠一层底色 */
+    background: none;
+    border-radius: 0;
+    padding: 0;
+    font-size: inherit;
+}
+
+/* ---- 列表 ---- */
+
+ul, ol {
+    margin: 0 0 1.15em;
+    padding-left: 1.4em;
+}
+
+li {
+    margin: 0.28em 0;
+    overflow-wrap: break-word;
+}
+
+li > ul, li > ol {
+    margin: 0.28em 0;
+}
+
+li::marker {
+    color: var(--text-3);
+}
+
+/* 任务列表：原生 checkbox 在深色模式下很难看，隐藏后用 CSS 重画 */
+ul:has(> li > input[type="checkbox"]),
+ol:has(> li > input[type="checkbox"]) {
+    list-style: none;
+    padding-left: 0.2em;
+}
+
+li:has(> input[type="checkbox"]) {
+    list-style: none;
+    position: relative;
+    padding-left: 1.7em;
+}
+
+li > input[type="checkbox"] {
+    position: absolute;
+    left: 0;
+    top: 0.42em;
+    appearance: none;
+    -webkit-appearance: none;
+    margin: 0;
+    width: 0.95em;
+    height: 0.95em;
+    border: 1.5px solid var(--hairline-strong);
+    border-radius: 3.5px;
+    background: var(--surface);
+}
+
+li > input[type="checkbox"]:checked {
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+li > input[type="checkbox"]:checked::after {
+    content: "";
+    position: absolute;
+    left: 0.28em;
+    top: 0.44em;
+    width: 0.3em;
+    height: 0.55em;
+    border: solid var(--bg);
+    border-width: 0 1.6px 1.6px 0;
+    transform: rotate(42deg);
+}
+
+li:has(> input[type="checkbox"]:checked) {
+    color: var(--text-2);
+}
+
+/* ---- 引用 ---- */
+
+blockquote {
+    margin: 0 0 1.35em;
+    padding: 0.1em 0 0.1em 1.1em;
+    border-left: 3px solid var(--hairline-strong);
+    color: var(--text-2);
+}
+
+blockquote p:last-child {
+    margin-bottom: 0;
+}
+
+/* ---- 表格 ---- */
+
+table {
+    width: 100%;
+    margin: 0 0 1.5em;
+    border-collapse: collapse;
+    font-size: 0.94rem;
+    font-variant-numeric: tabular-nums;   /* 数字列对齐 */
+}
+
+th, td {
+    padding: 0.55em 0.85em;
+    text-align: left;
+    vertical-align: top;
+}
+
+th {
+    font-weight: 600;
+    color: var(--text);
+    border-bottom: 1px solid var(--hairline-strong);
+    white-space: nowrap;
+}
+
+td {
+    border-bottom: 1px solid var(--hairline);
+}
+
+tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* ---- 分隔线 ---- */
+
+hr {
+    height: 1px;
+    margin: 2.4em 0;
+    border: none;
+    background: var(--hairline);
+}
+
+/* ---- 图片 ---- */
+
+img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin: 0.4em 0 1.4em;
+    border-radius: 8px;
+    border: 1px solid var(--hairline);
+}
+
+/* ---- 定义列表 / 脚注（cmark-gfm 支持） ---- */
+
+dl { margin: 0 0 1.2em; }
+dt { font-weight: 600; margin-top: 0.9em; }
+dd { margin: 0.2em 0 0 1.4em; color: var(--text-2); }
+
+sup {
+    font-size: 0.72em;
+    line-height: 0;
+    vertical-align: super;
+}
+
+sup > a {
+    text-decoration: none;
+}
+
+/* ---- 键盘按键 ---- */
+
+kbd {
+    font-family: var(--font-mono);
+    font-size: 0.82em;
+    padding: 0.15em 0.42em;
+    border: 1px solid var(--hairline-strong);
+    border-bottom-width: 2px;
+    border-radius: 5px;
+    background: var(--surface);
+    color: var(--text);
+}
+
+/* ---- 滚动条（WebKit 私有属性，不影响其它引擎） ---- */
+
+::-webkit-scrollbar {
+    width: 11px;
+    height: 11px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--hairline-strong);
+    border: 3px solid var(--bg);
+    border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-3);
+}
+
+/* ---- 窄容器（Quick Look 面板通常比主窗口小） ---- */
+
+@media (max-width: 680px) {
+    :root {
+        --fs-body: 15px;
+        --pad-x: 1.6rem;
+        --pad-y: 1.6rem;
+    }
+
+    h1 { font-size: 1.6rem; }
+    h2 { font-size: 1.28rem; }
+    h3 { font-size: 1.1rem; }
+}
+
+/* ---- 打印（主 App 里可能用到） ---- */
+
+@media print {
+    :root {
+        --bg: #ffffff;
+        --text: #000000;
+        --text-2: #333333;
+        --surface: #f5f5f5;
+        --hairline: #dddddd;
+    }
+
+    .content {
+        max-width: none;
+        padding: 0;
+    }
+
+    pre, blockquote, table {
+        break-inside: avoid;
+    }
+}
