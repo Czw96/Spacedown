@@ -1,0 +1,21 @@
+# SwiftPM 构建产物
+.build/
+Packages/**/.build/
+
+# Xcode
+xcuserdata/
+*.xcuserstate
+DerivedData/
+*.moved-aside
+Packages/**/xcuserdata/
+
+# 打包产物（dmg / zip / 签名中间物）
+*.dmg
+*.zip
+Distribution/build/
+
+# macOS
+.DS_Store
+
+# 注意：Packages/Core/Sources/CcmarkGfm 下的 vendored C 源码**必须提交**，
+# 那是刻意 vendor 进来的（见 docs/技术方案.md §8.1），不要加进 ignore。
