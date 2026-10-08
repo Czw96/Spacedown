@@ -11,6 +11,6 @@
   <g id="mark" fill="none" stroke="#FFFFFF" stroke-linecap="round" stroke-linejoin="round">
     <path id="M" stroke-width="22" d="M 51 132 L 51 68 L 87 114 L 123 68 L 123 132"/>
     <path id="down" stroke-width="17" d="M 185 70 L 185 137 M 163 115 L 185 137 L 207 115"/>
-    <path id="spacebar" stroke-width="30" d="M 44 185 L 212 185"/>
+    <path id="spacebar" stroke-width="26" d="M 42 185 L 214 185"/>
   </g>
 </svg>

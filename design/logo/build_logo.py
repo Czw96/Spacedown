@@ -119,7 +119,9 @@ WHITE = "#FFFFFF"
 
 MARK_SW = 22.0      # monoline weight of the letterform / hash
 ARROW_SW = 17.0     # the arrow carries the "down"; lighter so it stays airy
-BAR_SW = 30.0       # the key reads as a physical object: a touch heavier
+BAR_SW = 26.0       # the key reads as a physical object: a touch heavier
+                    # (was 30 — still clearly above MARK_SW, so the hierarchy
+                    #  holds, but it no longer presses down on the lockup)
 TILE_R = 57.0
 
 # ---- line treatment -------------------------------------------------------
@@ -144,7 +146,13 @@ MARK = {
              ('L', (162, 62), (162, 138)),
              ('L', (84, 80), (172, 80)),
              ('L', (84, 120), (172, 120))],
-    'spacebar': [('L', (44, 185), (212, 185))],
+    # The bar's centre-line ends are pulled OUTWARDS to compensate for the thinner
+    # stroke: a round cap sticks out by sw/2, so at BAR_SW 26 the ends sit at
+    # 29+13 / 227-13 instead of 44 / 212. Same outer silhouette (29..227, the
+    # widest element in the mark) — only the weight changes. Without this the key
+    # would also get 4 units shorter, which is not what a "make it thinner" ask
+    # means.
+    'spacebar': [('L', (42, 185), (214, 185))],
 }
 # Flat caps do not extend past the endpoint, so wherever the round version's
 # silhouette came from a cap, the end must be pushed out by half the stroke.
