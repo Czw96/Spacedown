@@ -6,6 +6,7 @@ Packages/**/.build/
 xcuserdata/
 *.xcuserstate
 DerivedData/
+build/
 *.moved-aside
 Packages/**/xcuserdata/
 

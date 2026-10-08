@@ -1,6 +1,37 @@
 import Foundation
 import CcmarkGfm
 
+public extension MarkdownRenderer {
+
+    /// 单份文档的体积上限。超过就截断，不再整篇渲染。
+    ///
+    /// 天花板不是解析（约 25 MB/s）而是 WebKit 排版（约 236 ms/MB HTML），
+    /// 所以「大文件先截断」是唯一有效的缓解手段 —— 见 docs/技术方案.md §3。
+    ///
+    /// 放在这里而不是各自调用方：Quick Look 扩展和主 App 的截断口径必须一致，
+    /// 否则同一个文件两处显示会不一样长。
+    static let defaultMaxBytes = 512 * 1024
+
+    /// 读文件 + 超限截断。
+    ///
+    /// 截断尽量切在换行上，避免把一个 markdown 块结构切成半截。
+    static func documentBytes(
+        contentsOf url: URL,
+        maxBytes: Int = Self.defaultMaxBytes
+    ) throws -> Data {
+        let data = try Data(contentsOf: url, options: .mappedIfSafe)
+        guard data.count > maxBytes else { return data }
+
+        var slice = data.prefix(maxBytes)
+        if let newline = slice.lastIndex(of: 0x0A) {
+            slice = slice[..<newline]
+        }
+        var out = Data("\n\n> 文件过大，已截断显示前 \(maxBytes / 1024) KB\n".utf8)
+        out.append(slice)
+        return out
+    }
+}
+
 /// Markdown → HTML。底层是 vendored cmark-gfm（C，静态链接）。
 ///
 /// 性能约定（改动前先看 docs/技术方案.md §3 与 docs/benchmarks.md）：
@@ -70,7 +101,17 @@ public struct MarkdownRenderer: Sendable {
     /// - Parameter markdown: 文档字节。不做编码探测，假定 UTF-8。
     /// - Returns: HTML 片段（不含 `<html>`/`<head>`，由 `SharedTheme.document` 套壳）。
     public func renderHTML(_ markdown: Data) -> String {
-        guard let parser = cmark_parser_new(Self.renderOptions) else { return "" }
+        String(decoding: renderHTMLData(markdown), as: UTF8.self)
+    }
+
+    /// 同 `renderHTML(_:)`，但**直接返回 cmark 产出的字节**，不经过 Swift String。
+    ///
+    /// 用这个版本：cmark 的输出本来就是 UTF-8 字节，走
+    /// `String(cString:)` → `Data(body.utf8)` 等于「解码一遍 + 再编码一遍」，
+    /// 白白多出两次全量拷贝（5MB 文档上是两次 5MB 的 memcpy + 一次 UTF-8 校验）。
+    /// 数据型 QL 扩展只需要 `Data`，中间那个 String 完全没有意义。
+    public func renderHTMLData(_ markdown: Data) -> Data {
+        guard let parser = cmark_parser_new(Self.renderOptions) else { return Data() }
         defer { cmark_parser_free(parser) }
 
         for ext in Self.extensionPointers {
@@ -82,18 +123,18 @@ public struct MarkdownRenderer: Sendable {
             cmark_parser_feed(parser, base.assumingMemoryBound(to: CChar.self), raw.count)
         }
 
-        guard let doc = cmark_parser_finish(parser) else { return "" }
+        guard let doc = cmark_parser_finish(parser) else { return Data() }
         defer { cmark_node_free(doc) }
 
-        guard let cstr = cmark_render_html(doc, Self.renderOptions, Self.filterList) else { return "" }
+        guard let cstr = cmark_render_html(doc, Self.renderOptions, Self.filterList) else { return Data() }
         defer { free(UnsafeMutableRawPointer(cstr)) }
 
-        // 先做一次便宜的字节级扫描；没命中就直接建 String，不走下面的重建路径。
+        // 先做一次便宜的字节级扫描；没命中就直接拷字节，不走下面的重建路径。
         let len = strlen(cstr)
         if !Self.containsDangerousScheme(UnsafeBufferPointer(start: cstr, count: len)) {
-            return String(cString: cstr)
+            return Data(bytes: cstr, count: len)
         }
-        return Self.neutralizingDangerousURLs(String(cString: cstr))
+        return Data(Self.neutralizingDangerousURLs(String(cString: cstr)).utf8)
     }
 
     /// 便捷重载：从磁盘读（mmap，零拷贝）后渲染。

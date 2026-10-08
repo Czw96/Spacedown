@@ -7,6 +7,7 @@ let package = Package(
     platforms: [.macOS(.v12)],
     products: [
         .library(name: "MarkdownKit", targets: ["MarkdownKit"]),
+        .library(name: "SharedTheme", targets: ["SharedTheme"]),
     ],
     targets: [
         // vendored cmark-gfm 0.29.0.gfm.7（C 源码在 Sources/CcmarkGfm/src 与 extensions）
@@ -26,7 +27,9 @@ let package = Package(
         ),
         .target(
             name: "SharedTheme",
-            resources: [.copy("theme.css")]
+            resources: [.copy("theme.css")],
+            // 让 SharedTheme 知道自己在 SwiftPM 下构建（Xcode 构建时没有 Bundle.module）
+            swiftSettings: [.define("SPACEDOWN_SPM_BUILD")]
         ),
         .target(name: "MarkdownKit", dependencies: ["CcmarkGfm"]),
         .executableTarget(name: "Bench", dependencies: ["MarkdownKit", "SharedTheme"]),
