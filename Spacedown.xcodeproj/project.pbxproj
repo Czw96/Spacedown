@@ -54,8 +54,8 @@
 		00000000000000000000005D /* DocumentTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000002D /* DocumentTab.swift */; };
 		00000000000000000000005E /* FileWatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000002E /* FileWatcher.swift */; };
 		00000000000000000000005F /* Palette.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000002F /* Palette.swift */; };
-		000000000000000000000060 /* WelcomeWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000030 /* WelcomeWindow.swift */; };
-		000000000000000000000061 /* PreviewProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000031 /* PreviewProvider.swift */; };
+		000000000000000000000060 /* SettingsWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000030 /* SettingsWindow.swift */; };
+		000000000000000000000061 /* PreviewViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000031 /* PreviewViewController.swift */; };
 		000000000000000000000065 /* theme.css in Resources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000064 /* theme.css */; };
 		000000000000000000000063 /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000062 /* AppIcon.icns */; };
 		00000000000000000000006D /* libCcmarkGfm.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 000000000000000000000068 /* libCcmarkGfm.a */; };
@@ -420,16 +420,16 @@
 			path = "Palette.swift";
 			sourceTree = "<group>";
 		};
-		000000000000000000000030 /* WelcomeWindow.swift */ = {
+		000000000000000000000030 /* SettingsWindow.swift */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
-			path = "WelcomeWindow.swift";
+			path = "SettingsWindow.swift";
 			sourceTree = "<group>";
 		};
-		000000000000000000000031 /* PreviewProvider.swift */ = {
+		000000000000000000000031 /* PreviewViewController.swift */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
-			path = "PreviewProvider.swift";
+			path = "PreviewViewController.swift";
 			sourceTree = "<group>";
 		};
 		000000000000000000000064 /* theme.css */ = {
@@ -589,7 +589,7 @@
 				00000000000000000000002D /* DocumentTab.swift */,
 				00000000000000000000002E /* FileWatcher.swift */,
 				00000000000000000000002F /* Palette.swift */,
-				000000000000000000000030 /* WelcomeWindow.swift */,
+				000000000000000000000030 /* SettingsWindow.swift */,
 				000000000000000000000062 /* AppIcon.icns */,
 				000000000000000000000066 /* Info.plist */,
 			);
@@ -598,7 +598,7 @@
 		00000000000000000000009B /* QuickLookPreview */ = {
 			isa = PBXGroup;
 			children = (
-				000000000000000000000031 /* PreviewProvider.swift */,
+				000000000000000000000031 /* PreviewViewController.swift */,
 				000000000000000000000067 /* Info.plist */,
 			);
 			path = "QuickLookPreview";
@@ -874,7 +874,7 @@
 				00000000000000000000005D /* DocumentTab.swift in Sources */,
 				00000000000000000000005E /* FileWatcher.swift in Sources */,
 				00000000000000000000005F /* Palette.swift in Sources */,
-				000000000000000000000060 /* WelcomeWindow.swift in Sources */,
+				000000000000000000000060 /* SettingsWindow.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -882,7 +882,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				000000000000000000000061 /* PreviewProvider.swift in Sources */,
+				000000000000000000000061 /* PreviewViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -35,5 +35,7 @@ let package = Package(
         .executableTarget(name: "Bench", dependencies: ["MarkdownKit", "SharedTheme"]),
         // 单独测 WKWebView 成本的 M0 spike 工具（AppKit + WebKit）
         .executableTarget(name: "WebViewBench"),
+        // 滚动主线程成本：同一个 HTML 跑多种 CSS 变体，横向比较帧间隔
+        .executableTarget(name: "ScrollBench"),
     ]
 )

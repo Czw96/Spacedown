@@ -2,7 +2,7 @@
 
 macOS Markdown 速览：Finder 空格键预览 + 只读多标签查看器。
 
-> **状态（2026-10-08）：主 App 多标签已可用；Quick Look 空格预览待真机验收。**
+> **状态（2026-10-08）：主 App 多标签已可用；Quick Look 扩展已改视图型，待真机验收滚动。**
 >
 > 已经能编出完整 `Spacedown.app`（内含 Quick Look 扩展），装到了 `/Applications`。
 > 但**扩展会不会被系统调用、按空格出来的是渲染页还是纯文本**在本环境验证不了
@@ -93,25 +93,29 @@ LSHandlerRoleAll     => com.microsoft.vscode      ← 就是这条
 `LSHandlerRank` 我们设的是 **Alternate** —— **不抢**你现有编辑器的默认打开方式（§7.4）。
 所以要让双击生效，二选一：
 
-1. 打开 Spacedown（双击 App 图标）→ 点「**设为 .md 默认打开方式**」
+1. 打开 Spacedown（双击 App 图标，或菜单「Spacedown → **设置…**」<kbd>⌘</kbd><kbd>,</kbd>）
+   → 在「打开方式」那张卡片上点「**设为默认打开方式**」
 2. 或 Finder 里右键 `.md` → 显示简介 → 打开方式 → 选 Spacedown → 「更改全部」
 
 > **这里有个死锁要说清楚**：默认打开方式被别人占着时，双击 `.md` 根本不会启动 Spacedown，
-> 你也就永远看不到那个按钮。所以引导窗会**明确显示现在是谁在接管**。
+> 你也就永远看不到那个按钮。所以设置窗的卡片会**明确显示现在是谁在接管**
+> （值那一行就是当前接管的 App 名）。
 
 **但空格预览不受影响** —— 它走 Quick Look 扩展，和默认打开方式是两回事。
 
 ---
 
-## 三、现在需要你做的验收（3 个动作）
+## 三、现在需要你做的验收（2 个动作）
 
-在 Finder 里随便选中一个 `.md` 文件，**按空格**，告诉我三件事：
+在 Finder 里随便选中一个 `.md` 文件，**按空格**，告诉我两件事：
 
 1. **出来的是渲染后的页面，还是一堆 `#` `**` 的纯文本？**
    → 判断扩展有没有被系统启用（风险 R1）
-2. **如果没生效**：去「系统设置 → 通用 → 登录项与扩展 → Quick Look」，
-   看里面有没有 Spacedown、是不是关着的
-3. **如果生效了**：按 `⌘+` `⌘-`，画面有没有缩放？（风险 R3）
+2. **滚动跟不跟手**（尤其是 100KB 以上的大文件、以及猛甩一下）
+
+> 扩展已从**数据型**改成**视图型**（自建 viewport 尺寸的 `WKWebView`）——
+> 原因与实测数据见 `docs/性能分析.md §6`。**改了扩展的形态就必须重装**（第一节的
+> 3 个步骤），否则系统跑的还是旧的那份。
 
 样例文件在 **桌面 → `Spacedown 示例`**：
 
@@ -121,14 +125,14 @@ LSHandlerRoleAll     => com.microsoft.vscode      ← 就是这条
 | `02 性能实测.md` | 长表格数字列对齐、代码块 |
 | `03 排版细节.md` | **专门用来挑毛病**：行宽 / 行高 / 字号 / 留白 / 颜色 |
 
-顺手也请再读一次埋点（同一个文件**连按两次空格**）：
+顺带请再看一眼埋点（输出到统一日志，不再写文件）：
 
 ```bash
-cat ~/Library/Logs/Spacedown/timing.log 2>/dev/null || cat /tmp/spacedown-timing.log
+log stream --predicate 'subsystem == "cn.29dev.Spacedown"' --style compact
 ```
 
-两行的 `pid` **是否相同**，决定 QL 是否复用扩展进程 —— 这是目前最大的未知数，
-详见 `docs/性能分析.md §2.6`。
+每次按空格会打一行 `preview file=… bytes=… read=…ms render=…ms wrap=…ms load=…ms total=…ms`。
+连续预览同一个文件两次、看两次的耗时差，就知道扩展进程和 webview 有没有被复用。
 
 ---
 
@@ -158,6 +162,25 @@ open /tmp/preview.html
 
 > 一句话：我们自己只占 ~1ms，慢的全在 WebKit。所以优化全部投在
 > "WebContent 进程预热 + webview 实例复用"上，而不是解析或缓存。
+>
+> ⚠️ 上面这句只管**首帧**。**滚动是另一笔账**（每帧重绘），预热与池化对它无效 —— 见 §四之下的滚动基准。
+
+### 滚动基准
+
+```bash
+.build/release/ScrollBench --file /path/to/preview.html            # 全部 CSS 变体
+.build/release/ScrollBench --file X.html --only baseline,cv        # 只跑指定变体
+.build/release/ScrollBench --file X.html --raf 3000 --step 150     # 连续滚动帧率（150px/帧 ≈ 猛甩）
+.build/release/ScrollBench --file X.html --pdf /tmp/out.pdf        # 试渲矢量 PDF（原型，见 §6.5）
+```
+
+三件能力：**滚一步的同步重排**、**强制重绘一屏**、**连续滚动帧率**（rAF 帧间隔直方图），
+并在 10 个 CSS 变体之间横向对比。结论（含"别再调 CSS"这条）见 `docs/性能分析.md §6`。
+
+⚠️ 连续滚动那一项对**可见性**敏感：页面被判 hidden 时 rAF 会被节流成 1Hz 左右，
+量出来是「max 4627ms」这种假数字。工具靠「跑 `NSApplication.run()` + runloop 定时器」
+保证窗口真的可见；看数前先确认输出里有 `[页面可见性] visible`。
+
 
 ---
 
@@ -185,10 +208,10 @@ defaults delete cn.29dev.Spacedown DebugLayout             # 关掉
 |---|---|---|
 | M0 | Spike：UTI 判定、QL 扩展跑通、webview 冷启实测、键盘事件是否可达 | 🟨 代码完成；**R1 / R3 待真机** ⬜ |
 | M1 | 渲染内核 + 主题 + Bench CLI | ✅ 内核 / 主题 / Bench；**缓存决定不做**（收益 ≈ 0，见性能分析 §2.4） |
-| M2 | Quick Look 扩展做完整 | 🟨 数据型扩展已构建并安装，待真机验收 |
+| M2 | Quick Look 扩展做完整 | 🟨 **已由数据型改为视图型**（自建 viewport 尺寸 WKWebView + 实例复用 + `os_log` 埋点），已安装，待真机验收滚动 |
 | M3 | 主 App | ✅ **多标签 + LRU 池 + 主菜单 + 文件监听 + 缩放（2026-10-08）** |
 | M4 | 打磨 | 🟨 布局自检 ✅；图片内联 ⬜（现在相对路径图片是坏图） |
-| M5 | 性能回归 | ⬜ |
+| M5 | 性能回归 | 🟨 滚动口径已建（`ScrollBench`）+ 归因见 `docs/性能分析.md §6`；按渲染规模截断 ⬜ |
 | M6 | 签名公证 + dmg + Homebrew Cask | ⬜ |
 
 ---
@@ -208,14 +231,17 @@ Spacedown/
 │   ├── FileWatcher.swift         外部修改监听（去抖 + lstat 四元组）
 │   ├── MainMenu.swift            代码构建主菜单
 │   ├── Palette.swift             主题色在 AppKit 侧的镜像
-│   ├── WelcomeWindow.swift       引导窗（含默认打开方式检测）
+│   ├── SettingsWindow.swift      设置窗（⌘,）：Logo + 打开方式；没开文件时也是启动窗
 │   └── DebugLog.swift            /tmp 文件日志
-├── QuickLookPreview/             Quick Look 扩展 target
+├── QuickLookPreview/             Quick Look 扩展 target（视图型）
+│   ├── PreviewViewController.swift  QLPreviewingController + 自建 viewport 尺寸 WKWebView + 实例复用
+│   └── Info.plist                扩展声明（⚠️ 故意没有 QLIsDataBasedPreview，见文件内注释）
 ├── Packages/Core/                SwiftPM 包（仅 macOS ≥13，仅 arm64）
 │   ├── Sources/CcmarkGfm/        vendored cmark-gfm 0.29.0.gfm.7
 │   ├── Sources/MarkdownKit/      Data → HTML
 │   ├── Sources/SharedTheme/      theme.css + HTML 模板拼装
 │   ├── Sources/Bench/            命令行基准 / 渲染工具
+│   ├── Sources/ScrollBench/      滚动成本基准（重排 / 重绘）与 CSS 变体对比
 │   ├── Sources/WebViewBench/     M0 的 WKWebView 成本实测工具
 │   └── XcodeSupport/CcmarkGfm/   Xcode 用的 module.modulemap
 ├── design/logo/                  Logo 源：spacedown-icon.svg + build_logo.py（改几何/配色都改这里再重跑）

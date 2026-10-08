@@ -13,7 +13,7 @@ import AppKit
 final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private var main: MainWindow?
-    private var welcome: WelcomeWindow?
+    private var settings: SettingsWindow?
 
     // MARK: - 生命周期
 
@@ -27,11 +27,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         DebugLog.write("didFinishLaunching")
         activate()
         // 「双击文件启动」时 application(_:open:) 与 didFinishLaunching 的先后
-        // 在各系统版本上并不一致。让出一个任务再判断，别抢着弹引导窗；
+        // 在各系统版本上并不一致。让出一个任务再判断，别抢着弹设置窗；
         // 万一还是弹了，openDocument 里会把它关掉（兜底）。
         Task { @MainActor in
             guard self.main == nil else { return }
-            self.showWelcome()
+            self.showSettings()
         }
     }
 
@@ -48,11 +48,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         true
     }
 
-    /// 点 Dock 图标、没有窗口时把引导窗带回来。
+    /// 点 Dock 图标、没有窗口时把设置窗带回来。
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         if !flag {
             if main == nil {
-                showWelcome()
+                showSettings()
             } else {
                 main?.show()
             }
@@ -62,20 +62,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - 窗口
 
-    private func showWelcome() {
-        DebugLog.write("showWelcome")
-        let window = WelcomeWindow()
-        window.onClose = { [weak self] _ in self?.welcome = nil }
-        window.onOpenFile = { [weak self] url in self?.openDocument(at: url) }
-        welcome = window
+    /// 菜单「Spacedown → 设置…」（⌘,）与启动兜底都走这里。
+    @objc func showSettings(_ sender: Any? = nil) {
+        DebugLog.write("showSettings")
+        if let settings {
+            settings.show()
+            return
+        }
+        let window = SettingsWindow()
+        window.onClose = { [weak self] _ in self?.settings = nil }
+        settings = window
         window.show()
     }
 
     private func openDocument(at url: URL) {
         guard url.isFileURL else { return }
-        // 引导窗只该在"什么都没开"的时候出现；用户既然要开文件，就把它收掉
-        welcome?.close()
-        welcome = nil
+        // 设置窗只该在"什么都没开"的时候占着位置；用户既然要开文件，就把它收掉
+        settings?.close()
+        settings = nil
 
         let window: MainWindow
         if let existing = main {

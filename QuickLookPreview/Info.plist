@@ -26,9 +26,10 @@
 	<dict>
 		<key>NSExtensionAttributes</key>
 		<dict>
-			<!-- 数据型预览：不创建 webview，只回传渲染好的 HTML -->
-			<key>QLIsDataBasedPreview</key>
-			<true/>
+			<!-- ⚠️ 这里**故意没有** QLIsDataBasedPreview。
+			     数据型（true）会把 HTML 交给系统去排版，我们就管不到 web view 的尺寸与滚动；
+			     实测那正是「滚动卡」的来源。现在是视图型：自建 viewport 尺寸的 WKWebView，
+			     滚动走 WebKit 的分块异步路径 —— 数据与归因见 docs/性能分析.md §6。 -->
 			<!-- .md / .markdown 的实际 UTI（mdls 实测）。
 			     不要列 public.plain-text —— 它在 md 的 conform 链里，加了会劫持 .txt -->
 			<key>QLSupportedContentTypes</key>
@@ -38,8 +39,9 @@
 		</dict>
 		<key>NSExtensionPointIdentifier</key>
 		<string>com.apple.quicklook.preview</string>
+		<!-- 视图型：principal class 就是那个 QLPreviewingController 视图控制器 -->
 		<key>NSExtensionPrincipalClass</key>
-		<string>QuickLookPreviewProvider</string>
+		<string>PreviewViewController</string>
 	</dict>
 </dict>
 </plist>

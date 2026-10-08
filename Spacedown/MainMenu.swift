@@ -26,6 +26,9 @@ enum MainMenu {
         holder("Spacedown", [
             item("关于 Spacedown", #selector(NSApplication.orderFrontStandardAboutPanel(_:)), target: NSApp),
             .separator(),
+            // ⌘, 是 macOS 的肌肉记忆。设置窗同时也是"没开文件"时的启动窗（AppDelegate.showSettings）
+            item("设置…", #selector(AppDelegate.showSettings(_:)), ","),
+            .separator(),
             item("隐藏 Spacedown", #selector(NSApplication.hide(_:)), "h", target: NSApp),
             item("隐藏其他", #selector(NSApplication.hideOtherApplications(_:)), "h", [.command, .option], target: NSApp),
             item("显示全部", #selector(NSApplication.unhideAllApplications(_:)), target: NSApp),

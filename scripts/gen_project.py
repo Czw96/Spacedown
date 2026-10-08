@@ -66,11 +66,11 @@ APP_SOURCES = [
     "Spacedown/DocumentTab.swift",
     "Spacedown/FileWatcher.swift",
     "Spacedown/Palette.swift",
-    "Spacedown/WelcomeWindow.swift",
+    "Spacedown/SettingsWindow.swift",
 ]
 APP_PLIST = "Spacedown/Info.plist"
 APP_ICON = "Spacedown/AppIcon.icns"      # app icon (.icns, CFBundleIconFile)
-EXT_SOURCES = ["QuickLookPreview/PreviewProvider.swift"]
+EXT_SOURCES = ["QuickLookPreview/PreviewViewController.swift"]
 EXT_PLIST = "QuickLookPreview/Info.plist"
 
 MODULEMAP_DIR = "Packages/Core/XcodeSupport/CcmarkGfm"
