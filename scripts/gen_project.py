@@ -69,6 +69,7 @@ APP_SOURCES = [
     "Spacedown/WelcomeWindow.swift",
 ]
 APP_PLIST = "Spacedown/Info.plist"
+APP_ICON = "Spacedown/AppIcon.icns"      # app icon (.icns, CFBundleIconFile)
 EXT_SOURCES = ["QuickLookPreview/PreviewProvider.swift"]
 EXT_PLIST = "QuickLookPreview/Info.plist"
 
@@ -319,6 +320,8 @@ def main() -> None:
     refs = {p: oid("ref:" + p) for p in all_sources}
     bfs = {p: oid("bf:" + p) for p in all_sources}
 
+    appicon_ref = oid("ref:" + APP_ICON)
+    appicon_bf = oid("bf:appicon")
     theme_css_ref = oid("ref:" + SHAREDTHEME_RESOURCE)
     theme_css_bf = oid("bf:theme.css")
     app_plist_ref = oid("ref:" + APP_PLIST)
@@ -351,6 +354,8 @@ def main() -> None:
             bfs[p], Path(p).name, refs[p], Path(p).name)
     bf += "\t\t%s /* theme.css in Resources */ = {isa = PBXBuildFile; fileRef = %s /* theme.css */; };\n" % (
         theme_css_bf, theme_css_ref)
+    bf += "\t\t%s /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = %s /* AppIcon.icns */; };\n" % (
+        appicon_bf, appicon_ref)
     # 链接 / 嵌入
     link_bfs = {}
     for label, product in [
@@ -439,6 +444,7 @@ def main() -> None:
     for p in MARKDOWNKIT_SOURCES + SHAREDTHEME_SOURCES + APP_SOURCES + EXT_SOURCES:
         fr += file_ref(refs[p], rel_for(p), "sourcecode.swift")
     fr += file_ref(theme_css_ref, rel_for(SHAREDTHEME_RESOURCE), "text.css")
+    fr += file_ref(appicon_ref, rel_for(APP_ICON), "image.icns")
     fr += file_ref(app_plist_ref, rel_for(APP_PLIST), "text.plist.xml")
     fr += file_ref(ext_plist_ref, rel_for(EXT_PLIST), "text.plist.xml")
     for name, _ in products.items():
@@ -497,7 +503,9 @@ def main() -> None:
                         + [theme_css_ref + " /* theme.css */"],
                         "Packages/Core/Sources/SharedTheme"),
         "Spacedown": (oid("group:Spacedown"),
-                      src_children(APP_SOURCES) + [app_plist_ref + " /* Info.plist */"],
+                      src_children(APP_SOURCES)
+                      + [appicon_ref + " /* AppIcon.icns */",
+                         app_plist_ref + " /* Info.plist */"],
                       "Spacedown"),
         "QuickLookPreview": (oid("group:QuickLookPreview"),
                              src_children(EXT_SOURCES) + [ext_plist_ref + " /* Info.plist */"],
@@ -630,8 +638,9 @@ def main() -> None:
         "SharedTheme": files_phase(phases[("SharedTheme", "Resources")],
                                    "PBXResourcesBuildPhase", "Resources",
                                    [(theme_css_bf, "theme.css in Resources")]),
-        "Spacedown": empty_phase(phases[("Spacedown", "Resources")],
-                                 "PBXResourcesBuildPhase", "Resources"),
+        "Spacedown": files_phase(phases[("Spacedown", "Resources")],
+                                 "PBXResourcesBuildPhase", "Resources",
+                                 [(appicon_bf, "AppIcon.icns in Resources")]),
         "QuickLookPreview": empty_phase(phases[("QuickLookPreview", "Resources")],
                                         "PBXResourcesBuildPhase", "Resources"),
     }

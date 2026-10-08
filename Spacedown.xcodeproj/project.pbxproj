@@ -56,78 +56,67 @@
 		00000000000000000000005F /* Palette.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000002F /* Palette.swift */; };
 		000000000000000000000060 /* WelcomeWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000030 /* WelcomeWindow.swift */; };
 		000000000000000000000061 /* PreviewProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000031 /* PreviewProvider.swift */; };
-		000000000000000000000063 /* theme.css in Resources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000062 /* theme.css */; };
-		00000000000000000000006B /* libCcmarkGfm.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 000000000000000000000066 /* libCcmarkGfm.a */; };
-		00000000000000000000006C /* MarkdownKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 000000000000000000000067 /* MarkdownKit.framework */; };
-		00000000000000000000006D /* SharedTheme.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 000000000000000000000068 /* SharedTheme.framework */; };
-		00000000000000000000006E /* QuickLookPreview.appex in Frameworks */ = {isa = PBXBuildFile; fileRef = 00000000000000000000006A /* QuickLookPreview.appex */; };
-		00000000000000000000006F /* MarkdownKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 000000000000000000000067 /* MarkdownKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy,); }; };
-		000000000000000000000070 /* SharedTheme.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 000000000000000000000068 /* SharedTheme.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy,); }; };
-		000000000000000000000071 /* MarkdownKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 000000000000000000000067 /* MarkdownKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy,); }; };
-		000000000000000000000072 /* SharedTheme.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 000000000000000000000068 /* SharedTheme.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy,); }; };
-		000000000000000000000073 /* MarkdownKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 000000000000000000000067 /* MarkdownKit.framework */; };
-		000000000000000000000074 /* SharedTheme.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 000000000000000000000068 /* SharedTheme.framework */; };
-		000000000000000000000075 /* QuickLookPreview.appex in Embed Plug-ins */ = {isa = PBXBuildFile; fileRef = 00000000000000000000006A /* QuickLookPreview.appex */; };
+		000000000000000000000065 /* theme.css in Resources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000064 /* theme.css */; };
+		000000000000000000000063 /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000062 /* AppIcon.icns */; };
+		00000000000000000000006D /* libCcmarkGfm.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 000000000000000000000068 /* libCcmarkGfm.a */; };
+		00000000000000000000006E /* MarkdownKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 000000000000000000000069 /* MarkdownKit.framework */; };
+		00000000000000000000006F /* SharedTheme.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 00000000000000000000006A /* SharedTheme.framework */; };
+		000000000000000000000070 /* QuickLookPreview.appex in Frameworks */ = {isa = PBXBuildFile; fileRef = 00000000000000000000006C /* QuickLookPreview.appex */; };
+		000000000000000000000071 /* MarkdownKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 000000000000000000000069 /* MarkdownKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy,); }; };
+		000000000000000000000072 /* SharedTheme.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 00000000000000000000006A /* SharedTheme.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy,); }; };
+		000000000000000000000073 /* MarkdownKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 000000000000000000000069 /* MarkdownKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy,); }; };
+		000000000000000000000074 /* SharedTheme.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 00000000000000000000006A /* SharedTheme.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy,); }; };
+		000000000000000000000075 /* MarkdownKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 000000000000000000000069 /* MarkdownKit.framework */; };
+		000000000000000000000076 /* SharedTheme.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 00000000000000000000006A /* SharedTheme.framework */; };
+		000000000000000000000077 /* QuickLookPreview.appex in Embed Plug-ins */ = {isa = PBXBuildFile; fileRef = 00000000000000000000006C /* QuickLookPreview.appex */; };
 /* End PBXBuildFile section */
 
 
 /* Begin PBXContainerItemProxy section */
-		00000000000000000000007B /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 000000000000000000000001 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 000000000000000000000076;
-			remoteInfo = CcmarkGfm;
-		};
 		00000000000000000000007D /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 000000000000000000000001 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = 000000000000000000000077;
-			remoteInfo = MarkdownKit;
+			remoteGlobalIDString = 000000000000000000000078;
+			remoteInfo = CcmarkGfm;
 		};
 		00000000000000000000007F /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 000000000000000000000001 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = 000000000000000000000078;
-			remoteInfo = SharedTheme;
+			remoteGlobalIDString = 000000000000000000000079;
+			remoteInfo = MarkdownKit;
 		};
 		000000000000000000000081 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 000000000000000000000001 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 00000000000000000000007A;
+			remoteInfo = SharedTheme;
+		};
+		000000000000000000000083 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 000000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 00000000000000000000007C;
 			remoteInfo = QuickLookPreview;
 		};
 /* End PBXContainerItemProxy section */
 
 
 /* Begin PBXCopyFilesBuildPhase section */
-		000000000000000000000083 /* Embed Plug-ins */ = {
+		000000000000000000000085 /* Embed Plug-ins */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			name = "Embed Plug-ins";
 			files = (
-				000000000000000000000075 /* QuickLookPreview.appex in Embed Plug-ins */,
+				000000000000000000000077 /* QuickLookPreview.appex in Embed Plug-ins */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		000000000000000000000084 /* Embed Frameworks */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			name = "Embed Frameworks";
-			files = (
-				00000000000000000000006F /* MarkdownKit.framework in Embed Frameworks */,
-				000000000000000000000070 /* SharedTheme.framework in Embed Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		000000000000000000000085 /* Embed Frameworks */ = {
+		000000000000000000000086 /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
@@ -136,6 +125,18 @@
 			files = (
 				000000000000000000000071 /* MarkdownKit.framework in Embed Frameworks */,
 				000000000000000000000072 /* SharedTheme.framework in Embed Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		000000000000000000000087 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			name = "Embed Frameworks";
+			files = (
+				000000000000000000000073 /* MarkdownKit.framework in Embed Frameworks */,
+				000000000000000000000074 /* SharedTheme.framework in Embed Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -431,70 +432,76 @@
 			path = "PreviewProvider.swift";
 			sourceTree = "<group>";
 		};
-		000000000000000000000062 /* theme.css */ = {
+		000000000000000000000064 /* theme.css */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = text.css;
 			path = "theme.css";
 			sourceTree = "<group>";
 		};
-		000000000000000000000064 /* Info.plist */ = {
+		000000000000000000000062 /* AppIcon.icns */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = image.icns;
+			path = "AppIcon.icns";
+			sourceTree = "<group>";
+		};
+		000000000000000000000066 /* Info.plist */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = text.plist.xml;
 			path = "Info.plist";
 			sourceTree = "<group>";
 		};
-		000000000000000000000065 /* Info.plist */ = {
+		000000000000000000000067 /* Info.plist */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = text.plist.xml;
 			path = "Info.plist";
 			sourceTree = "<group>";
 		};
-		000000000000000000000066 /* libCcmarkGfm.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libCcmarkGfm.a; sourceTree = BUILT_PRODUCTS_DIR; };
-		000000000000000000000067 /* MarkdownKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = MarkdownKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		000000000000000000000068 /* SharedTheme.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = SharedTheme.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		000000000000000000000069 /* Spacedown.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Spacedown.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		00000000000000000000006A /* QuickLookPreview.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = QuickLookPreview.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		000000000000000000000068 /* libCcmarkGfm.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libCcmarkGfm.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		000000000000000000000069 /* MarkdownKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = MarkdownKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		00000000000000000000006A /* SharedTheme.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = SharedTheme.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		00000000000000000000006B /* Spacedown.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Spacedown.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		00000000000000000000006C /* QuickLookPreview.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = QuickLookPreview.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 
 /* Begin PBXFrameworksBuildPhase section */
-		000000000000000000000087 /* Frameworks */ = {
+		000000000000000000000089 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		00000000000000000000008A /* Frameworks */ = {
+		00000000000000000000008C /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				00000000000000000000006B /* libCcmarkGfm.a in Frameworks */,
+				00000000000000000000006D /* libCcmarkGfm.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		00000000000000000000008D /* Frameworks */ = {
+		00000000000000000000008F /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		000000000000000000000090 /* Frameworks */ = {
+		000000000000000000000092 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				00000000000000000000006C /* MarkdownKit.framework in Frameworks */,
-				00000000000000000000006D /* SharedTheme.framework in Frameworks */,
+				00000000000000000000006E /* MarkdownKit.framework in Frameworks */,
+				00000000000000000000006F /* SharedTheme.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		000000000000000000000093 /* Frameworks */ = {
+		000000000000000000000095 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				000000000000000000000073 /* MarkdownKit.framework in Frameworks */,
-				000000000000000000000074 /* SharedTheme.framework in Frameworks */,
+				000000000000000000000075 /* MarkdownKit.framework in Frameworks */,
+				000000000000000000000076 /* SharedTheme.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -502,19 +509,19 @@
 
 
 /* Begin PBXGroup section */
-		00000000000000000000009B /* Group */ = {
+		00000000000000000000009D /* Group */ = {
 			isa = PBXGroup;
 			children = (
-				000000000000000000000095 /* CcmarkGfm */,
-				000000000000000000000096 /* MarkdownKit */,
-				000000000000000000000097 /* SharedTheme */,
-				000000000000000000000098 /* Spacedown */,
-				000000000000000000000099 /* QuickLookPreview */,
-				00000000000000000000009A /* Products */,
+				000000000000000000000097 /* CcmarkGfm */,
+				000000000000000000000098 /* MarkdownKit */,
+				000000000000000000000099 /* SharedTheme */,
+				00000000000000000000009A /* Spacedown */,
+				00000000000000000000009B /* QuickLookPreview */,
+				00000000000000000000009C /* Products */,
 			);
 			sourceTree = "<group>";
 		};
-		000000000000000000000095 /* Packages/Core/Sources/CcmarkGfm */ = {
+		000000000000000000000097 /* Packages/Core/Sources/CcmarkGfm */ = {
 			isa = PBXGroup;
 			children = (
 				000000000000000000000002 /* arena.c */,
@@ -554,22 +561,22 @@
 			);
 			path = "Packages/Core/Sources/CcmarkGfm";
 		};
-		000000000000000000000096 /* Packages/Core/Sources/MarkdownKit */ = {
+		000000000000000000000098 /* Packages/Core/Sources/MarkdownKit */ = {
 			isa = PBXGroup;
 			children = (
 				000000000000000000000024 /* MarkdownRenderer.swift */,
 			);
 			path = "Packages/Core/Sources/MarkdownKit";
 		};
-		000000000000000000000097 /* Packages/Core/Sources/SharedTheme */ = {
+		000000000000000000000099 /* Packages/Core/Sources/SharedTheme */ = {
 			isa = PBXGroup;
 			children = (
 				000000000000000000000025 /* Theme.swift */,
-				000000000000000000000062 /* theme.css */,
+				000000000000000000000064 /* theme.css */,
 			);
 			path = "Packages/Core/Sources/SharedTheme";
 		};
-		000000000000000000000098 /* Spacedown */ = {
+		00000000000000000000009A /* Spacedown */ = {
 			isa = PBXGroup;
 			children = (
 				000000000000000000000026 /* SpacedownMain.swift */,
@@ -583,26 +590,27 @@
 				00000000000000000000002E /* FileWatcher.swift */,
 				00000000000000000000002F /* Palette.swift */,
 				000000000000000000000030 /* WelcomeWindow.swift */,
-				000000000000000000000064 /* Info.plist */,
+				000000000000000000000062 /* AppIcon.icns */,
+				000000000000000000000066 /* Info.plist */,
 			);
 			path = "Spacedown";
 		};
-		000000000000000000000099 /* QuickLookPreview */ = {
+		00000000000000000000009B /* QuickLookPreview */ = {
 			isa = PBXGroup;
 			children = (
 				000000000000000000000031 /* PreviewProvider.swift */,
-				000000000000000000000065 /* Info.plist */,
+				000000000000000000000067 /* Info.plist */,
 			);
 			path = "QuickLookPreview";
 		};
-		00000000000000000000009A /* Products */ = {
+		00000000000000000000009C /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				000000000000000000000069 /* Spacedown.app */,
-				00000000000000000000006A /* QuickLookPreview.appex */,
-				000000000000000000000067 /* MarkdownKit.framework */,
-				000000000000000000000068 /* SharedTheme.framework */,
-				000000000000000000000066 /* libCcmarkGfm.a */,
+				00000000000000000000006B /* Spacedown.app */,
+				00000000000000000000006C /* QuickLookPreview.appex */,
+				000000000000000000000069 /* MarkdownKit.framework */,
+				00000000000000000000006A /* SharedTheme.framework */,
+				000000000000000000000068 /* libCcmarkGfm.a */,
 			);
 			name = Products;
 		};
@@ -610,12 +618,12 @@
 
 
 /* Begin PBXNativeTarget section */
-		000000000000000000000076 /* CcmarkGfm */ = {
+		000000000000000000000078 /* CcmarkGfm */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 00000000000000000000009C /* Build configuration list for PBXNativeTarget "CcmarkGfm" */;
+			buildConfigurationList = 00000000000000000000009E /* Build configuration list for PBXNativeTarget "CcmarkGfm" */;
 			buildPhases = (
-				000000000000000000000086,
-				000000000000000000000087,
+				000000000000000000000088,
+				000000000000000000000089,
 			);
 			buildRules = (
 			);
@@ -623,34 +631,34 @@
 			);
 			name = CcmarkGfm;
 			productName = CcmarkGfm;
-			productReference = 000000000000000000000066 /* libCcmarkGfm.a */;
+			productReference = 000000000000000000000068 /* libCcmarkGfm.a */;
 			productType = "com.apple.product-type.library.static";
 		};
-		000000000000000000000077 /* MarkdownKit */ = {
+		000000000000000000000079 /* MarkdownKit */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 00000000000000000000009D /* Build configuration list for PBXNativeTarget "MarkdownKit" */;
+			buildConfigurationList = 00000000000000000000009F /* Build configuration list for PBXNativeTarget "MarkdownKit" */;
 			buildPhases = (
-				000000000000000000000089,
-				00000000000000000000008A,
 				00000000000000000000008B,
+				00000000000000000000008C,
+				00000000000000000000008D,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				00000000000000000000007C /* PBXTargetDependency */,
+				00000000000000000000007E /* PBXTargetDependency */,
 			);
 			name = MarkdownKit;
 			productName = MarkdownKit;
-			productReference = 000000000000000000000067 /* MarkdownKit.framework */;
+			productReference = 000000000000000000000069 /* MarkdownKit.framework */;
 			productType = "com.apple.product-type.framework";
 		};
-		000000000000000000000078 /* SharedTheme */ = {
+		00000000000000000000007A /* SharedTheme */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 00000000000000000000009E /* Build configuration list for PBXNativeTarget "SharedTheme" */;
+			buildConfigurationList = 0000000000000000000000A0 /* Build configuration list for PBXNativeTarget "SharedTheme" */;
 			buildPhases = (
-				00000000000000000000008C,
-				00000000000000000000008D,
 				00000000000000000000008E,
+				00000000000000000000008F,
+				000000000000000000000090,
 			);
 			buildRules = (
 			);
@@ -658,49 +666,49 @@
 			);
 			name = SharedTheme;
 			productName = SharedTheme;
-			productReference = 000000000000000000000068 /* SharedTheme.framework */;
+			productReference = 00000000000000000000006A /* SharedTheme.framework */;
 			productType = "com.apple.product-type.framework";
 		};
-		000000000000000000000079 /* Spacedown */ = {
+		00000000000000000000007B /* Spacedown */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 00000000000000000000009F /* Build configuration list for PBXNativeTarget "Spacedown" */;
+			buildConfigurationList = 0000000000000000000000A1 /* Build configuration list for PBXNativeTarget "Spacedown" */;
 			buildPhases = (
-				00000000000000000000008F,
-				000000000000000000000090,
 				000000000000000000000091,
-				000000000000000000000083,
-				000000000000000000000084,
+				000000000000000000000092,
+				000000000000000000000093,
+				000000000000000000000085,
+				000000000000000000000086,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				00000000000000000000007E /* PBXTargetDependency */,
 				000000000000000000000080 /* PBXTargetDependency */,
 				000000000000000000000082 /* PBXTargetDependency */,
+				000000000000000000000084 /* PBXTargetDependency */,
 			);
 			name = Spacedown;
 			productName = Spacedown;
-			productReference = 000000000000000000000069 /* Spacedown.app */;
+			productReference = 00000000000000000000006B /* Spacedown.app */;
 			productType = "com.apple.product-type.application";
 		};
-		00000000000000000000007A /* QuickLookPreview */ = {
+		00000000000000000000007C /* QuickLookPreview */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 0000000000000000000000A0 /* Build configuration list for PBXNativeTarget "QuickLookPreview" */;
+			buildConfigurationList = 0000000000000000000000A2 /* Build configuration list for PBXNativeTarget "QuickLookPreview" */;
 			buildPhases = (
-				000000000000000000000092,
-				000000000000000000000093,
 				000000000000000000000094,
-				000000000000000000000085,
+				000000000000000000000095,
+				000000000000000000000096,
+				000000000000000000000087,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				00000000000000000000007E /* PBXTargetDependency */,
 				000000000000000000000080 /* PBXTargetDependency */,
+				000000000000000000000082 /* PBXTargetDependency */,
 			);
 			name = QuickLookPreview;
 			productName = QuickLookPreview;
-			productReference = 00000000000000000000006A /* QuickLookPreview.appex */;
+			productReference = 00000000000000000000006C /* QuickLookPreview.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
@@ -713,12 +721,6 @@
 				BuildIndependentTargetsInParallel = 1;
 				LastUpgradeCheck = 2700;
 				TargetAttributes = {
-					000000000000000000000076 = {
-						CreatedOnToolsVersion = 27.0;
-					};
-					000000000000000000000077 = {
-						CreatedOnToolsVersion = 27.0;
-					};
 					000000000000000000000078 = {
 						CreatedOnToolsVersion = 27.0;
 					};
@@ -728,9 +730,15 @@
 					00000000000000000000007A = {
 						CreatedOnToolsVersion = 27.0;
 					};
+					00000000000000000000007B = {
+						CreatedOnToolsVersion = 27.0;
+					};
+					00000000000000000000007C = {
+						CreatedOnToolsVersion = 27.0;
+					};
 				};
 			};
-			buildConfigurationList = 0000000000000000000000A1 /* Build configuration list for PBXProject "Spacedown" */;
+			buildConfigurationList = 0000000000000000000000A3 /* Build configuration list for PBXProject "Spacedown" */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -738,52 +746,53 @@
 				en,
 				Base,
 			);
-			mainGroup = 00000000000000000000009B;
-			productRefGroup = 00000000000000000000009A /* Products */;
+			mainGroup = 00000000000000000000009D;
+			productRefGroup = 00000000000000000000009C /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				000000000000000000000076 /* CcmarkGfm */,
-				000000000000000000000077 /* MarkdownKit */,
-				000000000000000000000078 /* SharedTheme */,
-				000000000000000000000079 /* Spacedown */,
-				00000000000000000000007A /* QuickLookPreview */,
+				000000000000000000000078 /* CcmarkGfm */,
+				000000000000000000000079 /* MarkdownKit */,
+				00000000000000000000007A /* SharedTheme */,
+				00000000000000000000007B /* Spacedown */,
+				00000000000000000000007C /* QuickLookPreview */,
 			);
 		};
 /* End PBXProject section */
 
 
 /* Begin PBXResourcesBuildPhase section */
-		000000000000000000000088 /* Resources */ = {
+		00000000000000000000008A /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		00000000000000000000008B /* Resources */ = {
+		00000000000000000000008D /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		00000000000000000000008E /* Resources */ = {
+		000000000000000000000090 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				000000000000000000000063 /* theme.css in Resources */,
+				000000000000000000000065 /* theme.css in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		000000000000000000000091 /* Resources */ = {
+		000000000000000000000093 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				000000000000000000000063 /* AppIcon.icns in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		000000000000000000000094 /* Resources */ = {
+		000000000000000000000096 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -794,7 +803,7 @@
 
 
 /* Begin PBXSourcesBuildPhase section */
-		000000000000000000000086 /* Sources */ = {
+		000000000000000000000088 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -835,7 +844,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		000000000000000000000089 /* Sources */ = {
+		00000000000000000000008B /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -843,7 +852,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		00000000000000000000008C /* Sources */ = {
+		00000000000000000000008E /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -851,7 +860,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		00000000000000000000008F /* Sources */ = {
+		000000000000000000000091 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -869,7 +878,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		000000000000000000000092 /* Sources */ = {
+		000000000000000000000094 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -881,31 +890,31 @@
 
 
 /* Begin PBXTargetDependency section */
-		00000000000000000000007C /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 000000000000000000000076 /* CcmarkGfm */;
-			targetProxy = 00000000000000000000007B /* PBXContainerItemProxy */;
-		};
 		00000000000000000000007E /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 000000000000000000000077 /* MarkdownKit */;
+			target = 000000000000000000000078 /* CcmarkGfm */;
 			targetProxy = 00000000000000000000007D /* PBXContainerItemProxy */;
 		};
 		000000000000000000000080 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 000000000000000000000078 /* SharedTheme */;
+			target = 000000000000000000000079 /* MarkdownKit */;
 			targetProxy = 00000000000000000000007F /* PBXContainerItemProxy */;
 		};
 		000000000000000000000082 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 00000000000000000000007A /* QuickLookPreview */;
+			target = 00000000000000000000007A /* SharedTheme */;
 			targetProxy = 000000000000000000000081 /* PBXContainerItemProxy */;
+		};
+		000000000000000000000084 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 00000000000000000000007C /* QuickLookPreview */;
+			targetProxy = 000000000000000000000083 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
 
 /* Begin XCBuildConfiguration section */
-		0000000000000000000000A2 /* Debug */ = {
+		0000000000000000000000A4 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -931,7 +940,7 @@
 			};
 			name = Debug;
 		};
-		0000000000000000000000A3 /* Release */ = {
+		0000000000000000000000A5 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -954,50 +963,6 @@
 			};
 			name = Release;
 		};
-		0000000000000000000000A4 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_IDENTITY = "-";
-				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 1;
-				DEFINES_MODULE = YES;
-				ENABLE_HARDENED_RUNTIME = NO;
-				EXECUTABLE_EXTENSION = a;
-				HEADER_SEARCH_PATHS = (
-					"$(SRCROOT)/Packages/Core/Sources/CcmarkGfm/src",
-					"$(SRCROOT)/Packages/Core/Sources/CcmarkGfm/include",
-					"$(SRCROOT)/Packages/Core/Sources/CcmarkGfm/extensions",
-				);
-				MARKETING_VERSION = 1.0;
-				MODULEMAP_FILE = "$(SRCROOT)/Packages/Core/XcodeSupport/CcmarkGfm/module.modulemap";
-				OTHER_CFLAGS = ("-O3", "-mcpu=apple-m1",);
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-			};
-			name = Debug;
-		};
-		0000000000000000000000A5 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_IDENTITY = "-";
-				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 1;
-				DEFINES_MODULE = YES;
-				ENABLE_HARDENED_RUNTIME = NO;
-				EXECUTABLE_EXTENSION = a;
-				HEADER_SEARCH_PATHS = (
-					"$(SRCROOT)/Packages/Core/Sources/CcmarkGfm/src",
-					"$(SRCROOT)/Packages/Core/Sources/CcmarkGfm/include",
-					"$(SRCROOT)/Packages/Core/Sources/CcmarkGfm/extensions",
-				);
-				MARKETING_VERSION = 1.0;
-				MODULEMAP_FILE = "$(SRCROOT)/Packages/Core/XcodeSupport/CcmarkGfm/module.modulemap";
-				OTHER_CFLAGS = ("-O3", "-mcpu=apple-m1",);
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-			};
-			name = Release;
-		};
 		0000000000000000000000A6 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -1005,12 +970,16 @@
 				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 1;
 				DEFINES_MODULE = YES;
-				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				ENABLE_HARDENED_RUNTIME = NO;
-				GENERATE_INFOPLIST_FILE = YES;
-				LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", "@loader_path/Frameworks",);
+				EXECUTABLE_EXTENSION = a;
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/Packages/Core/Sources/CcmarkGfm/src",
+					"$(SRCROOT)/Packages/Core/Sources/CcmarkGfm/include",
+					"$(SRCROOT)/Packages/Core/Sources/CcmarkGfm/extensions",
+				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = cn.29dev.Spacedown.MarkdownKit;
+				MODULEMAP_FILE = "$(SRCROOT)/Packages/Core/XcodeSupport/CcmarkGfm/module.modulemap";
+				OTHER_CFLAGS = ("-O3", "-mcpu=apple-m1",);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 			};
@@ -1023,12 +992,16 @@
 				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 1;
 				DEFINES_MODULE = YES;
-				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				ENABLE_HARDENED_RUNTIME = NO;
-				GENERATE_INFOPLIST_FILE = YES;
-				LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", "@loader_path/Frameworks",);
+				EXECUTABLE_EXTENSION = a;
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/Packages/Core/Sources/CcmarkGfm/src",
+					"$(SRCROOT)/Packages/Core/Sources/CcmarkGfm/include",
+					"$(SRCROOT)/Packages/Core/Sources/CcmarkGfm/extensions",
+				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = cn.29dev.Spacedown.MarkdownKit;
+				MODULEMAP_FILE = "$(SRCROOT)/Packages/Core/XcodeSupport/CcmarkGfm/module.modulemap";
+				OTHER_CFLAGS = ("-O3", "-mcpu=apple-m1",);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 			};
@@ -1046,7 +1019,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", "@loader_path/Frameworks",);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = cn.29dev.Spacedown.SharedTheme;
+				PRODUCT_BUNDLE_IDENTIFIER = cn.29dev.Spacedown.MarkdownKit;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 			};
@@ -1064,13 +1037,49 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", "@loader_path/Frameworks",);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = cn.29dev.Spacedown.SharedTheme;
+				PRODUCT_BUNDLE_IDENTIFIER = cn.29dev.Spacedown.MarkdownKit;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 			};
 			name = Release;
 		};
 		0000000000000000000000AA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				ENABLE_HARDENED_RUNTIME = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", "@loader_path/Frameworks",);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = cn.29dev.Spacedown.SharedTheme;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+			};
+			name = Debug;
+		};
+		0000000000000000000000AB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				ENABLE_HARDENED_RUNTIME = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", "@loader_path/Frameworks",);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = cn.29dev.Spacedown.SharedTheme;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+			};
+			name = Release;
+		};
+		0000000000000000000000AC /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_IDENTITY = "-";
@@ -1087,7 +1096,7 @@
 			};
 			name = Debug;
 		};
-		0000000000000000000000AB /* Release */ = {
+		0000000000000000000000AD /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_IDENTITY = "-";
@@ -1104,7 +1113,7 @@
 			};
 			name = Release;
 		};
-		0000000000000000000000AC /* Debug */ = {
+		0000000000000000000000AE /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_IDENTITY = "-";
@@ -1126,7 +1135,7 @@
 			};
 			name = Debug;
 		};
-		0000000000000000000000AD /* Release */ = {
+		0000000000000000000000AF /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_IDENTITY = "-";
@@ -1152,16 +1161,7 @@
 
 
 /* Begin XCConfigurationList section */
-		0000000000000000000000A1 /* Build configuration list for PBXProject "Spacedown" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				0000000000000000000000A2 /* Debug */,
-				0000000000000000000000A3 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		00000000000000000000009C /* Build configuration list for PBXNativeTarget "CcmarkGfm" */ = {
+		0000000000000000000000A3 /* Build configuration list for PBXProject "Spacedown" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				0000000000000000000000A4 /* Debug */,
@@ -1170,7 +1170,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		00000000000000000000009D /* Build configuration list for PBXNativeTarget "MarkdownKit" */ = {
+		00000000000000000000009E /* Build configuration list for PBXNativeTarget "CcmarkGfm" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				0000000000000000000000A6 /* Debug */,
@@ -1179,7 +1179,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		00000000000000000000009E /* Build configuration list for PBXNativeTarget "SharedTheme" */ = {
+		00000000000000000000009F /* Build configuration list for PBXNativeTarget "MarkdownKit" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				0000000000000000000000A8 /* Debug */,
@@ -1188,7 +1188,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		00000000000000000000009F /* Build configuration list for PBXNativeTarget "Spacedown" */ = {
+		0000000000000000000000A0 /* Build configuration list for PBXNativeTarget "SharedTheme" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				0000000000000000000000AA /* Debug */,
@@ -1197,11 +1197,20 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		0000000000000000000000A0 /* Build configuration list for PBXNativeTarget "QuickLookPreview" */ = {
+		0000000000000000000000A1 /* Build configuration list for PBXNativeTarget "Spacedown" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				0000000000000000000000AC /* Debug */,
 				0000000000000000000000AD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		0000000000000000000000A2 /* Build configuration list for PBXNativeTarget "QuickLookPreview" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0000000000000000000000AE /* Debug */,
+				0000000000000000000000AF /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

@@ -199,6 +199,7 @@ defaults delete cn.29dev.Spacedown DebugLayout             # 关掉
 Spacedown/
 ├── Spacedown.xcodeproj/          Xcode 工程（由 scripts/gen_project.py 生成）
 ├── Spacedown/                    主 App target
+│   ├── AppIcon.icns              App 图标（源与生成脚本在 design/logo/）
 │   ├── AppDelegate.swift         入口、open 事件分发
 │   ├── MainWindow.swift          多标签窗口、交通灯对齐、布局自检
 │   ├── TabBar.swift              自绘标签栏 + 右侧缩放/动作
@@ -217,6 +218,7 @@ Spacedown/
 │   ├── Sources/Bench/            命令行基准 / 渲染工具
 │   ├── Sources/WebViewBench/     M0 的 WKWebView 成本实测工具
 │   └── XcodeSupport/CcmarkGfm/   Xcode 用的 module.modulemap
+├── design/logo/                  Logo 源：spacedown-icon.svg + build_logo.py（改几何/配色都改这里再重跑）
 ├── scripts/gen_project.py        工程生成器
 ├── docs/技术方案.md               方案（性能指标、风险清单、里程碑）
 ├── docs/benchmarks.md            实测数字与踩坑记录
