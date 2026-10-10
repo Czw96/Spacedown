@@ -15,7 +15,10 @@ final class DocumentTab {
     var scrollY: Double = 0
 
     /// 每个标签各自记缩放。webview 是复用的，不记在模型上会串到别的标签。
-    var magnification: CGFloat = 1
+    ///
+    /// ⚠️ 它对应的是 `WKWebView.pageZoom`（**会重排**的缩放），不是 `magnification`。
+    /// `magnification` 只做视觉放大，内容宽度不变 → 一定会压出横向滚动条（踩过）。
+    var zoom: CGFloat = 1
 
     init(url: URL) {
         self.url = url

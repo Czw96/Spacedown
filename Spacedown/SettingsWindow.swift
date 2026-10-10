@@ -32,6 +32,10 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
             backing: .buffered,
             defer: false
         )
+        // ⚠️ 不关掉这个标志，**关设置窗时会段错误崩溃**（程序化创建的窗口默认为 true，
+        // 关窗时 AppKit 释放一次、ARC 再释放一次）。完整说明与复现数据见
+        // `SpacedownWindow` 的注释 —— 这条是那个崩溃的直接责任人。
+        window.isReleasedWhenClosed = false
         // 不设标题：头部已有 Logo + 名字，标题栏再来一份"Spacedown 设置"是重复的。
         window.title = ""
         super.init()

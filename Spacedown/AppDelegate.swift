@@ -60,6 +60,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return true
     }
 
+    /// 「关于 Spacedown」。
+    ///
+    /// 刻意不用默认的 `orderFrontStandardAboutPanel(_:)`：它渲染的版本行是
+    /// `Version {CFBundleShortVersionString} ({CFBundleVersion})` → 显示成
+    /// **「Version 1.0 (1)」**，括号里的 build 号对用户没有意义。
+    ///
+    /// 实测（构造面板后把里面的文本读出来）：
+    ///
+    /// | 传的选项 | 面板上的版本行 |
+    /// |---|---|
+    /// | 都不传（默认） | `Version 1.0 (1)` |
+    /// | 只传 `.version` | **`Version 1.0`** ✅ |
+    /// | 只传 `.applicationVersion` | `Version 1.0` |
+    /// | **两个都传** | `Version 1.0 (1.0)` ← 括号又回来了 |
+    ///
+    /// 所以只传 `.version` 一个，且**不要**同时传 `.applicationVersion`。
+    @objc func showAbout(_ sender: Any?) {
+        let short = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
+        NSApp.orderFrontStandardAboutPanel(options: [.version: short ?? "1.0"])
+    }
+
     // MARK: - 窗口
 
     /// 菜单「Spacedown → 设置…」（⌘,）与启动兜底都走这里。

@@ -61,6 +61,9 @@ final class WebViewPool {
 
     private let delegate: WKNavigationDelegate
 
+    /// 文件被拖到某个 webview 上时回调（由 `MainWindow` 接管）。
+    var onDropFiles: (([URL]) -> Void)?
+
     init(delegate: WKNavigationDelegate) {
         self.delegate = delegate
     }
@@ -77,7 +80,7 @@ final class WebViewPool {
     /// `needsLoad` 一定是 true，不会把这段空白页当成内容。
     func prewarm() {
         guard spare.isEmpty, slots.isEmpty else { return }
-        let view = Self.makeView(delegate: delegate)
+        let view = makeView()
         view.loadHTMLString("<!doctype html><meta charset='utf-8'><body></body>", baseURL: nil)
         spare.append(view)
     }
@@ -93,9 +96,9 @@ final class WebViewPool {
             return (slot.view, contentOwner[ObjectIdentifier(slot.view)] != ObjectIdentifier(tab))
         }
 
-        let view = spare.popLast() ?? Self.makeView(delegate: delegate)
+        let view = spare.popLast() ?? makeView()
         // 实例是复用的，缩放不会自己回到 1
-        view.magnification = tab.magnification
+        view.pageZoom = tab.zoom
 
         slots.append(Slot(view: view, tab: tab))
         evictOverflow()
@@ -110,6 +113,14 @@ final class WebViewPool {
     /// 不用 touch 地查实例（给"文件变了要重载"这种旁路用）
     func residentView(for tab: DocumentTab) -> WKWebView? {
         slots.first { $0.tab === tab }?.view
+    }
+
+    /// 让池里所有实例"忘记"自己装的是哪份内容 —— 下次取用时一律重新载入。
+    ///
+    /// 给**渲染期参数**变化用的（目前是版心宽度）：同一个文件也要重渲染，
+    /// 光把当前标签刷了不够，否则切到别的标签会看到旧参数渲染出来的内容。
+    func invalidateContent() {
+        contentOwner.removeAll()
     }
 
     /// 池内常驻实例数 = 当前活着的 WebContent 渲染进程数（每个 webview 独占一个）。
@@ -129,12 +140,29 @@ final class WebViewPool {
     }
 
     /// 离开一个标签前把滚动位置存回模型。实例被淘汰时也会调。
+    ///
+    /// ⚠️ 这次读是**异步**的，而调用方紧接着就会回收/复用这个实例
+    /// （`retire` / `evictOverflow` 都会把它丢进备用区）。等 JS 回执回来时，
+    /// 实例可能已经被别的标签 `acquire` 并载入了新内容 —— 那时读到的 `scrollY`
+    /// 是**别人**的位置，写进这个模型就是串台。所以回执必须验身份。
+    ///
+    /// 判据不能写成 `contentOwner[view] == tab`：被回收的实例 `contentOwner` 已被清空，
+    /// 但**里面的内容还没被换掉**，那份读数依然是对的 —— 一刀切会把该存的丢掉。
+    /// 真正要挡的只有「实例已经属于另一个标签」。
     func captureScrollY(of tab: DocumentTab) {
         guard let view = residentView(for: tab) else { return }
         Task { @MainActor in
-            if let raw = try? await view.evaluateJavaScript("window.scrollY") {
-                tab.scrollY = (raw as? NSNumber)?.doubleValue ?? 0
-            }
+            guard let raw = try? await view.evaluateJavaScript("window.scrollY"),
+                  self.stillHolds(view, tab) else { return }
+            tab.scrollY = (raw as? NSNumber)?.doubleValue ?? 0
+        }
+    }
+
+    /// 回执回来时，实例里的内容还是不是这个标签的。
+    private func stillHolds(_ view: WKWebView, _ tab: DocumentTab) -> Bool {
+        switch contentOwner[ObjectIdentifier(view)] {
+        case .none:                     return true        // 已回收、内容未换：读数仍有效
+        case .some(let owner):          return owner == ObjectIdentifier(tab)
         }
     }
 
@@ -170,9 +198,19 @@ final class WebViewPool {
         }
     }
 
-    private static func makeView(delegate: WKNavigationDelegate) -> WKWebView {
-        let view = WKWebView(frame: .zero)
-        view.allowsMagnification = true
+    /// 建实例并接上拖放回调 —— 两处创建点（预热 / 取用）都走它，
+    /// 免得漏掉一处导致"有的 webview 能收拖放、有的不能"。
+    private func makeView() -> SpacedownWebView {
+        let view = Self.makeBareView(delegate: delegate)
+        view.onDropFiles = { [weak self] urls in self?.onDropFiles?(urls) }
+        return view
+    }
+
+    private static func makeBareView(delegate: WKNavigationDelegate) -> SpacedownWebView {
+        // 用 SpacedownWebView 而不是裸 WKWebView：它拦下文件拖放并交给我们（见 MainWindow.swift）
+        let view = SpacedownWebView(frame: .zero, configuration: WKWebViewConfiguration())
+        // ⚠️ **不要开 `allowsMagnification`**：那是纯视觉放大（不重排），一放大就压出横向滚动条。
+        // 缩放由 `pageZoom` 负责（会重排），见 `MainWindow.setZoom`。
         view.navigationDelegate = delegate
         // 文档加载完成前 WebKit 默认刷白，深色模式下会很刺眼
         view.underPageBackgroundColor = Palette.pageBackground

@@ -39,8 +39,19 @@ final class FileWatcher {
         var exists: Bool { inode != 0 }
     }
 
+    /// 监听什么。**两个源不是二选一的美化，是功能必需**：
+    ///
+    /// - `.file` 盯文件本身，才能接住「原地写」（编辑器直接改写同一个 inode）；
+    /// - `.dir` 盯父目录的目录项变化，才能接住「文件消失 → 又在原路径出现」。
+    ///
+    /// 只盯文件的话，`rm` 掉再写回同名文件时，旧 fd 攥着的是**已删除的那个 inode**，
+    /// 新文件是另一个 inode —— 此后一个事件都收不到，预览再也不刷新（旧实现正是这么漏的）。
+    /// 反过来只盯目录也不行：原地写不改变目录项，只有文件源能收到。
+    private enum WatchKind { case file, dir }
+
     private struct Entry {
-        let source: DispatchSourceFileSystemObject
+        var file: DispatchSourceFileSystemObject?
+        var dir: DispatchSourceFileSystemObject?
         var stamp: FileStamp
     }
 
@@ -66,19 +77,25 @@ final class FileWatcher {
     // MARK: - 内部
 
     private func start(_ url: URL) {
-        let descriptor = open(url.path, O_EVTONLY)
-        guard descriptor >= 0 else { return }
-        let source = Self.makeSource(descriptor: descriptor, url: url)
-        entries[url] = Entry(source: source, stamp: FileStamp(url))
-        source.resume()
+        let stamp = FileStamp(url)
+        var entry = Entry(stamp: stamp)
+        if stamp.exists {
+            entry.file = makeSource(.file, url: url)
+        }
+        // 文件不存在（或连 fd 都开不出来）时先用目录源占位
+        if entry.file == nil {
+            entry.dir = makeSource(.dir, url: url)
+        }
+        entries[url] = entry
     }
 
     private func stop(_ url: URL) {
         debounces[url]?.cancel()
         debounces[url] = nil
         guard let entry = entries.removeValue(forKey: url) else { return }
-        // 关 fd 在 cancelHandler 里做
-        entry.source.cancel()
+        // 关 fd 在各自的 cancelHandler 里做
+        entry.file?.cancel()
+        entry.dir?.cancel()
     }
 
     private func receive(_ url: URL) {
@@ -95,24 +112,40 @@ final class FileWatcher {
         guard let entry = entries[url] else { return }
 
         let now = FileStamp(url)
-        guard now != entry.stamp else { return }
+        guard now != entry.stamp else { return }   // 没变就不重渲染 —— 省 CPU 的大头
 
-        // 原子保存（写临时文件再 rename）会换 inode，旧 fd 已经盯不住新文件了，重挂
-        if now.exists && now.inode != entry.stamp.inode {
-            stop(url)
-            start(url)
-        } else {
-            entries[url]?.stamp = now
-        }
-        guard now.exists else { return }
+        // 原子保存（写临时文件再 rename）会换 inode，文件被删会让 stamp 归零：
+        // 两种都由 rearm 决定接下来该盯哪一根源。
+        entries[url]?.stamp = now
+        rearm(url, fileExists: now.exists, hadFileSource: entry.file != nil)
         onChange?(url)
     }
 
-    /// 事件闭包只捕获 `URL`，别的一律走 `shared` —— 见类型注释。
-    private static func makeSource(descriptor: Int32, url: URL) -> DispatchSourceFileSystemObject {
+    /// 在「文件在 / 不在」之间切换时换一根监听源。
+    private func rearm(_ url: URL, fileExists: Bool, hadFileSource: Bool) {
+        if fileExists, !hadFileSource {
+            entries[url]?.dir?.cancel()
+            entries[url]?.dir = nil
+            entries[url]?.file = makeSource(.file, url: url)
+        } else if !fileExists, hadFileSource {
+            entries[url]?.file?.cancel()
+            entries[url]?.file = nil
+            entries[url]?.dir = makeSource(.dir, url: url)
+        }
+    }
+
+    /// 建一根已 resume 的源。事件闭包只捕获 `URL`，别的一律走 `shared` —— 见类型注释。
+    private func makeSource(_ kind: WatchKind, url: URL) -> DispatchSourceFileSystemObject? {
+        let path = kind == .file ? url.path : url.deletingLastPathComponent().path
+        let descriptor = open(path, O_EVTONLY)
+        guard descriptor >= 0 else { return nil }
+
+        let mask: DispatchSource.FileSystemEvent = kind == .file
+            ? [.write, .delete, .rename, .extend, .attrib]
+            : [.write, .delete, .rename]
         let source = DispatchSource.makeFileSystemObjectSource(
             fileDescriptor: descriptor,
-            eventMask: [.write, .delete, .rename, .extend, .attrib],
+            eventMask: mask,
             queue: .main
         )
         source.setEventHandler { [url] in
@@ -123,6 +156,7 @@ final class FileWatcher {
         source.setCancelHandler {
             close(descriptor)
         }
+        source.resume()
         return source
     }
 }
