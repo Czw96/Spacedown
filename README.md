@@ -1,6 +1,7 @@
 # Spacedown
 
 macOS Markdown 速览：Finder 空格键预览 + 只读多标签查看器。
+**平台：macOS 13+ · Apple Silicon**（App target 与 `Package.swift` 的口径已统一为 13.0）。
 
 > **状态（2026-10-08）：主 App 多标签已可用；Quick Look 扩展已改视图型，待真机验收滚动。**
 >
@@ -61,9 +62,13 @@ AppKit 实现（不是 SwiftUI —— 见 `docs/技术方案.md §7.1`）。一�
 | 多标签 | 自绘标签栏，38px，`NSVisualEffectView(.windowBackground)` 材质；当前标签底色微抬 + 顶部 2px 强调色条 |
 | 标签切换 | **LRU `WKWebView` 池**，容量 5 + 备用 2，淘汰不销毁 → 池内切换 ≈ 0ms |
 | 启动预热 | App 一起动就建好一个 webview，省掉首次打开要付的 ~370ms |
+| 拖放打开 | `.md` 拖到窗口任意位置都能开（空白处与已打开的文档上都能接） |
+| 打开反馈 | 首帧超过 120ms 才起转菊花 —— 快速加载不会闪一下 |
 | 只读 | HTML 天然不可编辑 + `default-src 'none'` 的 CSP；可以选中复制 |
-| 外部修改 | `DispatchSource` 监听 + 120ms 去抖 + `lstat` 四元组比对，没变就不重渲染 |
-| 缩放 | `webView.magnification`（GPU 合成层缩放，不触发重排），每个标签各自记 |
+| 外部修改 | `DispatchSource` 监听 + 120ms 去抖 + `lstat` 四元组比对，没变就不重渲染；文件被删掉再重建会自动换源重挂 |
+| 缩放 | `webView.pageZoom`（**会重排**，所以放大不出横向滚动条），每个标签各自记 |
+| 宽表格 | 渲染期给 `<table>` 套 `overflow-x: auto` 容器，窄面板里横着滚而不是撑破版心 |
+| 版心宽度 | 「显示 → 版心宽度」，默认铺满，可收到 40%~100%；⌥⌘= / ⌥⌘− / ⌥⌘0，设置会记住 |
 
 ### 快捷键
 
@@ -74,12 +79,24 @@ AppKit 实现（不是 SwiftUI —— 见 `docs/技术方案.md §7.1`）。一�
 | 重新载入 | <kbd>⌘</kbd> <kbd>R</kbd> |
 | 下一个 / 上一个标签 | <kbd>⌃</kbd> <kbd>⇥</kbd> / <kbd>⌃</kbd> <kbd>⇧</kbd> <kbd>⇥</kbd> |
 | 同上的第二入口 | <kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>]</kbd> / <kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>[</kbd> |
-| 跳到第 N 个标签 | <kbd>⌘</kbd> <kbd>1</kbd> … <kbd>⌘</kbd> <kbd>9</kbd> |
+| 跳到第 N 个标签 | <kbd>⌘</kbd> <kbd>1</kbd> … <kbd>⌘</kbd> <kbd>9</kbd>（<kbd>⌘9</kbd> 固定是**最后一个**） |
 | 放大 / 缩小 / 实际大小 | <kbd>⌘</kbd> <kbd>+</kbd> / <kbd>⌘</kbd> <kbd>−</kbd> / <kbd>⌘</kbd> <kbd>0</kbd> |
+| 版心加宽 / 收窄 / 铺满 | <kbd>⌥</kbd> <kbd>⌘</kbd> <kbd>=</kbd> / <kbd>⌥</kbd> <kbd>⌘</kbd> <kbd>−</kbd> / <kbd>⌥</kbd> <kbd>⌘</kbd> <kbd>0</kbd> |
 | 在 Finder 中显示 | <kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>R</kbd> |
 | 用默认编辑器打开 | <kbd>⌥</kbd> <kbd>⌘</kbd> <kbd>E</kbd> |
 
-空白标签栏双击 = 新建标签（打开文件面板）。
+> 缩放那三条：**<kbd>⌘=</kbd> 也管用**（等价于 ⇧<kbd>⌘=</kbd>，也就是大家心里的「⌘+」）。
+> 物理键盘上并没有单独的 `+` 键，所以菜单匹配不能写成 `"+"` —— 见 `MainMenu.hiddenAlias` 的注释，
+> 那里有一张实测表格。
+>
+> 版心那三条：**默认铺满**（`--measure: 100%`），范围 40%~100%、每次 10%。
+> 入口在 **「显示 → 版心宽度」**（菜单里那一行会显示当前值，打开菜单时刷新）。
+> ⌥⌘= / ⌥⌘− / ⌥⌘0 随时可用，不用打开菜单。
+> **空格预览读不到这个设置** —— 扩展与 App 的 bundle id 不同、也没有 App Group，
+> 所以 QL 面板固定按铺满渲染。
+
+空白标签栏双击 = 新建标签（打开文件面板）；把 `.md` 拖到窗口任意位置也会打开。
+工具栏右侧只有缩放（`−` / 百分比 / `+`）；「在 Finder 中显示」「用默认编辑器打开」只在「文件」菜单里。
 
 ### ⚠️ 为什么双击 `.md` 打开的不是渲染视图
 
