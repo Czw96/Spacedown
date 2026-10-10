@@ -6,7 +6,8 @@
 
    设计取向：
    - 克制的中性色阶，全篇只有一个强调色，且只出现在「可交互 / 需注意」的元素上
-   - 行宽上限控制在 44rem（约 704px）——长行是阅读体验的头号杀手
+   - 版心跟着窗口走（`--measure` 是"占可用宽度的比例"，默认 100% 铺满，
+     用户可在「显示 → 版心宽度」里收窄）
    - 层级靠字号 + 字重 + 留白表达，不靠边框和色块
    - 中英混排：字体栈里 PingFang SC 必须排在 fallback 之前
    ========================================================================== */
@@ -23,14 +24,17 @@
     /* ---- 排版尺度 ---- */
     --fs-body: 16px;
     --lh-body: 1.72;
-    --measure: 44rem;
+    /* 版心：**占可用宽度的比例**，默认 100% = 铺满（两侧只留 --pad-x）。
+       想收窄一行的人可以在「显示 → 版心宽度」里调（MainWindow 会覆盖这个变量）。
+       ⚠️ 这里刻意**不写死具体宽度**（曾写死 72rem）—— 那是个拿不准的魔法数，
+       而且"完全自适应"与"一行太长"本来就是同一个旋钮的两端，该由用户定。 */
+    --measure: 100%;
     --pad-x: 3rem;
     --pad-y: 2.5rem;
 
     /* ---- 浅色 ---- */
     --bg: #ffffff;
     --surface: #f7f7f8;
-    --surface-2: #f1f1f3;
     --text: #1b1b1f;
     --text-2: #6b6b70;
     --text-3: #9a9aa0;
@@ -46,7 +50,6 @@
     :root {
         --bg: #1b1b1d;          /* 不用纯黑：纯黑在 OLED 上会产生光晕感 */
         --surface: #242427;
-        --surface-2: #2c2c30;
         --text: #e9e9ec;        /* 也不用纯白 */
         --text-2: #9a9aa0;
         --text-3: #6e6e73;
@@ -278,6 +281,20 @@ blockquote p:last-child {
 
 /* ---- 表格 ---- */
 
+/* 横向滚动容器由渲染期包上（见 SharedTheme.wrappingTables）：
+   宽表格在 Quick Look 的窄面板里必须能横着滚，而不是撑破版心。
+   滚动条只在真的滚得动时才占位（`scrollbar-gutter` 不行就靠负边距补）。 */
+.table-wrap {
+    margin: 0 0 1.5em;
+    overflow-x: auto;
+    /* 让滚动条压不到第一行/最后一行的文字 */
+    padding-bottom: 2px;
+}
+
+.table-wrap > table {
+    margin-bottom: 0;
+}
+
 table {
     width: 100%;
     margin: 0 0 1.5em;
@@ -296,6 +313,7 @@ th {
     font-weight: 600;
     color: var(--text);
     border-bottom: 1px solid var(--hairline-strong);
+    /* 表头不折行：窄面板下由 .table-wrap 横向滚动兜底 */
     white-space: nowrap;
 }
 
@@ -407,7 +425,12 @@ kbd {
         padding: 0;
     }
 
-    pre, blockquote, table {
+    /* 打印时不该有横向滚动条：让宽表格直接溢出到页面（比被裁掉好） */
+    .table-wrap {
+        overflow: visible;
+    }
+
+    pre, .table-wrap, blockquote, table {
         break-inside: avoid;
     }
 }

@@ -31,10 +31,12 @@
 			     实测那正是「滚动卡」的来源。现在是视图型：自建 viewport 尺寸的 WKWebView，
 			     滚动走 WebKit 的分块异步路径 —— 数据与归因见 docs/性能分析.md §6。 -->
 			<!-- .md / .markdown 的实际 UTI（mdls 实测）。
-			     不要列 public.plain-text —— 它在 md 的 conform 链里，加了会劫持 .txt -->
+			     不要列 public.plain-text —— 它在 md 的 conform 链里，加了会劫持 .txt。
+			     public.markdown 是通用那条，一并认领（技术方案 §6.2 的结论）。 -->
 			<key>QLSupportedContentTypes</key>
 			<array>
 				<string>net.daringfireball.markdown</string>
+				<string>public.markdown</string>
 			</array>
 		</dict>
 		<key>NSExtensionPointIdentifier</key>

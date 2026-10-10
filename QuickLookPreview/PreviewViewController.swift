@@ -61,12 +61,6 @@ import SharedTheme
 final class PreviewViewController: NSViewController, @preconcurrency QLPreviewingController,
     @preconcurrency WKNavigationDelegate, @preconcurrency WKScriptMessageHandler {
 
-    /// 超过这个体积就截断。
-    ///
-    /// 天花板不是解析而是 WebKit 排版（约 236 ms/MB HTML），所以「大文件先截断」
-    /// 是唯一有效的缓解手段 —— 见 docs/技术方案.md §3。
-    private static let maxBytes = 512 * 1024
-
     private static let renderer = MarkdownRenderer()
 
     private static let logger = Logger(subsystem: "cn.29dev.Spacedown", category: "quicklook")
@@ -362,8 +356,11 @@ final class PreviewViewController: NSViewController, @preconcurrency QLPreviewin
     /// 为什么放着 `os_log` 还要写文件：这台机器上 `log show` / `ps` / `pluginkit` 全被权限挡住，
     /// 拿不到档案就看不了。Quick Look 主进程会把扩展进程关进沙箱，**这两个路径不一定可写** ——
     /// 写没写成、写到哪一路，本身就是这次要测的一件事。
-    /// TODO(诊断用): 取证结束就删掉，正式版本只走 os_log。
+    ///
+    /// ⚠️ **只在 Debug 构建里存在**。它是取证工具，不该跟着发行版出去：
+    /// 会往 `/tmp` 明文写文件名，而 os_log 那条链路本来就够用。
     private static func diag(_ kind: String, _ extra: String = "") {
+        #if DEBUG
         let line = """
         {"ts":\(Self.now() / 1_000_000), "kind":"\(kind)", "pid":\(ProcessInfo.processInfo.processIdentifier)\(extra)}
         """
@@ -383,6 +380,7 @@ final class PreviewViewController: NSViewController, @preconcurrency QLPreviewin
                 try? data.write(to: URL(fileURLWithPath: path))
             }
         }
+        #endif
     }
 
     private static func now() -> UInt64 { DispatchTime.now().uptimeNanoseconds }
@@ -392,14 +390,16 @@ final class PreviewViewController: NSViewController, @preconcurrency QLPreviewin
     }
 
     /// 读文件 → 截断 → 解析 → 拼完整 HTML。与主 App 走同一条链路。
+    ///
+    /// ⚠️ 截断必须走 `MarkdownRenderer.documentBytes`，**不要在这里再写一份**。
+    /// 那个方法存在的唯一理由就是「扩展与主 App 的截断口径必须一致，否则同一个文件
+    /// 两处显示会不一样长」—— 而这里曾经复制过一份（连提示文案都抄了），
+    /// 两边只要改一处就会漂。上限也由它统一持有（`defaultMaxBytes`）。
     private func render(url: URL) throws -> Data {
         let t0 = Self.now()
-        var data = try Data(contentsOf: url, options: .mappedIfSafe)
+        let markdown = try MarkdownRenderer.documentBytes(contentsOf: url)
         let t1 = Self.now()
-        if data.count > Self.maxBytes {
-            data = Self.truncated(data, limit: Self.maxBytes)
-        }
-        let body = Self.renderer.renderHTMLData(data)
+        let body = Self.renderer.renderHTMLData(markdown)
         let t2 = Self.now()
         let document = SharedTheme.document(body: body)
         let t3 = Self.now()
@@ -408,17 +408,6 @@ final class PreviewViewController: NSViewController, @preconcurrency QLPreviewin
         renderMs = Self.ms(t1, t2)
         wrapMs = Self.ms(t2, t3)
         return document
-    }
-
-    /// 尽量切在换行上，避免把一个 markdown 块结构切成半截。
-    private static func truncated(_ data: Data, limit: Int) -> Data {
-        var slice = data.prefix(limit)
-        if let newline = slice.lastIndex(of: 0x0A) {
-            slice = slice[..<newline]
-        }
-        var out = Data("\n\n> 文件过大，已截断显示前 \(limit / 1024) KB\n".utf8)
-        out.append(slice)
-        return out
     }
 }
 

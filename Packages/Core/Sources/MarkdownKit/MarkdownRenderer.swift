@@ -56,11 +56,32 @@ public struct MarkdownRenderer: Sendable {
     /// 打开后的安全边界由三层构成，**缺一不可**：
     /// 1. `tagfilter` 扩展：去掉 script / style / iframe / title / textarea /
     ///    xmp / noembed / noframes / plaintext
-    /// 2. `SharedTheme` 的 CSP `default-src 'none'`：挡住脚本执行与一切远程加载
+    /// 2. `neutralizingDangerousURLs(_:)`：`CMARK_OPT_UNSAFE` 会连"危险 scheme 链接"
+    ///    一起放开，cmark 不再替我们净化，必须自己来。覆盖 `href` / `src` 的三种引号形态
+    /// 3. `SharedTheme` 的 CSP `default-src 'none'`：挡住脚本执行与一切远程加载
     ///    （WebKit 下它同时会挡掉 `javascript:` 导航）
-    /// 3. `sanitizeLinks(_:)`：`CMARK_OPT_UNSAFE` 会连"危险 scheme 链接"一起放开，
-    ///    cmark 不再替我们净化，必须自己来
+    ///
+    /// ⚠️ 顺序是刻意的：2 是**主**防线（精确到属性值），3 是兜底。不要把 3 当成唯一依赖 ——
+    /// 哪天为了远程图片把 CSP 放宽成 `img-src *`，只有 2 能继续拦住 `data:text/html`。
     public static let renderOptions: Int32 = CMARK_OPT_UNSAFE
+
+    /// 会被清空的危险 scheme。`CMARK_OPT_UNSAFE` 打开后 cmark 不再拦这些。
+    ///
+    /// 只针对 `href` / `src` 两个属性；其他位置（正文里的字面文字）不去动。
+    private static let dangerousSchemes = ["javascript:", "vbscript:", "data:text/html"]
+
+    /// 危险 scheme 的 ASCII 字面量（小写），供字节级匹配用。
+    private static let dangerousPatterns: [[UInt8]] = dangerousSchemes.map { Array($0.utf8) }
+
+    /// 需要检查的属性名（小写）。
+    private static let dangerousAttributes: [[UInt8]] = [Array("href".utf8), Array("src".utf8)]
+
+    /// 替换危险 scheme 用的页内锚点前缀。冒号被吃掉，`javascript:alert(1)` 就退化成
+    /// 一个点不动、也执行不了的锚点。
+    private static let blockedFragment = "#blocked-"
+
+    /// 上面那串的字节形式，重建路径里要用很多次。
+    private static let blockedFragmentData = Data(blockedFragment.utf8)
 
     /// 扩展注册 + 指针解析各只做一次，每次渲染只剩 N 次 `attach`。
     ///
@@ -88,12 +109,6 @@ public struct MarkdownRenderer: Sendable {
               let tagfilter = cmark_find_syntax_extension("tagfilter") else { return nil }
         return cmark_llist_append(mem, nil, UnsafeMutableRawPointer(tagfilter))
     }()
-
-    /// 会被清空的危险 scheme。`CMARK_OPT_UNSAFE` 打开后 cmark 不再拦这些。
-    ///
-    /// 只针对 markdown 语法产生的链接/图片节点；嵌在裸 HTML 里的 `<a href>` 不在
-    /// AST 上，由 CSP 兜底。
-    private static let dangerousSchemes = ["javascript:", "vbscript:", "data:text/html"]
 
     public init() {}
 
@@ -131,59 +146,114 @@ public struct MarkdownRenderer: Sendable {
 
         // 先做一次便宜的字节级扫描；没命中就直接拷字节，不走下面的重建路径。
         let len = strlen(cstr)
-        if !Self.containsDangerousScheme(UnsafeBufferPointer(start: cstr, count: len)) {
+        let buf = UnsafeBufferPointer(start: cstr, count: len)
+        if !Self.containsDangerousScheme(buf) {
             return Data(bytes: cstr, count: len)
         }
-        return Data(Self.neutralizingDangerousURLs(String(cString: cstr)).utf8)
+        // 重建路径也走在字节上：既省掉 `String(cString:)` + `.utf8` 的两次全量拷贝，
+        // 也让「按属性值处理」这件事不必先猜引号形态。
+        return Self.neutralizingDangerousURLs(buf)
     }
 
-    /// 便捷重载：从磁盘读（mmap，零拷贝）后渲染。
-    public func renderHTML(contentsOf url: URL) throws -> String {
-        let data = try Data(contentsOf: url, options: .mappedIfSafe)
-        return renderHTML(data)
-    }
-
-    /// 把 `href="…"` / `src="…"` 里的危险 scheme 清空。
+    /// 把 `href` / `src` 属性值开头的危险 scheme 换成页内锚点。
     ///
-    /// 为什么扫 HTML 字符串、不走 AST：
+    /// 为什么扫渲染结果、不走 AST：
     /// - AST 走查漏掉**裸 HTML** 里的 `<a href="javascript:…">`（它不是语法树节点），
     ///   而那正是打开 `CMARK_OPT_UNSAFE` 后新放开的面——必须覆盖到
     /// - 少一遍全树遍历，也就少一份耗时
     /// - 不用碰 `cmark_node_get_url()` 那笔说不清的所有权（它返回 arena 分配的串，
     ///   手动 `free` 会 double free）
     ///
-    /// 为什么这样扫是安全的：cmark 输出属性值时已经把 `"` 转义成 `%22`，
-    /// 所以 `[^"]*` 一定能精确界定属性值，不会被构造输入骗过去。
+    /// ⚠️ 必须覆盖三种引号形态（`"` / `'` / 无引号）与 `=` 两侧的空白。
+    /// 上一版只做 `href="` 的字面替换：这在 markdown 语法产生的链接上够用（cmark 只输出
+    /// 双引号，且会把值里的 `"` 转义成 %22），但裸 HTML 是**原样输出**的 ——
+    /// `<a href='javascript:…'>` 会整个漏过去，而 `containsDangerousScheme` 明明命中了，
+    /// 于是白跑一遍重建路径却什么都没改。这是"三层防护第二层事实上是漏的"。
     ///
-    /// 命中率极低（正常文档为零），所以先做一次便宜的 `contains` 判定，
-    /// 没命中就整串原样返回，不重建字符串。
-    private static func neutralizingDangerousURLs(_ html: String) -> String {
-        // 做法：把 scheme 本身换掉，而不是去挖属性值的边界。
-        // `href="javascript:alert(1)"` → `href="#blocked-alert(1)"` —— 冒号没了，
-        // 就只剩一个页面内锚点，点不动也执行不了。
-        //
-        // 之所以不写「找到闭合引号再清空中间」那种写法：清空后 `href="javascript:"`
-        // 仍然匹配得到 pattern，而闭合引号正好落在替换起点上，替换成空等于没变，
-        // while 循环就此不终止（这个 bug 真踩过一次，别改回去）。
-        var out = html
-        for scheme in dangerousSchemes {
-            for attr in ["href=\"", "src=\""] {
-                out = out.replacingOccurrences(
-                    of: attr + scheme,
-                    with: attr + Self.blockedFragment,
-                    options: .caseInsensitive
-                )
+    /// 做法是**换掉 scheme 本身**而不是去挖属性值边界：`href="javascript:alert(1)"`
+    /// → `href="#blocked-alert(1)"`，冒号没了就只剩一个点不动的页内锚点。
+    /// 不写「找闭合引号再清空中间」是因为清空后模式仍然匹配、替换成空等于没变，
+    /// while 会不终止（踩过，别改回去）。
+    ///
+    /// 命中率极低（正常文档为零），所以上面先做一次便宜的 `contains` 判定；
+    /// 只有真命中才走这里的逐字节重建。
+    private static func neutralizingDangerousURLs(_ buf: UnsafeBufferPointer<CChar>) -> Data {
+        let raw = UnsafeRawBufferPointer(buf)
+        var out = Data()
+        out.reserveCapacity(buf.count)
+        var emitted = 0          // 已经写进 out 的原始字节数（区间左端）
+        var i = 0
+        while i < buf.count {
+            if let valueStart = attributeValueStart(buf, at: i),
+               let schemeLength = matchedSchemeLength(buf, at: valueStart) {
+                // 属性名与开引号这些原样保留，只把 scheme 那一段换成锚点
+                out.append(contentsOf: raw[emitted..<valueStart])
+                out.append(blockedFragmentData)
+                i = valueStart + schemeLength
+                emitted = i
+                continue
             }
+            i += 1
         }
+        out.append(contentsOf: raw[emitted..<buf.count])
         return out
     }
 
-    /// 替换危险 scheme 用的锚点前缀。
-    private static let blockedFragment = "#blocked-"
+    /// 判断 `i` 处是不是 `href=` / `src=` 的**属性值起点**（已跳过空白与引号）。
+    ///
+    /// 返回 `nil` 表示这里不是我们关心的属性。属性名在 HTML 里大小写不敏感，
+    /// 所以匹配是大小写不敏感的；同时要求前一个字节不是名字字符，
+    /// 否则 `data-href=` 之类的自定义属性也会被当成 `href`。
+    private static func attributeValueStart(_ buf: UnsafeBufferPointer<CChar>, at i: Int) -> Int? {
+        let n = buf.count
+        if i > 0, isAttributeNameByte(buf[i - 1]) { return nil }
 
-    /// 危险 scheme 的 ASCII 字面量，供字节级扫描用。
-    private static let dangerousPatterns: [[UInt8]] =
-        dangerousSchemes.map { Array($0.utf8) }
+        var j = i
+        var matched = false
+        for name in dangerousAttributes where j + name.count <= n && matchesASCII(buf, at: j, name) {
+            j += name.count
+            matched = true
+            break
+        }
+        guard matched else { return nil }
+
+        while j < n, isASCIISpace(buf[j]) { j += 1 }
+        guard j < n, buf[j] == UInt8(ascii: "=") else { return nil }
+        j += 1
+        while j < n, isASCIISpace(buf[j]) { j += 1 }
+        guard j < n else { return nil }
+        if buf[j] == UInt8(ascii: "\"") || buf[j] == UInt8(ascii: "'") { j += 1 }
+        return j < n ? j : nil
+    }
+
+    /// `i` 处是否以某个危险 scheme 开头，返回它的字节长度。
+    private static func matchedSchemeLength(_ buf: UnsafeBufferPointer<CChar>, at i: Int) -> Int? {
+        for pat in dangerousPatterns where matchesASCII(buf, at: i, pat) { return pat.count }
+        return nil
+    }
+
+    /// 大小写不敏感的 ASCII 前缀比较（只用于小写的 pattern）。
+    private static func matchesASCII(_ buf: UnsafeBufferPointer<CChar>, at i: Int, _ pattern: [UInt8]) -> Bool {
+        guard i + pattern.count <= buf.count else { return false }
+        for k in 0..<pattern.count where UInt8(bitPattern: buf[i + k]) | 0x20 != pattern[k] {
+            return false
+        }
+        return true
+    }
+
+    private static func isASCIISpace(_ byte: CChar) -> Bool {
+        let b = UInt8(bitPattern: byte)
+        return b == 0x20 || b == 0x09 || b == 0x0A || b == 0x0D || b == 0x0C
+    }
+
+    /// 属性名字符（用于判定边界）。`-` 与 `_` 也算，因为自定义属性常见。
+    private static func isAttributeNameByte(_ byte: CChar) -> Bool {
+        let b = UInt8(bitPattern: byte)
+        let lowered = b | 0x20
+        return (lowered >= UInt8(ascii: "a") && lowered <= UInt8(ascii: "z"))
+            || (b >= UInt8(ascii: "0") && b <= UInt8(ascii: "9"))
+            || b == UInt8(ascii: "-") || b == UInt8(ascii: "_") || b == UInt8(ascii: ":")
+    }
 
     /// 在渲染结果的原始字节上做大小写不敏感的子串查找。
     ///
@@ -205,15 +275,6 @@ public struct MarkdownRenderer: Sendable {
                 }
                 i += 1
             }
-        }
-        return false
-    }
-
-    /// 只做前缀判断，不解析 URL —— 便宜且够用。
-    private static func isDangerous(_ value: String) -> Bool {
-        let lower = value.lowercased()
-        for scheme in dangerousSchemes where lower.hasPrefix(scheme) {
-            return true
         }
         return false
     }

@@ -2,9 +2,13 @@
 import PackageDescription
 
 // 仅 macOS：见 docs/技术方案.md「平台范围」
+//
+// ⚠️ 版本号必须与 `scripts/gen_project.py` 的 MACOS_MIN（13.0）以及 README /
+// 技术方案里的"目标机"口径一致。这里曾写 .v12，而 App target 是 13.0 ——
+// 两套构建链路的生效版本不同，`swift build` 出来的工具会比 App 更宽松。
 let package = Package(
     name: "SpacedownCore",
-    platforms: [.macOS(.v12)],
+    platforms: [.macOS(.v13)],
     products: [
         .library(name: "MarkdownKit", targets: ["MarkdownKit"]),
         .library(name: "SharedTheme", targets: ["SharedTheme"]),
