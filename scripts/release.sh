@@ -19,7 +19,7 @@ cd "$(dirname "$0")/.."
 
 APP_NAME="Spacedown"
 REPO="Czw96/Spacedown"                      # 源码仓库（私有）
-RELEASE_REPO="Czw96/Spacedown-releases"    # 公开的二进制发布仓库（Cask 从这里下载）
+RELEASE_REPO="Czw96/homebrew-spacedown"     # tap 仓库：Cask 与产物放一起，少一个仓库
 OUT="Distribution/build"
 DERIVED="build/DerivedData"
 APP="$DERIVED/Build/Products/Release/$APP_NAME.app"
