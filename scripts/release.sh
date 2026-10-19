@@ -1,10 +1,12 @@
 #!/bin/bash
-# 打包发布：Release 构建 → （可选）Developer ID 签名 + 公证 → dmg / zip → Cask → （可选）GitHub Release。
+# 打包发布：Release 构建 → （可选）Developer ID 签名 + 公证 → dmg / zip → Cask → （可选）发 Release / 更新 tap。
 #
 # 用法：
-#   scripts/release.sh                          # 版本取 gen_project.py 的 MARKETING_VERSION
-#   scripts/release.sh --version 1.1.0
-#   scripts/release.sh --version 1.1.0 --publish
+#   scripts/release.sh                                  # 版本取 gen_project.py 的 MARKETING_VERSION
+#   scripts/release.sh --version 1.1.0                  # 指定版本
+#   scripts/release.sh --version 1.1.0 --publish        # 同时发 GitHub Release（到 tap 仓库）
+#   scripts/release.sh --version 1.1.0 --update-tap     # 同时把 Cask 提交进 tap 仓库
+#   scripts/release.sh --version 1.1.0 --skip-build --update-tap   # 只重推现有 Cask，不重新构建
 #
 # 公开发布前必须先有 Developer ID 证书，并把公证凭据存进钥匙串：
 #   xcrun notarytool store-credentials spacedown \
@@ -19,18 +21,22 @@ cd "$(dirname "$0")/.."
 
 APP_NAME="Spacedown"
 REPO="Czw96/Spacedown"                      # 源码仓库（私有）
-RELEASE_REPO="Czw96/homebrew-spacedown"     # tap 仓库：Cask 与产物放一起，少一个仓库
+RELEASE_REPO="Czw96/homebrew-spacedown"     # tap 仓库：Cask 与产物放一起
 OUT="Distribution/build"
 DERIVED="build/DerivedData"
 APP="$DERIVED/Build/Products/Release/$APP_NAME.app"
 
 VERSION=""
 PUBLISH=0
+UPDATE_TAP=0
+SKIP_BUILD=0
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --version) VERSION="$2"; shift 2 ;;
         --publish) PUBLISH=1; shift ;;
-        -h|--help) sed -n '2,20p' "$0"; exit 0 ;;
+        --update-tap) UPDATE_TAP=1; shift ;;
+        --skip-build) SKIP_BUILD=1; shift ;;
+        -h|--help) sed -n '2,22p' "$0"; exit 0 ;;
         *) echo "未知参数：$1"; exit 1 ;;
     esac
 done
@@ -42,65 +48,70 @@ s = pathlib.Path("scripts/gen_project.py").read_text()
 print(re.search(r"\"MARKETING_VERSION\": \"([^\"]+)\"", s).group(1))
 ')
 fi
-BUILD_NUMBER=$(date +%Y%m%d%H%M)
+
 DMG="$OUT/$APP_NAME-$VERSION.dmg"
 ZIP="$OUT/$APP_NAME-$VERSION.zip"
 CASK="$OUT/spacedown.rb"
 
-echo "==> 版本 $VERSION ($BUILD_NUMBER)"
+echo "==> 版本 $VERSION"
 
-# 工程是生成的：先重跑，避免 pbxproj 落后于源码目录
-python3 scripts/gen_project.py
+# ---------------------------------------------------------------- 构建与打包
 
-echo "==> 构建"
-xcodebuild -project Spacedown.xcodeproj -scheme Spacedown -configuration Release \
-    -derivedDataPath "$DERIVED" \
-    MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
-    clean build >/tmp/spacedown-release-build.log 2>&1 \
-    || { tail -30 /tmp/spacedown-release-build.log; exit 1; }
-grep -E "BUILD (SUCCEEDED|FAILED)" /tmp/spacedown-release-build.log | tail -1
+if [[ $SKIP_BUILD -eq 0 ]]; then
+    BUILD_NUMBER=$(date +%Y%m%d%H%M)
 
-BUILT_VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$APP/Contents/Info.plist")
-[[ "$BUILT_VERSION" == "$VERSION" ]] \
-    || { echo "版本不一致：产物是 $BUILT_VERSION，期望 $VERSION"; exit 1; }
+    # 工程是生成的：先重跑，避免 pbxproj 落后于源码目录
+    python3 scripts/gen_project.py
 
-# 签名：从里往外（先内层 framework / xpc / appex，最后才是 App），否则外层封条会被内层改动破坏
-if [[ -n "${SIGN_IDENTITY:-}" ]]; then
-    echo "==> Developer ID 签名：$SIGN_IDENTITY"
-    sign() { codesign --force --timestamp --options runtime --sign "$SIGN_IDENTITY" "$1"; }
+    echo "==> 构建"
+    xcodebuild -project Spacedown.xcodeproj -scheme Spacedown -configuration Release \
+        -derivedDataPath "$DERIVED" \
+        MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
+        clean build >/tmp/spacedown-release-build.log 2>&1 \
+        || { tail -30 /tmp/spacedown-release-build.log; exit 1; }
+    grep -E "BUILD (SUCCEEDED|FAILED)" /tmp/spacedown-release-build.log | tail -1
 
-    APPEX="$APP/Contents/PlugIns/QuickLookPreview.appex"
-    for framework in "$APP/Contents/Frameworks/"*.framework; do sign "$framework"; done
-    for framework in "$APPEX/Contents/Frameworks/"*.framework; do sign "$framework"; done
-    sign "$APPEX/Contents/XPCServices/LinkOpener.xpc"
-    sign "$APPEX"
-    sign "$APP"
+    BUILT_VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$APP/Contents/Info.plist")
+    [[ "$BUILT_VERSION" == "$VERSION" ]] \
+        || { echo "版本不一致：产物是 ${BUILT_VERSION}，期望 $VERSION"; exit 1; }
 
-    codesign --verify --deep --strict --verbose=2 "$APP"
-else
-    echo "⚠️ 未提供 SIGN_IDENTITY：维持 ad-hoc 签名（Gatekeeper 会拦下载后的首次打开）"
-fi
+    # 签名：从里往外（先内层 framework / xpc / appex，最后才是 App），否则外层封条会被内层改动破坏
+    if [[ -n "${SIGN_IDENTITY:-}" ]]; then
+        echo "==> Developer ID 签名：$SIGN_IDENTITY"
+        sign() { codesign --force --timestamp --options runtime --sign "$SIGN_IDENTITY" "$1"; }
 
-# 公证：先公证 App（zip 承载），staple 后再打 dmg —— 这样离线首次启动也能通过
-if [[ -n "${NOTARY_PROFILE:-}" ]]; then
-    [[ -n "${SIGN_IDENTITY:-}" ]] || { echo "公证需要 Developer ID 签名"; exit 1; }
-    echo "==> 公证"
-    NOTARY_ZIP="$OUT/notarize.zip"
-    ditto -c -k --keepParent "$APP" "$NOTARY_ZIP"
-    xcrun notarytool submit "$NOTARY_ZIP" --keychain-profile "$NOTARY_PROFILE" --wait
-    xcrun stapler staple "$APP"
-    rm -f "$NOTARY_ZIP"
-    spctl -a -vvv -t exec "$APP" || true
-fi
+        APPEX="$APP/Contents/PlugIns/QuickLookPreview.appex"
+        for framework in "$APP/Contents/Frameworks/"*.framework; do sign "$framework"; done
+        for framework in "$APPEX/Contents/Frameworks/"*.framework; do sign "$framework"; done
+        sign "$APPEX/Contents/XPCServices/LinkOpener.xpc"
+        sign "$APPEX"
+        sign "$APP"
 
-echo "==> 打包"
-rm -rf "$OUT"
-mkdir -p "$OUT"
+        codesign --verify --deep --strict --verbose=2 "$APP"
+    else
+        echo "⚠️ 未提供 SIGN_IDENTITY：维持 ad-hoc 签名（Gatekeeper 会拦下载后的首次打开）"
+    fi
 
-STAGE=$(mktemp -d)
-cp -R "$APP" "$STAGE/"
-ln -s /Applications "$STAGE/Applications"
-cat > "$STAGE/安装说明.txt" <<'TXT'
+    # 公证：先公证 App（zip 承载），staple 后再打 dmg —— 这样离线首次启动也能通过
+    if [[ -n "${NOTARY_PROFILE:-}" ]]; then
+        [[ -n "${SIGN_IDENTITY:-}" ]] || { echo "公证需要 Developer ID 签名"; exit 1; }
+        echo "==> 公证"
+        NOTARY_ZIP="$OUT/notarize.zip"
+        ditto -c -k --keepParent "$APP" "$NOTARY_ZIP"
+        xcrun notarytool submit "$NOTARY_ZIP" --keychain-profile "$NOTARY_PROFILE" --wait
+        xcrun stapler staple "$APP"
+        rm -f "$NOTARY_ZIP"
+        spctl -a -vvv -t exec "$APP" || true
+    fi
+
+    echo "==> 打包"
+    rm -rf "$OUT"
+    mkdir -p "$OUT"
+
+    STAGE=$(mktemp -d)
+    cp -R "$APP" "$STAGE/"
+    ln -s /Applications "$STAGE/Applications"
+    cat > "$STAGE/安装说明.txt" <<'TXT'
 把 Spacedown 拖到左边的「应用程序」文件夹即可。
 
 首次打开：
@@ -114,16 +125,15 @@ cat > "$STAGE/安装说明.txt" <<'TXT'
 2. 菜单「显示 → 接管 Markdown 空格预览」，等几秒生效。
 TXT
 
-hdiutil create -volname "$APP_NAME $VERSION" -srcfolder "$STAGE" -ov -format UDZO "$DMG" >/dev/null
-rm -rf "$STAGE"
+    hdiutil create -volname "$APP_NAME $VERSION" -srcfolder "$STAGE" -ov -format UDZO "$DMG" >/dev/null
+    rm -rf "$STAGE"
 
-ditto -c -k --sequesterRsrc --keepParent "$APP" "$ZIP"
+    ditto -c -k --sequesterRsrc --keepParent "$APP" "$ZIP"
+    SHA_DMG=$(shasum -a 256 "$DMG" | awk '{print $1}')
+    SHA_ZIP=$(shasum -a 256 "$ZIP" | awk '{print $1}')
 
-SHA_DMG=$(shasum -a 256 "$DMG" | awk '{print $1}')
-SHA_ZIP=$(shasum -a 256 "$ZIP" | awk '{print $1}')
-
-# Homebrew Cask：自建 tap 用（Czw96/homebrew-spacedown 的 Casks/spacedown.rb）
-cat > "$CASK" <<RUBY
+    # Homebrew Cask：version 与 sha256 直接填好，省掉手抄
+    cat > "$CASK" <<RUBY
 cask "spacedown" do
   version "$VERSION"
   sha256 "$SHA_DMG"
@@ -147,16 +157,17 @@ cask "spacedown" do
   ]
 end
 RUBY
+else
+    echo "==> 跳过构建，复用 $CASK"
+    [[ -f "$CASK" ]] || { echo "找不到 $CASK —— --skip-build 需要先成功打包过一次"; exit 1; }
+    [[ -f "$DMG" ]] || { echo "找不到 $DMG —— --skip-build 时 dmg 必须还在"; exit 1; }
+fi
 
-echo ""
-echo "==> 产物"
-printf "  %-42s %8s  %s\n" "$DMG" "$(du -h "$DMG" | cut -f1)" "$SHA_DMG"
-printf "  %-42s %8s  %s\n" "$ZIP" "$(du -h "$ZIP" | cut -f1)" "$SHA_ZIP"
-printf "  %-42s\n" "${CASK}（Homebrew Cask，放到 tap 的 Casks/ 下）"
+# ---------------------------------------------------------------- 发布
 
 if [[ $PUBLISH -eq 1 ]]; then
     command -v gh >/dev/null || { echo "发布需要 gh（brew install gh）"; exit 1; }
-    echo "==> 发布 GitHub Release v$VERSION（仓库：$RELEASE_REPO）"
+    echo "==> 发布 GitHub Release v${VERSION}（仓库：${RELEASE_REPO}）"
     NOTES=$(mktemp)
     cat > "$NOTES" <<TXT
 macOS 13+ / Apple Silicon。源码仓库为私有，这里只放构建产物。
@@ -175,7 +186,46 @@ TXT
         --notes-file "$NOTES"
     rm -f "$NOTES"
     echo "已发布：https://github.com/$RELEASE_REPO/releases/tag/v$VERSION"
-else
+fi
+
+if [[ $UPDATE_TAP -eq 1 ]]; then
+    echo "==> 更新 tap：$RELEASE_REPO"
+    TAP_WORK="${TAP_DIR:-}"
+    TAP_TEMP=""
+    if [[ -z "$TAP_WORK" ]]; then
+        TAP_TEMP=$(mktemp -d)
+        TAP_WORK="$TAP_TEMP/homebrew-spacedown"
+        gh repo clone "$RELEASE_REPO" "$TAP_WORK" -- --quiet >/dev/null
+    else
+        # 本地 tap 可能分支不匹配（比如克隆自空仓库），拉取失败不该挡住发布
+        git -C "$TAP_WORK" pull --quiet --ff-only \
+            || echo "    ⚠️ 拉取失败，按本地内容继续"
+    fi
+
+    cp "$CASK" "$TAP_WORK/Casks/spacedown.rb"
+    if [[ -n "$(git -C "$TAP_WORK" status --porcelain -- Casks/spacedown.rb)" ]]; then
+        git -C "$TAP_WORK" add Casks/spacedown.rb
+        git -C "$TAP_WORK" commit --quiet -m "spacedown $VERSION"
+        git -C "$TAP_WORK" push --quiet
+        echo "    已推送 Cask（${VERSION}）"
+    else
+        echo "    Cask 无变化，跳过提交"
+    fi
+
+    if [[ -n "$TAP_TEMP" ]]; then
+        rm -rf "$TAP_TEMP"
+    fi
+fi
+
+# ---------------------------------------------------------------- 汇总
+
+echo ""
+echo "==> 产物"
+printf "  %-42s %8s  %s\n" "$DMG" "$(du -h "$DMG" | cut -f1)" "$(shasum -a 256 "$DMG" | awk '{print $1}')"
+printf "  %-42s %8s  %s\n" "$ZIP" "$(du -h "$ZIP" | cut -f1)" "$(shasum -a 256 "$ZIP" | awk '{print $1}')"
+printf "  %-42s\n" "${CASK}（Homebrew Cask）"
+
+if [[ $PUBLISH -eq 0 && $UPDATE_TAP -eq 0 ]]; then
     echo ""
-    echo "发布：scripts/release.sh --version $VERSION --publish"
+    echo "发布：scripts/release.sh --version $VERSION --publish --update-tap"
 fi

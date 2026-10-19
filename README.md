@@ -152,9 +152,10 @@ lsregister -u "$PWD/build/DerivedData/Build/Products/Release/Spacedown.app"
 ### 6. 打包与发布
 
 ```bash
-scripts/release.sh                      # 版本取 gen_project.py 的 MARKETING_VERSION
-scripts/release.sh --version 1.1.0      # 指定版本
-scripts/release.sh --version 1.1.0 --publish   # 同时发 GitHub Release
+scripts/release.sh                                    # 只打包，版本取 MARKETING_VERSION
+scripts/release.sh --version 1.1.0                    # 指定版本
+scripts/release.sh --version 1.1.0 --publish --update-tap   # 一条命令发完
+scripts/release.sh --version 1.1.0 --skip-build --update-tap  # 只重推 Cask
 ```
 
 脚本做四件事：Release 全量构建 →（可选）Developer ID 重签 + 公证 → 出 `dmg` / `zip`
@@ -162,8 +163,12 @@ scripts/release.sh --version 1.1.0 --publish   # 同时发 GitHub Release
 （Homebrew Cask，version 与 sha256 已填好）。
 
 `--publish` 上传到 **`Czw96/homebrew-spacedown`** 的 Release（tap 仓库，公开），
-源码仓库保持私有；Cask 的 `url` 也指向同一处 —— 少一个仓库要同步。
+`--update-tap` 顺手把 Cask 提交进该仓库（默认临时 clone 后推送；设 `TAP_DIR`
+可复用本地克隆，省一次下载）。源码仓库保持私有，Cask 的 `url` 指向 tap 仓库，
 用户下载、`brew install` 都不需要任何账号。
+
+`--skip-build` 跳过构建，直接复用 `Distribution/build/` 里已有的 dmg 与 Cask ——
+用于只改 Cask（比如换下载地址）或补推 tap 的场景。
 
 **正式发布**还需要一台有 Developer ID 证书的机器，并把公证凭据存进钥匙串：
 
