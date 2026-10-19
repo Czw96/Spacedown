@@ -2,20 +2,18 @@
 # -*- coding: utf-8 -*-
 """生成 Spacedown.xcodeproj。
 
-为什么用脚本而不是手写 project.pbxproj：
-pbxproj 里每个对象都要 24 位十六进制 UUID，且相互引用的地方有几十处，
-手写漏一个引用 xcodebuild 只报 "object not found"，排查成本很高。
+为什么用脚本而不是手写 project.pbxproj：pbxproj 里每个对象都要 24 位十六进制 UUID，
+相互引用的地方有几十处，手写漏一个引用 xcodebuild 只会报 "object not found"。
 
 用法：python3 scripts/gen_project.py
-改结构（加源码文件 / 加 target）时重跑一次即可。
 
-⚠️ 为什么工程里**没有** SwiftPM 包引用：
-Xcode 接入本地 SwiftPM 包时会先跑一遍「Resolve Package Graph」，那一步要编译
-Package.swift manifest，而 SwiftPM 会把 manifest 编译塞进 sandbox-exec。
-本机（以及 CI 上带沙箱的 shell）里 sandbox-exec 套受限 profile 一律
-`Operation not permitted` —— 连 `(version 1)(deny default)` 都过不去，
-所以整条 SwiftPM 链路不可用。改成原生 target 后，Xcode 与 `swift build` 各自独立、
-互不依赖，两边都能编。
+源文件按目录自动发现、分组按目录树递归生成 —— 新增文件不需要改这个脚本，
+只要落进下面对应的目录即可。
+
+⚠️ 工程里为什么没有 SwiftPM 包引用：Xcode 接入本地包时会先跑「Resolve Package Graph」，
+那一步要编译 Package.swift manifest，而 SwiftPM 会把 manifest 编译塞进 sandbox-exec，
+本机一律 `Operation not permitted`。改成原生 target 后，Xcode 与 `swift build`
+各自独立、互不依赖。
 """
 import re
 from pathlib import Path
@@ -45,60 +43,55 @@ def ref_of(name: str) -> str:
 
 # ---------------------------------------------------------------- 源码清单
 
-def c_sources(sub: str) -> list[str]:
-    root = ROOT / CORE / "Sources" / "CcmarkGfm" / sub
-    return sorted(str(p.relative_to(ROOT)) for p in root.glob("*.c"))
+def files_under(base: str, suffixes: tuple[str, ...]) -> list[str]:
+    """递归取出 base 下指定后缀的文件，返回仓库相对路径并排序。"""
+    root = ROOT / base
+    found = [p for p in root.rglob("*") if p.is_file() and p.suffix in suffixes]
+    return sorted(str(p.relative_to(ROOT)) for p in found)
 
 
-CCMARK_SOURCES = c_sources("src") + c_sources("extensions")
-MARKDOWNKIT_SOURCES = ["Packages/Core/Sources/MarkdownKit/MarkdownRenderer.swift"]
-SHAREDTHEME_SOURCES = ["Packages/Core/Sources/SharedTheme/Theme.swift"]
-SHAREDTHEME_RESOURCE = "Packages/Core/Sources/SharedTheme/theme.css"
+CCMARK_SOURCES = (files_under(CORE + "/Sources/CcmarkGfm/src", (".c",))
+                  + files_under(CORE + "/Sources/CcmarkGfm/extensions", (".c",)))
+MARKDOWNKIT_SOURCES = files_under(CORE + "/Sources/MarkdownKit", (".swift",))
+SHAREDTHEME_SOURCES = files_under(CORE + "/Sources/SharedTheme", (".swift",))
+SHAREDTHEME_RESOURCE = CORE + "/Sources/SharedTheme/theme.css"
 
-APP_SOURCES = [
-    "Spacedown/SpacedownMain.swift",
-    "Spacedown/AppDelegate.swift",
-    "Spacedown/DebugLog.swift",
-    "Spacedown/MainMenu.swift",
-    "Spacedown/MainWindow.swift",
-    "Spacedown/TabBar.swift",
-    "Spacedown/WebViewPool.swift",
-    "Spacedown/DocumentTab.swift",
-    "Spacedown/FileWatcher.swift",
-    "Spacedown/Palette.swift",
-    "Spacedown/SettingsWindow.swift",
-]
-APP_PLIST = "Spacedown/Info.plist"
-APP_ICON = "Spacedown/AppIcon.icns"      # app icon (.icns, CFBundleIconFile)
-EXT_SOURCES = ["QuickLookPreview/PreviewViewController.swift"]
-EXT_PLIST = "QuickLookPreview/Info.plist"
+APP_SOURCES = files_under("Spacedown", (".swift",))
+APP_PLIST = "Spacedown/Resources/Info.plist"
+APP_ICON = "Spacedown/Resources/AppIcon.icns"          # CFBundleIconFile
+APP_RESOURCES = ["Spacedown/Resources/uninstall.sh"]
 
-# XPC 服务：替沙箱里的扩展打开外部链接（沙箱里调 NSWorkspace 会让进程被 SIGTRAP 杀掉）。
-LINKOPENER_SOURCES = ["LinkOpener/main.swift", "LinkOpener/LinkOpenerProtocol.swift"]
+EXT_SOURCES = files_under("QuickLookPreview", (".swift",))
+EXT_PLIST = "QuickLookPreview/Resources/Info.plist"
+EXT_ENTITLEMENTS = "QuickLookPreview/Resources/QuickLookPreview.entitlements"
+
+# XPC 服务：替沙箱里的扩展打开外部链接。
+LINKOPENER_SOURCES = files_under("LinkOpener", (".swift",))
 LINKOPENER_PLIST = "LinkOpener/Info.plist"
-# 协议文件要**同时**编译进扩展和服务两个 target，但它物理上属于 LinkOpener/ ——
-# 一个文件只能有一个 fileRef，所以不能塞进 EXT_SOURCES（那个会驱动组的孩子，路径会错）。
+# 协议文件要同时编译进扩展和服务两个 target，但物理上属于 LinkOpener/ ——
+# 一个文件只能有一个 fileRef，所以用单独的 build file 给扩展。
 EXT_SHARED_SOURCES = ["LinkOpener/LinkOpenerProtocol.swift"]
 
-MODULEMAP_DIR = "Packages/Core/XcodeSupport/CcmarkGfm"
+FILE_TYPES = {
+    ".swift": "sourcecode.swift",
+    ".c": "sourcecode.c.c",
+    ".css": "text.css",
+    ".plist": "text.plist.xml",
+    ".icns": "image.icns",
+    ".sh": "text.script.sh",
+    ".entitlements": "text.plist.entitlements",
+}
 
-# 文件引用的 `path` 是**相对所在 group** 的（sourceTree = <group>），不是相对仓库根。
-# 每个 target 的 group 都自带 path，所以这里再剥一层前缀。
-GROUP_BASES = [
-    "Packages/Core/Sources/CcmarkGfm",
-    "Packages/Core/Sources/MarkdownKit",
-    "Packages/Core/Sources/SharedTheme",
-    "Spacedown",
-    "QuickLookPreview",
-    "LinkOpener",
-]
-
-
-def rel_for(p: str) -> str:
-    for base in GROUP_BASES:
-        if p.startswith(base + "/"):
-            return p[len(base) + 1:]
-    raise SystemExit("文件不属于任何已知 group 基目录: " + p)
+# 每个 group 的根目录与它包含的文件（源码 + 需要显示在工程里的资源）
+GROUPS = {
+    "CcmarkGfm": (CORE + "/Sources/CcmarkGfm", CCMARK_SOURCES),
+    "MarkdownKit": (CORE + "/Sources/MarkdownKit", MARKDOWNKIT_SOURCES),
+    "SharedTheme": (CORE + "/Sources/SharedTheme", SHAREDTHEME_SOURCES + [SHAREDTHEME_RESOURCE]),
+    "Spacedown": ("Spacedown", APP_SOURCES + [APP_PLIST, APP_ICON] + APP_RESOURCES),
+    "QuickLookPreview": ("QuickLookPreview",
+                         EXT_SOURCES + [EXT_PLIST, EXT_ENTITLEMENTS]),
+    "LinkOpener": ("LinkOpener", LINKOPENER_SOURCES + [LINKOPENER_PLIST]),
+}
 
 # ---------------------------------------------------------------- 构建设置
 
@@ -118,10 +111,8 @@ PROJECT_COMMON = {
     "SDKROOT": "macosx",
     "SWIFT_EMIT_LOC_STRINGS": "YES",
     "SWIFT_VERSION": "6.0",
-    # CcmarkGfm 是静态库，它的 clang module 只存在于 XcodeSupport 那份 modulemap 里。
-    # MarkdownKit 的 swiftmodule 带着对它的依赖，所以**所有**会 import MarkdownKit 的
-    # target 都得能找到这份 modulemap，否则报
-    # "Unable to resolve module dependency: 'CcmarkGfm'"（踩过）。
+    # CcmarkGfm 的 clang module 只存在于 XcodeSupport 那份 modulemap 里。MarkdownKit 的
+    # swiftmodule 带着对它的依赖，所以所有 import MarkdownKit 的 target 都要能找到它。
     "SWIFT_INCLUDE_PATHS": '"$(SRCROOT)/Packages/Core/XcodeSupport/CcmarkGfm"',
 }
 
@@ -140,8 +131,7 @@ PROJECT_RELEASE = {
     "SWIFT_COMPILATION_MODE": "wholemodule",
 }
 
-# 签名：本机没有任何 codesigning identity（security find-identity 返回 0 个），
-# 只能 ad-hoc。M6 做公证分发时必须换成 Developer ID 并打开 hardened runtime。
+# 本机没有 codesigning identity，只能 ad-hoc。正式分发要换 Developer ID + 公证。
 SIGNING = {
     "CODE_SIGN_IDENTITY": '"-"',
     "CODE_SIGN_STYLE": "Manual",
@@ -166,34 +156,27 @@ CCMARK_SETTINGS = {
     "SKIP_INSTALL": "YES",
 }
 
-# MarkdownKit 是 framework：让 `import MarkdownKit` 走 -F 自动发现，最稳。
-# 内部静态链 CcmarkGfm.a，所以宿主不需要 embed 它。
-MARKDOWNKIT_SETTINGS = {
+# framework 让 `import MarkdownKit` 走 -F 自动发现。内部静态链 CcmarkGfm.a，
+# 所以宿主不需要 embed 它。
+FRAMEWORK_SETTINGS = {
     "DEFINES_MODULE": "YES",
     # framework 也要 Info.plist 才能签名；这里没有自定义项，交给 Xcode 自动生成
     "GENERATE_INFOPLIST_FILE": "YES",
     # @rpath 必须加引号：旧式 plist 里裸 `@` 是非法字符（会整个工程读不出来）
     "DYLIB_INSTALL_NAME_BASE": '"@rpath"',
     "LD_RUNPATH_SEARCH_PATHS": '("$(inherited)", "@executable_path/Frameworks", "@loader_path/Frameworks",)',
-    "PRODUCT_BUNDLE_IDENTIFIER": "cn.29dev.Spacedown.MarkdownKit",
     "PRODUCT_NAME": '"$(TARGET_NAME)"',
     "SKIP_INSTALL": "YES",
 }
 
-SHAREDTHEME_SETTINGS = {
-    "DEFINES_MODULE": "YES",
-    "GENERATE_INFOPLIST_FILE": "YES",
-    # @rpath 必须加引号：旧式 plist 里裸 `@` 是非法字符（会整个工程读不出来）
-    "DYLIB_INSTALL_NAME_BASE": '"@rpath"',
-    "LD_RUNPATH_SEARCH_PATHS": '("$(inherited)", "@executable_path/Frameworks", "@loader_path/Frameworks",)',
-    "PRODUCT_BUNDLE_IDENTIFIER": "cn.29dev.Spacedown.SharedTheme",
-    "PRODUCT_NAME": '"$(TARGET_NAME)"',
-    "SKIP_INSTALL": "YES",
-}
+MARKDOWNKIT_SETTINGS = {**FRAMEWORK_SETTINGS,
+                        "PRODUCT_BUNDLE_IDENTIFIER": "cn.29dev.Spacedown.MarkdownKit"}
+SHAREDTHEME_SETTINGS = {**FRAMEWORK_SETTINGS,
+                        "PRODUCT_BUNDLE_IDENTIFIER": "cn.29dev.Spacedown.SharedTheme"}
 
 APP_SETTINGS = {
     "GENERATE_INFOPLIST_FILE": "NO",
-    "INFOPLIST_FILE": "Spacedown/Info.plist",
+    "INFOPLIST_FILE": APP_PLIST,
     "LD_RUNPATH_SEARCH_PATHS": '("$(inherited)", "@executable_path/../Frameworks",)',
     "PRODUCT_BUNDLE_IDENTIFIER": "cn.29dev.Spacedown",
     "PRODUCT_NAME": '"$(TARGET_NAME)"',
@@ -202,12 +185,10 @@ APP_SETTINGS = {
 
 EXT_SETTINGS = {
     "GENERATE_INFOPLIST_FILE": "NO",
-    "INFOPLIST_FILE": "QuickLookPreview/Info.plist",
-    # ⚠️ 必需：**App 扩展必须沙箱化**，否则 macOS 静默不加载它 ——
-    # 表现为"扩展永远不会被拉起（日志一行都没有）+ 系统设置里看不到它 + 空格预览
-    # 退回去用别家扩展"。完整归因见 docs/技术方案.md §15.6 与那个 entitlements 文件里的注释。
-    "CODE_SIGN_ENTITLEMENTS": "QuickLookPreview/QuickLookPreview.entitlements",
-    # appex 嵌在 App 的 Contents/PlugIns 下，比 App 深两级，所以补一条向上四级的路径
+    "INFOPLIST_FILE": EXT_PLIST,
+    # App 扩展必须沙箱化，否则 macOS 静默不加载它（不报错，扩展永远不被拉起）
+    "CODE_SIGN_ENTITLEMENTS": EXT_ENTITLEMENTS,
+    # appex 嵌在 App 的 Contents/PlugIns 下，比 App 深两级
     "LD_RUNPATH_SEARCH_PATHS": ('(\n\t\t\t\t\t"$(inherited)",\n'
                                 '\t\t\t\t\t"@executable_path/../Frameworks",\n'
                                 '\t\t\t\t\t"@executable_path/../../../../Frameworks",\n'
@@ -218,8 +199,7 @@ EXT_SETTINGS = {
     "WRAPPER_EXTENSION": "appex",
 }
 
-# XPC 服务：**刻意不带 app-sandbox 权限** —— 它的存在意义就是替沙箱里的扩展
-# 做那件被沙箱禁止的事（打开链接）。加了沙箱等于自废武功。
+# XPC 服务刻意不带 app-sandbox：它的存在意义就是替沙箱里的扩展打开链接
 LINKOPENER_SETTINGS = {
     "GENERATE_INFOPLIST_FILE": "NO",
     "INFOPLIST_FILE": LINKOPENER_PLIST,
@@ -255,14 +235,15 @@ def build_config(ident: str, name: str, base: dict, extra: dict) -> str:
     )
 
 
-def file_ref(ident: str, path: str, filetype: str) -> str:
+def file_ref(ident: str, name: str, filetype: str) -> str:
+    """文件的 path 是相对所在 group 的，所以只写文件名 —— 目录由 group 树表达。"""
     return (
         "\t\t%s /* %s */ = {\n"
         "\t\t\tisa = PBXFileReference;\n"
         "\t\t\tlastKnownFileType = %s;\n"
         "\t\t\tpath = \"%s\";\n"
         "\t\t\tsourceTree = \"<group>\";\n"
-        "\t\t};\n" % (ident, Path(path).name, filetype, path)
+        "\t\t};\n" % (ident, name, filetype, name)
     )
 
 
@@ -274,12 +255,13 @@ def group(ident: str, children: list[str], name: str | None = None,
         extra += "\t\t\tname = %s;\n" % name
     if path:
         extra += "\t\t\tpath = \"%s\";\n" % path
-    st = "" if (name or path) else "\t\t\tsourceTree = \"<group>\";\n"
+    # sourceTree 必须显式写：省略时 Xcode 不保证按父组解析相对路径。
     return (
         "\t\t%s /* %s */ = {\n"
         "\t\t\tisa = PBXGroup;\n"
-        "\t\t\tchildren = (\n%s\t\t\t);\n%s%s"
-        "\t\t};\n" % (ident, name or path or "Group", body, extra, st)
+        "\t\t\tchildren = (\n%s\t\t\t);\n%s"
+        "\t\t\tsourceTree = \"<group>\";\n"
+        "\t\t};\n" % (ident, name or path or "Group", body, extra)
     )
 
 
@@ -331,42 +313,67 @@ def config_list(ident: str, owner: str, debug: str, release: str) -> str:
         "\t\t};\n" % (ident, owner, debug, release))
 
 
+def group_tree(base: str, file_paths: list[str]) -> tuple[str, str]:
+    """按真实目录结构把文件生成为嵌套 PBXGroup。
+
+    返回（组文本, 文件引用文本）。组文本里子组的 path 是相对父组的目录名，
+    与 Xcode 自己生成的工程一致。
+    """
+    base_path = Path(base)
+    by_dir: dict[Path, list[str]] = {}
+    for path in file_paths:
+        rel = Path(path).relative_to(base_path)
+        by_dir.setdefault(rel.parent, []).append(rel.name)
+
+    group_text = ""
+    ref_text = ""
+
+    def emit(directory: Path) -> str:
+        nonlocal group_text, ref_text
+        children: list[str] = []
+
+        for filename in sorted(by_dir.get(directory, [])):
+            full = str(base_path / directory / filename)
+            ident = oid("ref:" + full)
+            children.append("%s /* %s */" % (ident, filename))
+            ref_text += file_ref(ident, filename, FILE_TYPES[Path(filename).suffix])
+
+        depth = len(directory.parts)
+        subdirs = sorted({d.parts[depth] for d in by_dir
+                          if len(d.parts) > depth and d.parts[:depth] == directory.parts})
+        for subdir in subdirs:
+            children.append("%s /* %s */" % (emit(directory / subdir), subdir))
+
+        ident = oid("group:" + str(base_path / directory))
+        # 根组的 path 从仓库根写全（主组本身没有 path）；子组只写目录名，相对父组。
+        path = str(base_path) if directory == Path(".") else directory.name
+        group_text += group(ident, children, path=path)
+        return ident
+
+    emit(Path("."))
+    return group_text, ref_text
+
+
 # ---------------------------------------------------------------- 组装
 
 def main() -> None:
     objects: list[str] = []
-
     project_obj = oid("project")
 
-    # --- 源码文件引用 + build file
     all_sources = (CCMARK_SOURCES + MARKDOWNKIT_SOURCES + SHAREDTHEME_SOURCES
-                   + APP_SOURCES + EXT_SOURCES)
-    all_sources = list(all_sources) + LINKOPENER_SOURCES
+                   + APP_SOURCES + EXT_SOURCES + LINKOPENER_SOURCES)
     refs = {p: oid("ref:" + p) for p in all_sources}
     bfs = {p: oid("bf:" + p) for p in all_sources}
 
     appicon_ref = oid("ref:" + APP_ICON)
     appicon_bf = oid("bf:appicon")
+    uninstall_ref = oid("ref:" + APP_RESOURCES[0])
+    uninstall_bf = oid("bf:uninstall")
     theme_css_ref = oid("ref:" + SHAREDTHEME_RESOURCE)
     theme_css_bf = oid("bf:theme.css")
-    app_plist_ref = oid("ref:" + APP_PLIST)
-    ext_plist_ref = oid("ref:" + EXT_PLIST)
-    linkopener_plist_ref = oid("ref:" + LINKOPENER_PLIST)
 
-    # 产物引用
+    # --- 产物引用
     products = {
-        "libCcmarkGfm.a": ("archive.ar", "libCcmarkGfm.a"),
-        "MarkdownKit.framework": ("wrapper.framework", "MarkdownKit.framework"),
-        "SharedTheme.framework": ("wrapper.framework", "SharedTheme.framework"),
-        "Spacedown.app": ("wrapper.application", "Spacedown.app"),
-        "QuickLookPreview.appex": ("wrapper.cfbundle", "QuickLookPreview.appex"),
-        "LinkOpener.xpc": ("wrapper.cfbundle", "LinkOpener.xpc"),
-    }
-    prod_refs = {
-        name: oid("prod:" + name) for name in products
-    }
-    # QuickLookPreview.appex 的 explicitFileType 用 app-extension
-    prod_filetypes = {
         "libCcmarkGfm.a": "archive.ar",
         "MarkdownKit.framework": "wrapper.framework",
         "SharedTheme.framework": "wrapper.framework",
@@ -374,6 +381,7 @@ def main() -> None:
         "QuickLookPreview.appex": '"wrapper.app-extension"',
         "LinkOpener.xpc": '"wrapper.xpc-service"',
     }
+    prod_refs = {name: oid("prod:" + name) for name in products}
 
     # --- PBXBuildFile
     bf = "\n/* Begin PBXBuildFile section */\n"
@@ -384,63 +392,54 @@ def main() -> None:
         theme_css_bf, theme_css_ref)
     bf += "\t\t%s /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = %s /* AppIcon.icns */; };\n" % (
         appicon_bf, appicon_ref)
-    # 链接 / 嵌入
+    bf += "\t\t%s /* uninstall.sh in Resources */ = {isa = PBXBuildFile; fileRef = %s /* uninstall.sh */; };\n" % (
+        uninstall_bf, uninstall_ref)
+
     link_bfs = {}
-    for label, product in [
-        ("libCcmarkGfm.a", "libCcmarkGfm.a"),
-        ("MarkdownKit.framework", "MarkdownKit.framework"),
-        ("SharedTheme.framework", "SharedTheme.framework"),
-        ("QuickLookPreview.appex", "QuickLookPreview.appex"),
-    ]:
-        key = ("link", label)
-        link_bfs[key] = oid("bf:link:" + label)
+    for label in ["libCcmarkGfm.a", "MarkdownKit.framework", "SharedTheme.framework",
+                  "QuickLookPreview.appex"]:
+        link_bfs[("link", label)] = oid("bf:link:" + label)
         bf += "\t\t%s /* %s in Frameworks */ = {isa = PBXBuildFile; fileRef = %s /* %s */; };\n" % (
-            link_bfs[key], label, prod_refs[product], product)
-    # App 与 appex 各自要嵌一份 framework，PBXBuildFile 不能共用（同一个 fileRef
-    # 出现在两个 target 的不同阶段里是可以的，但 Xcode 生成时也是各建一条）
-    embed_bfs = {}
-    for label in ["MarkdownKit.framework", "SharedTheme.framework"]:
-        embed_bfs[("embed", label)] = oid("bf:embed:" + label)
-    ext_embed_bfs = {label: oid("bf:embed:ext:" + label)
-                     for label in ["MarkdownKit.framework", "SharedTheme.framework"]}
-    ext_link_bfs = {label: oid("bf:link:ext:" + label)
-                    for label in ["MarkdownKit.framework", "SharedTheme.framework"]}
-    for ident, label in ([(embed_bfs[("embed", k)], k) for k in ext_embed_bfs]
-                         + [(v, k) for k, v in ext_embed_bfs.items()]):
-        bf += "\t\t%s /* %s in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = %s /* %s */; settings = {ATTRIBUTES = (CodeSignOnCopy,); }; };\n" % (
-            ident, label, prod_refs[label], label)
-    for ident, label in [(v, k) for k, v in ext_link_bfs.items()]:
+            link_bfs[("link", label)], label, prod_refs[label], label)
+
+    # App 与 appex 各自要嵌一份 framework，build file 不能共用
+    frameworks = ["MarkdownKit.framework", "SharedTheme.framework"]
+    app_embed = {label: oid("bf:embed:app:" + label) for label in frameworks}
+    ext_embed = {label: oid("bf:embed:ext:" + label) for label in frameworks}
+    ext_link = {label: oid("bf:link:ext:" + label) for label in frameworks}
+    for ident, label in ([(app_embed[label], label) for label in frameworks]
+                         + [(ext_embed[label], label) for label in frameworks]):
+        bf += ("\t\t%s /* %s in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = %s /* %s */; "
+               "settings = {ATTRIBUTES = (CodeSignOnCopy,); }; };\n"
+               % (ident, label, prod_refs[label], label))
+    for ident, label in [(v, k) for k, v in ext_link.items()]:
         bf += "\t\t%s /* %s in Frameworks */ = {isa = PBXBuildFile; fileRef = %s /* %s */; };\n" % (
             ident, label, prod_refs[label], label)
+
     embed_appex_bf = oid("bf:embed:appex")
-    bf += "\t\t%s /* QuickLookPreview.appex in Embed Plug-ins */ = {isa = PBXBuildFile; fileRef = %s /* QuickLookPreview.appex */; };\n" % (
-        embed_appex_bf, prod_refs["QuickLookPreview.appex"])
+    bf += ("\t\t%s /* QuickLookPreview.appex in Embed Plug-ins */ = {isa = PBXBuildFile; "
+           "fileRef = %s /* QuickLookPreview.appex */; };\n"
+           % (embed_appex_bf, prod_refs["QuickLookPreview.appex"]))
     embed_xpc_bf = oid("bf:embed:xpc")
-    bf += "\t\t%s /* LinkOpener.xpc in Embed XPC Services */ = {isa = PBXBuildFile; fileRef = %s /* LinkOpener.xpc */; settings = {ATTRIBUTES = (CodeSignOnCopy,); }; };\n" % (
-        embed_xpc_bf, prod_refs["LinkOpener.xpc"])
+    bf += ("\t\t%s /* LinkOpener.xpc in Embed XPC Services */ = {isa = PBXBuildFile; "
+           "fileRef = %s /* LinkOpener.xpc */; settings = {ATTRIBUTES = (CodeSignOnCopy,); }; };\n"
+           % (embed_xpc_bf, prod_refs["LinkOpener.xpc"]))
     ext_protocol_bf = oid("bf:ext:LinkOpenerProtocol")
     bf += "\t\t%s /* LinkOpenerProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = %s /* LinkOpenerProtocol.swift */; };\n" % (
-        ext_protocol_bf, refs["LinkOpener/LinkOpenerProtocol.swift"])
+        ext_protocol_bf, refs[EXT_SHARED_SOURCES[0]])
     bf += "/* End PBXBuildFile section */\n\n"
     objects.append(bf)
 
-    # --- target 依赖（container item proxy）
-    target_ids = {
-        "CcmarkGfm": oid("target:CcmarkGfm"),
-        "MarkdownKit": oid("target:MarkdownKit"),
-        "SharedTheme": oid("target:SharedTheme"),
-        "Spacedown": oid("target:Spacedown"),
-        "QuickLookPreview": oid("target:QuickLookPreview"),
-        "LinkOpener": oid("target:LinkOpener"),
-    }
-    proxies = {}
-    deps = {}
-    for t in ["CcmarkGfm", "MarkdownKit", "SharedTheme", "QuickLookPreview", "LinkOpener"]:
-        proxies[t] = oid("proxy:" + t)
-        deps[t] = oid("dep:" + t)
+    # --- target 依赖
+    target_ids = {name: oid("target:" + name) for name in GROUPS}
+    proxies, deps = {}, {}
+    dependency_targets = ["CcmarkGfm", "MarkdownKit", "SharedTheme", "QuickLookPreview", "LinkOpener"]
+    for name in dependency_targets:
+        proxies[name] = oid("proxy:" + name)
+        deps[name] = oid("dep:" + name)
 
     proxy_src = "\n/* Begin PBXContainerItemProxy section */\n"
-    for t in ["CcmarkGfm", "MarkdownKit", "SharedTheme", "QuickLookPreview", "LinkOpener"]:
+    for name in dependency_targets:
         proxy_src += (
             "\t\t%s /* PBXContainerItemProxy */ = {\n"
             "\t\t\tisa = PBXContainerItemProxy;\n"
@@ -448,69 +447,39 @@ def main() -> None:
             "\t\t\tproxyType = 1;\n"
             "\t\t\tremoteGlobalIDString = %s;\n"
             "\t\t\tremoteInfo = %s;\n"
-            "\t\t};\n" % (proxies[t], project_obj, target_ids[t], t))
-    proxy_src += "/* End PBXContainerItemProxy section */\n\n"
-    objects.append(proxy_src)
+            "\t\t};\n" % (proxies[name], project_obj, target_ids[name], name))
+    objects.append(proxy_src + "/* End PBXContainerItemProxy section */\n\n")
 
     # --- Embed 阶段
-    embed_phase = oid("phase:embed-plugins")
     objects.append(
         "\n/* Begin PBXCopyFilesBuildPhase section */\n"
         + files_phase(
-            embed_phase, "PBXCopyFilesBuildPhase", "Embed Plug-ins",
+            oid("phase:embed-plugins"), "PBXCopyFilesBuildPhase", "Embed Plug-ins",
             [(embed_appex_bf, "QuickLookPreview.appex in Embed Plug-ins")],
             extra="\t\t\tdstPath = \"\";\n\t\t\tdstSubfolderSpec = 13;\n\t\t\tname = \"Embed Plug-ins\";\n")
         + files_phase(
             oid("phase:app-embed-fw"), "PBXCopyFilesBuildPhase", "Embed Frameworks",
-            [(embed_bfs[("embed", "MarkdownKit.framework")], "MarkdownKit.framework in Embed Frameworks"),
-             (embed_bfs[("embed", "SharedTheme.framework")], "SharedTheme.framework in Embed Frameworks")],
+            [(app_embed[label], label + " in Embed Frameworks") for label in frameworks],
             extra="\t\t\tdstPath = \"\";\n\t\t\tdstSubfolderSpec = 10;\n\t\t\tname = \"Embed Frameworks\";\n")
         + files_phase(
             oid("phase:ext-embed-fw"), "PBXCopyFilesBuildPhase", "Embed Frameworks",
-            [(ext_embed_bfs["MarkdownKit.framework"], "MarkdownKit.framework in Embed Frameworks"),
-             (ext_embed_bfs["SharedTheme.framework"], "SharedTheme.framework in Embed Frameworks")],
+            [(ext_embed[label], label + " in Embed Frameworks") for label in frameworks],
             extra="\t\t\tdstPath = \"\";\n\t\t\tdstSubfolderSpec = 10;\n\t\t\tname = \"Embed Frameworks\";\n")
         + files_phase(
             oid("phase:ext-embed-xpc"), "PBXCopyFilesBuildPhase", "Embed XPC Services",
             [(embed_xpc_bf, "LinkOpener.xpc in Embed XPC Services")],
-            # ⚠️ 那个 `dstSubfolderSpec` 的取值是试出来的，别照抄别处的经验值：
-            #
-            # | 写法 | 实际落点 | 结果 |
-            # |---|---|---|
-            # | `16`（Xcode 界面上叫 Embed XPC Services 的那个值） | `<appex>/XPCServices/`（**bundle 根**，和 Contents 平级） | ✗ 签名直接失败：`unsealed contents present in the bundle root` |
-            # | `0` + `$(CONTENTS_FOLDER_PATH)/XPCServices` | 解析失败 | ✗ `The file "LinkOpener.xpc" doesn't exist` |
-            # | **`1` + `Contents/XPCServices`** | `<appex>/Contents/XPCServices/` | ✓ 正确 |
-            #
-            # 也就是 `16` 是 **iOS 语义**（那里 bundle 根就是产品本身）；macOS 包必须把一切
-            # 放在 `Contents/` 下，得自己把它拼出来。
+            # dstSubfolderSpec 必须是 1 + Contents/XPCServices。16 是 iOS 语义
+            # （bundle 根），在 macOS 上会让签名报 "unsealed contents in the bundle root"。
             extra="\t\t\tdstPath = Contents/XPCServices;\n\t\t\tdstSubfolderSpec = 1;\n\t\t\tname = \"Embed XPC Services\";\n")
         + "/* End PBXCopyFilesBuildPhase section */\n\n")
 
-    # --- 文件引用
-    fr = "\n/* Begin PBXFileReference section */\n"
-    for p in CCMARK_SOURCES:
-        fr += file_ref(refs[p], rel_for(p), "sourcecode.c.c")
-    for p in MARKDOWNKIT_SOURCES + SHAREDTHEME_SOURCES + APP_SOURCES + EXT_SOURCES + LINKOPENER_SOURCES:
-        fr += file_ref(refs[p], rel_for(p), "sourcecode.swift")
-    fr += file_ref(theme_css_ref, rel_for(SHAREDTHEME_RESOURCE), "text.css")
-    fr += file_ref(appicon_ref, rel_for(APP_ICON), "image.icns")
-    fr += file_ref(app_plist_ref, rel_for(APP_PLIST), "text.plist.xml")
-    fr += file_ref(ext_plist_ref, rel_for(EXT_PLIST), "text.plist.xml")
-    fr += file_ref(linkopener_plist_ref, rel_for(LINKOPENER_PLIST), "text.plist.xml")
-    for name, _ in products.items():
-        fr += (
-            "\t\t%s /* %s */ = {isa = PBXFileReference; explicitFileType = %s; "
-            "includeInIndex = 0; path = %s; sourceTree = BUILT_PRODUCTS_DIR; };\n"
-            % (prod_refs[name], name, prod_filetypes[name], name))
-    fr += "/* End PBXFileReference section */\n\n"
-    objects.append(fr)
-
-    # --- 各 target 的构建阶段 id
+    # --- 文件引用（由 group 树生成，见下方的组）
+    # --- 构建阶段 id
     phases = {}
-    for t in target_ids:
-        phases[(t, "Sources")] = oid("phase:%s:sources" % t)
-        phases[(t, "Frameworks")] = oid("phase:%s:frameworks" % t)
-        phases[(t, "Resources")] = oid("phase:%s:resources" % t)
+    for name in target_ids:
+        phases[(name, "Sources")] = oid("phase:%s:sources" % name)
+        phases[(name, "Frameworks")] = oid("phase:%s:frameworks" % name)
+        phases[(name, "Resources")] = oid("phase:%s:resources" % name)
 
     fw_phases = {
         "CcmarkGfm": empty_phase(phases[("CcmarkGfm", "Frameworks")],
@@ -526,68 +495,46 @@ def main() -> None:
              (link_bfs[("link", "SharedTheme.framework")], "SharedTheme.framework in Frameworks")]),
         "QuickLookPreview": files_phase(
             phases[("QuickLookPreview", "Frameworks")], "PBXFrameworksBuildPhase", "Frameworks",
-            [(ext_link_bfs["MarkdownKit.framework"], "MarkdownKit.framework in Frameworks"),
-             (ext_link_bfs["SharedTheme.framework"], "SharedTheme.framework in Frameworks")]),
-        # XPC 服务只依赖系统框架，不需要链我们的
+            [(ext_link["MarkdownKit.framework"], "MarkdownKit.framework in Frameworks"),
+             (ext_link["SharedTheme.framework"], "SharedTheme.framework in Frameworks")]),
+        # XPC 服务只依赖系统框架
         "LinkOpener": empty_phase(phases[("LinkOpener", "Frameworks")],
                                   "PBXFrameworksBuildPhase", "Frameworks"),
     }
     objects.append(
         "\n/* Begin PBXFrameworksBuildPhase section */\n"
-        + "".join(fw_phases[t] for t in ["CcmarkGfm", "MarkdownKit", "SharedTheme",
-                                         "Spacedown", "QuickLookPreview", "LinkOpener"])
+        + "".join(fw_phases[name] for name in GROUPS)
         + "/* End PBXFrameworksBuildPhase section */\n\n")
 
-    # --- 组
-    def src_children(paths: list[str]) -> list[str]:
-        return [refs[p] + " /* %s */" % Path(p).name for p in paths]
-
-    # 组一律直接挂在 mainGroup 下、路径从仓库根写全。
-    # 试过「Products/Core（name+path）+ 子组 Sources/XXX」的嵌套写法，Xcode 解析子组
-    # 文件时只取子组自己的 path（拼出来的路径少了 Packages/Core），CpResource 直接报
-    # 「no such file」。扁平挂载没有这种歧义。
-    groups = {
-        "CcmarkGfm": (oid("group:CcmarkGfm"), src_children(CCMARK_SOURCES),
-                      "Packages/Core/Sources/CcmarkGfm"),
-        "MarkdownKit": (oid("group:MarkdownKit"), src_children(MARKDOWNKIT_SOURCES),
-                        "Packages/Core/Sources/MarkdownKit"),
-        "SharedTheme": (oid("group:SharedTheme"),
-                        src_children(SHAREDTHEME_SOURCES)
-                        + [theme_css_ref + " /* theme.css */"],
-                        "Packages/Core/Sources/SharedTheme"),
-        "Spacedown": (oid("group:Spacedown"),
-                      src_children(APP_SOURCES)
-                      + [appicon_ref + " /* AppIcon.icns */",
-                         app_plist_ref + " /* Info.plist */"],
-                      "Spacedown"),
-        "QuickLookPreview": (oid("group:QuickLookPreview"),
-                             src_children(EXT_SOURCES) + [ext_plist_ref + " /* Info.plist */"],
-                             "QuickLookPreview"),
-        "LinkOpener": (oid("group:LinkOpener"),
-                       src_children(LINKOPENER_SOURCES)
-                       + [linkopener_plist_ref + " /* Info.plist */"],
-                       "LinkOpener"),
-    }
+    # --- 组（文件引用在 group_tree 里一并生成）
     products_group = oid("group:Products")
     main_group = oid("group:main")
 
-    children_main = [
-        groups[t][0] + " /* %s */" % t
-        for t in ["CcmarkGfm", "MarkdownKit", "SharedTheme",
-                  "Spacedown", "QuickLookPreview", "LinkOpener"]
-    ] + [products_group + " /* Products */"]
+    groups_text = "\n/* Begin PBXGroup section */\n"
+    file_ref_text = "\n/* Begin PBXFileReference section */\n"
 
-    g = "\n/* Begin PBXGroup section */\n"
-    g += group(main_group, children_main)
-    for _t, (gid, ch, path) in groups.items():
-        g += group(gid, ch, path=path)
-    g += group(products_group,
-               [prod_refs[n] + " /* %s */" % n for n in
-                ["Spacedown.app", "QuickLookPreview.appex", "LinkOpener.xpc",
-                 "MarkdownKit.framework", "SharedTheme.framework", "libCcmarkGfm.a"]],
-               name="Products")
-    g += "/* End PBXGroup section */\n\n"
-    objects.append(g)
+    # 产物引用（BUILT_PRODUCTS_DIR）
+    for name, filetype in products.items():
+        file_ref_text += (
+            "\t\t%s /* %s */ = {isa = PBXFileReference; explicitFileType = %s; "
+            "includeInIndex = 0; path = %s; sourceTree = BUILT_PRODUCTS_DIR; };\n"
+            % (prod_refs[name], name, filetype, name))
+
+    for name, (base, paths) in GROUPS.items():
+        text, refs_text = group_tree(base, paths)
+        groups_text += text
+        file_ref_text += refs_text
+
+    groups_text += group(products_group,
+                         ["%s /* %s */" % (prod_refs[n], n) for n in products],
+                         name="Products")
+    groups_text += group(main_group,
+                         ["%s /* %s */" % (oid("group:" + GROUPS[n][0]), n) for n in GROUPS]
+                         + ["%s /* Products */" % products_group])
+    groups_text += "/* End PBXGroup section */\n\n"
+
+    objects.append(file_ref_text + "/* End PBXFileReference section */\n\n")
+    objects.append(groups_text)
 
     # --- native targets
     def native_target(name: str, product: str, product_type: str,
@@ -595,10 +542,6 @@ def main() -> None:
                       settings_extra: dict, cfg_list: str) -> str:
         ph = "".join("\t\t\t\t%s,\n" % p for p in phase_list)
         dp = "".join("\t\t\t\t%s /* PBXTargetDependency */,\n" % deps[d] for d in dependencies)
-        cfg = dict(SIGNING)
-        cfg.update(VERSIONING)
-        cfg.update(settings_extra)
-        # buildSettings 已并入 XCBuildConfiguration，这里只放结构
         return (
             "\t\t%s /* %s */ = {\n"
             "\t\t\tisa = PBXNativeTarget;\n"
@@ -614,7 +557,7 @@ def main() -> None:
             % (target_ids[name], name, cfg_list, name, ph, dp, name, name,
                prod_refs[product], product, product_type))
 
-    cfg_lists = {t: oid("cfglist:" + t) for t in target_ids}
+    cfg_lists = {name: oid("cfglist:" + name) for name in target_ids}
 
     objects.append(
         "\n/* Begin PBXNativeTarget section */\n"
@@ -639,7 +582,7 @@ def main() -> None:
                         [phases[("Spacedown", "Sources")],
                          phases[("Spacedown", "Frameworks")],
                          phases[("Spacedown", "Resources")],
-                         embed_phase, oid("phase:app-embed-fw")],
+                         oid("phase:embed-plugins"), oid("phase:app-embed-fw")],
                         ["MarkdownKit", "SharedTheme", "QuickLookPreview"], {},
                         cfg_lists["Spacedown"])
         + native_target("QuickLookPreview", "QuickLookPreview.appex",
@@ -658,13 +601,11 @@ def main() -> None:
         + "/* End PBXNativeTarget section */\n\n")
 
     # --- project
-    # 注意：`%` 的优先级高于 `+`，上面那种「末尾统一 % args」的写法会把最后一组相邻
-    # 字面量单独格式化掉。这里先拼好再格式化。
     project_attrs = "".join(
         "\t\t\t\t\t%s = {\n\t\t\t\t\t\tCreatedOnToolsVersion = 27.0;\n\t\t\t\t\t};\n"
-        % target_ids[t] for t in target_ids)
+        % target_ids[name] for name in target_ids)
     project_targets = "".join(
-        "\t\t\t\t%s /* %s */,\n" % (target_ids[t], t) for t in target_ids)
+        "\t\t\t\t%s /* %s */,\n" % (target_ids[name], name) for name in target_ids)
     objects.append((
         "\n/* Begin PBXProject section */\n"
         "\t\t%s /* Project object */ = {\n"
@@ -693,7 +634,7 @@ def main() -> None:
     ) % (project_obj, oid("cfglist:project"), main_group, products_group))
 
     # --- resources
-    res = {
+    resources = {
         "CcmarkGfm": empty_phase(phases[("CcmarkGfm", "Resources")],
                                  "PBXResourcesBuildPhase", "Resources"),
         "MarkdownKit": empty_phase(phases[("MarkdownKit", "Resources")],
@@ -703,13 +644,13 @@ def main() -> None:
                                    [(theme_css_bf, "theme.css in Resources")]),
         "Spacedown": files_phase(phases[("Spacedown", "Resources")],
                                  "PBXResourcesBuildPhase", "Resources",
-                                 [(appicon_bf, "AppIcon.icns in Resources")]),
+                                 [(appicon_bf, "AppIcon.icns in Resources"),
+                                  (uninstall_bf, "uninstall.sh in Resources")]),
         "QuickLookPreview": empty_phase(phases[("QuickLookPreview", "Resources")],
                                         "PBXResourcesBuildPhase", "Resources"),
     }
     objects.append("\n/* Begin PBXResourcesBuildPhase section */\n"
-                   + "".join(res[t] for t in ["CcmarkGfm", "MarkdownKit", "SharedTheme",
-                                              "Spacedown", "QuickLookPreview"])
+                   + "".join(resources[name] for name in resources)
                    + "/* End PBXResourcesBuildPhase section */\n\n")
 
     # --- sources
@@ -721,13 +662,12 @@ def main() -> None:
         "QuickLookPreview": EXT_SOURCES,
         "LinkOpener": LINKOPENER_SOURCES,
     }
-    # 扩展还要多编译一份 XPC 协议（那个文件属于 LinkOpener 组，所以用单独的 build file）
-    src_extra = {"QuickLookPreview": [(ext_protocol_bf, "LinkOpener/LinkOpenerProtocol.swift")]}
+    src_extra = {"QuickLookPreview": [(ext_protocol_bf, EXT_SHARED_SOURCES[0])]}
     objects.append(
         "\n/* Begin PBXSourcesBuildPhase section */\n"
-        + "".join(sources_phase(phases[(t, "Sources")],
-                                [(bfs[p], p) for p in src_map[t]] + src_extra.get(t, []))
-                  for t in src_map)
+        + "".join(sources_phase(phases[(name, "Sources")],
+                                [(bfs[p], p) for p in src_map[name]] + src_extra.get(name, []))
+                  for name in src_map)
         + "/* End PBXSourcesBuildPhase section */\n\n")
 
     # --- target dependency
@@ -738,9 +678,8 @@ def main() -> None:
             "\t\t\tisa = PBXTargetDependency;\n"
             "\t\t\ttarget = %s /* %s */;\n"
             "\t\t\ttargetProxy = %s /* PBXContainerItemProxy */;\n"
-            "\t\t};\n" % (deps[t], target_ids[t], t, proxies[t])
-            for t in ["CcmarkGfm", "MarkdownKit", "SharedTheme", "QuickLookPreview",
-                      "LinkOpener"])
+            "\t\t};\n" % (deps[name], target_ids[name], name, proxies[name])
+            for name in dependency_targets)
         + "/* End PBXTargetDependency section */\n\n")
 
     # --- 构建配置
@@ -758,22 +697,21 @@ def main() -> None:
         ident = oid("cfg:project:" + name)
         proj_cfg_ids[name] = ident
         cfgs += build_config(ident, name, PROJECT_COMMON, extra)
-    for t in target_ids:
-        for name in ["Debug", "Release"]:
+    for name in target_ids:
+        for config in ["Debug", "Release"]:
             merged = dict(SIGNING)
             merged.update(VERSIONING)
-            merged.update(settings_map[t])
-            ident = oid("cfg:%s:%s" % (t, name))
-            cfgs += build_config(ident, name, merged, {})
+            merged.update(settings_map[name])
+            cfgs += build_config(oid("cfg:%s:%s" % (name, config)), config, merged, {})
     cfgs += "/* End XCBuildConfiguration section */\n\n"
     objects.append(cfgs)
 
     cl = "\n/* Begin XCConfigurationList section */\n"
     cl += config_list(oid("cfglist:project"), 'PBXProject "Spacedown"',
                       proj_cfg_ids["Debug"], proj_cfg_ids["Release"])
-    for t in target_ids:
-        cl += config_list(cfg_lists[t], 'PBXNativeTarget "%s"' % t,
-                          oid("cfg:%s:Debug" % t), oid("cfg:%s:Release" % t))
+    for name in target_ids:
+        cl += config_list(cfg_lists[name], 'PBXNativeTarget "%s"' % name,
+                          oid("cfg:%s:Debug" % name), oid("cfg:%s:Release" % name))
     cl += "/* End XCConfigurationList section */\n"
     objects.append(cl)
 

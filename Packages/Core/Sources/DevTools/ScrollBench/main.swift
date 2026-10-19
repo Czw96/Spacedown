@@ -25,11 +25,9 @@ import Foundation
 //     滚动退化成主线程同步重绘整屏 —— 那种情况下，这个数字就是每帧要付的钱，
 //     超过 16.7ms（60Hz 预算）就必然掉帧。
 //
-// ⚠️ 这个工具**测不了连续滚动的帧率**。试过 `requestAnimationFrame`：窗口在
-// 「手工泵 runloop、不跑 NSApplication.run()」的情况下，WebKit 自报
-// `document.visibilityState === "hidden"`（即使 .floating + orderFrontRegardless
-// + activate 也一样），rAF 根本不触发，帧数恒为 0。`--raf` 参数保留着，
-// 但别指望它 —— 想测手感只能上真机 + Instruments。
+// ⚠️ 这个工具**测不了连续滚动的帧率**：窗口在「手工泵 runloop、不跑
+// `NSApplication.run()`」的情况下会被 WebKit 判为 hidden，`requestAnimationFrame`
+// 不触发、帧数恒为 0。`--raf` 参数保留着，但想测手感只能上真机 + Instruments。
 //
 // 数字只用于**变体之间横向比较**（快照本身的编码开销所有变体都一样）。
 
@@ -194,7 +192,7 @@ final class EvalBox: @unchecked Sendable {
 /// 同步取值的小工具。JS 回调在别的隔离域，用显式 Sendable 盒子搬结果。
 ///
 /// ⚠️ `callAsyncJavaScript` 传进去的是**函数体**，不是表达式 ——
-/// 少了 `return` 会安静地返回 undefined（踩过：所有数字都是 0）。
+/// 少了 `return` 会安静地返回 undefined，所有数字都是 0。
 func evalSync(_ js: String) -> Any? {
     let box = EvalBox()
     webView.callAsyncJavaScript(js, arguments: [:], in: nil, in: .page) { outcome in

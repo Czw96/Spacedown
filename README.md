@@ -318,30 +318,29 @@ defaults delete cn.29dev.Spacedown DebugLayout             # 关掉
 Spacedown/
 ├── Spacedown.xcodeproj/          Xcode 工程（由 scripts/gen_project.py 生成）
 ├── Spacedown/                    主 App target
-│   ├── AppIcon.icns              App 图标（源与生成脚本在 design/logo/）
-│   ├── AppDelegate.swift         入口、open 事件分发
-│   ├── MainWindow.swift          多标签窗口、交通灯对齐、布局自检
-│   ├── TabBar.swift              自绘标签栏 + 右侧缩放/动作
-│   ├── WebViewPool.swift         LRU webview 池 + 启动预热
-│   ├── DocumentTab.swift         标签模型（滚动位置 / 缩放）
-│   ├── FileWatcher.swift         外部修改监听（去抖 + lstat 四元组）
-│   ├── MainMenu.swift            代码构建主菜单
-│   ├── Palette.swift             主题色在 AppKit 侧的镜像
-│   ├── SettingsWindow.swift      设置窗（⌘,）：Logo + 打开方式；没开文件时也是启动窗
-│   └── DebugLog.swift            /tmp 文件日志
+│   ├── App/                      入口（SpacedownMain）、AppDelegate、主菜单
+│   ├── Window/                   主窗口与动作/WebKit/自检（MainWindow+*.swift）、标签栏、标签模型、窗口子类
+│   ├── Content/                  LRU web view 池、拖放落点、SpacedownWebView
+│   ├── Document/                 markdown 文件类型判定、文件监听、版心偏好
+│   ├── Settings/                 设置窗、悬停按钮、卸载
+│   ├── Support/                  调试日志、命令行调用、空格预览接管与诊断
+│   └── Resources/                Info.plist、AppIcon.icns、uninstall.sh
 ├── QuickLookPreview/             Quick Look 扩展 target（视图型）
-│   ├── PreviewViewController.swift  QLPreviewingController + 自建 viewport 尺寸 WKWebView + 实例复用
-│   └── Info.plist                扩展声明（⚠️ 故意没有 QLIsDataBasedPreview，见文件内注释）
+│   ├── PreviewViewController.swift   QLPreviewingController：交接、导航、链接、兜底
+│   ├── PreviewDocument.swift         读文件 → 截断 → 渲染 → 拼文档
+│   ├── PreviewWebViewPool.swift      实例复用（容量 1）
+│   ├── ScrollProbe.swift             滚动帧率探针
+│   ├── PreviewDiagnostics.swift      os_log 与 Debug 取证
+│   └── Resources/                    Info.plist、entitlements
+├── LinkOpener/                   XPC 服务：替沙箱里的扩展打开外部链接
 ├── Packages/Core/                SwiftPM 包（仅 macOS ≥13，仅 arm64）
 │   ├── Sources/CcmarkGfm/        vendored cmark-gfm 0.29.0.gfm.7
-│   ├── Sources/MarkdownKit/      Data → HTML
-│   ├── Sources/SharedTheme/      theme.css + HTML 模板拼装
-│   ├── Sources/Bench/            命令行基准 / 渲染工具
-│   ├── Sources/ScrollBench/      滚动成本基准（重排 / 重绘）与 CSS 变体对比
-│   ├── Sources/WebViewBench/     M0 的 WKWebView 成本实测工具
+│   ├── Sources/MarkdownKit/      文档装载（截断）、cmark 渲染、危险 scheme 中和
+│   ├── Sources/SharedTheme/      主题与 HTML 外壳、文档后处理、链接语义、色板、Toast
+│   ├── Sources/DevTools/         Bench / ScrollBench / WebViewBench
 │   └── XcodeSupport/CcmarkGfm/   Xcode 用的 module.modulemap
 ├── design/logo/                  Logo 源：spacedown-icon.svg + build_logo.py（改几何/配色都改这里再重跑）
-├── scripts/gen_project.py        工程生成器
+├── scripts/gen_project.py        工程生成器（源文件按目录自动发现）
 ├── docs/技术方案.md               方案（性能指标、风险清单、里程碑）
 ├── docs/benchmarks.md            实测数字与踩坑记录
 └── docs/性能分析.md              耗时归因、"换技术栈"的结论、优化清单
