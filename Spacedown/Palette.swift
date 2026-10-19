@@ -18,6 +18,12 @@ enum Palette {
     /// 用途只有一个：填 `WKWebView` 文档加载完成前的白闪。
     static let pageBackground = dynamic(light: 0xffffff, dark: 0x1b1b1d)
 
+    /// 窗口底色（标签栏那一圈 + 内容卡片四周的留白）。
+    ///
+    /// 比内容暗一档，内容才有"一张纸浮在上面"的分层感。浅色下是很淡的灰，
+    /// 深色下比 `pageBackground` 再暗一点 —— 两个方向都是"卡片更亮"。
+    static let chromeBackground = dynamic(light: 0xf2f2f3, dark: 0x131315)
+
     /// 当前标签的"底色微抬"。浅色下就是白，深色下靠白色叠加提亮 ——
     /// 直接用系统语义色做不到这一点（`textBackgroundColor` 在深色下和标签栏一样深）。
     static let currentTabFill = NSColor(name: nil) { appearance in

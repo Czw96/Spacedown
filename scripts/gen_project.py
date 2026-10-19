@@ -73,6 +73,13 @@ APP_ICON = "Spacedown/AppIcon.icns"      # app icon (.icns, CFBundleIconFile)
 EXT_SOURCES = ["QuickLookPreview/PreviewViewController.swift"]
 EXT_PLIST = "QuickLookPreview/Info.plist"
 
+# XPC 服务：替沙箱里的扩展打开外部链接（沙箱里调 NSWorkspace 会让进程被 SIGTRAP 杀掉）。
+LINKOPENER_SOURCES = ["LinkOpener/main.swift", "LinkOpener/LinkOpenerProtocol.swift"]
+LINKOPENER_PLIST = "LinkOpener/Info.plist"
+# 协议文件要**同时**编译进扩展和服务两个 target，但它物理上属于 LinkOpener/ ——
+# 一个文件只能有一个 fileRef，所以不能塞进 EXT_SOURCES（那个会驱动组的孩子，路径会错）。
+EXT_SHARED_SOURCES = ["LinkOpener/LinkOpenerProtocol.swift"]
+
 MODULEMAP_DIR = "Packages/Core/XcodeSupport/CcmarkGfm"
 
 # 文件引用的 `path` 是**相对所在 group** 的（sourceTree = <group>），不是相对仓库根。
@@ -83,6 +90,7 @@ GROUP_BASES = [
     "Packages/Core/Sources/SharedTheme",
     "Spacedown",
     "QuickLookPreview",
+    "LinkOpener",
 ]
 
 
@@ -195,6 +203,10 @@ APP_SETTINGS = {
 EXT_SETTINGS = {
     "GENERATE_INFOPLIST_FILE": "NO",
     "INFOPLIST_FILE": "QuickLookPreview/Info.plist",
+    # ⚠️ 必需：**App 扩展必须沙箱化**，否则 macOS 静默不加载它 ——
+    # 表现为"扩展永远不会被拉起（日志一行都没有）+ 系统设置里看不到它 + 空格预览
+    # 退回去用别家扩展"。完整归因见 docs/技术方案.md §15.6 与那个 entitlements 文件里的注释。
+    "CODE_SIGN_ENTITLEMENTS": "QuickLookPreview/QuickLookPreview.entitlements",
     # appex 嵌在 App 的 Contents/PlugIns 下，比 App 深两级，所以补一条向上四级的路径
     "LD_RUNPATH_SEARCH_PATHS": ('(\n\t\t\t\t\t"$(inherited)",\n'
                                 '\t\t\t\t\t"@executable_path/../Frameworks",\n'
@@ -204,6 +216,18 @@ EXT_SETTINGS = {
     "PRODUCT_NAME": '"$(TARGET_NAME)"',
     "SKIP_INSTALL": "YES",
     "WRAPPER_EXTENSION": "appex",
+}
+
+# XPC 服务：**刻意不带 app-sandbox 权限** —— 它的存在意义就是替沙箱里的扩展
+# 做那件被沙箱禁止的事（打开链接）。加了沙箱等于自废武功。
+LINKOPENER_SETTINGS = {
+    "GENERATE_INFOPLIST_FILE": "NO",
+    "INFOPLIST_FILE": LINKOPENER_PLIST,
+    "MACH_O_TYPE": "mh_execute",
+    "PRODUCT_BUNDLE_IDENTIFIER": "cn.29dev.Spacedown.LinkOpener",
+    "PRODUCT_NAME": '"$(TARGET_NAME)"',
+    "SKIP_INSTALL": "YES",
+    "WRAPPER_EXTENSION": "xpc",
 }
 
 
@@ -317,6 +341,7 @@ def main() -> None:
     # --- 源码文件引用 + build file
     all_sources = (CCMARK_SOURCES + MARKDOWNKIT_SOURCES + SHAREDTHEME_SOURCES
                    + APP_SOURCES + EXT_SOURCES)
+    all_sources = list(all_sources) + LINKOPENER_SOURCES
     refs = {p: oid("ref:" + p) for p in all_sources}
     bfs = {p: oid("bf:" + p) for p in all_sources}
 
@@ -326,6 +351,7 @@ def main() -> None:
     theme_css_bf = oid("bf:theme.css")
     app_plist_ref = oid("ref:" + APP_PLIST)
     ext_plist_ref = oid("ref:" + EXT_PLIST)
+    linkopener_plist_ref = oid("ref:" + LINKOPENER_PLIST)
 
     # 产物引用
     products = {
@@ -334,6 +360,7 @@ def main() -> None:
         "SharedTheme.framework": ("wrapper.framework", "SharedTheme.framework"),
         "Spacedown.app": ("wrapper.application", "Spacedown.app"),
         "QuickLookPreview.appex": ("wrapper.cfbundle", "QuickLookPreview.appex"),
+        "LinkOpener.xpc": ("wrapper.cfbundle", "LinkOpener.xpc"),
     }
     prod_refs = {
         name: oid("prod:" + name) for name in products
@@ -345,6 +372,7 @@ def main() -> None:
         "SharedTheme.framework": "wrapper.framework",
         "Spacedown.app": "wrapper.application",
         "QuickLookPreview.appex": '"wrapper.app-extension"',
+        "LinkOpener.xpc": '"wrapper.xpc-service"',
     }
 
     # --- PBXBuildFile
@@ -387,6 +415,12 @@ def main() -> None:
     embed_appex_bf = oid("bf:embed:appex")
     bf += "\t\t%s /* QuickLookPreview.appex in Embed Plug-ins */ = {isa = PBXBuildFile; fileRef = %s /* QuickLookPreview.appex */; };\n" % (
         embed_appex_bf, prod_refs["QuickLookPreview.appex"])
+    embed_xpc_bf = oid("bf:embed:xpc")
+    bf += "\t\t%s /* LinkOpener.xpc in Embed XPC Services */ = {isa = PBXBuildFile; fileRef = %s /* LinkOpener.xpc */; settings = {ATTRIBUTES = (CodeSignOnCopy,); }; };\n" % (
+        embed_xpc_bf, prod_refs["LinkOpener.xpc"])
+    ext_protocol_bf = oid("bf:ext:LinkOpenerProtocol")
+    bf += "\t\t%s /* LinkOpenerProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = %s /* LinkOpenerProtocol.swift */; };\n" % (
+        ext_protocol_bf, refs["LinkOpener/LinkOpenerProtocol.swift"])
     bf += "/* End PBXBuildFile section */\n\n"
     objects.append(bf)
 
@@ -397,15 +431,16 @@ def main() -> None:
         "SharedTheme": oid("target:SharedTheme"),
         "Spacedown": oid("target:Spacedown"),
         "QuickLookPreview": oid("target:QuickLookPreview"),
+        "LinkOpener": oid("target:LinkOpener"),
     }
     proxies = {}
     deps = {}
-    for t in ["CcmarkGfm", "MarkdownKit", "SharedTheme", "QuickLookPreview"]:
+    for t in ["CcmarkGfm", "MarkdownKit", "SharedTheme", "QuickLookPreview", "LinkOpener"]:
         proxies[t] = oid("proxy:" + t)
         deps[t] = oid("dep:" + t)
 
     proxy_src = "\n/* Begin PBXContainerItemProxy section */\n"
-    for t in ["CcmarkGfm", "MarkdownKit", "SharedTheme", "QuickLookPreview"]:
+    for t in ["CcmarkGfm", "MarkdownKit", "SharedTheme", "QuickLookPreview", "LinkOpener"]:
         proxy_src += (
             "\t\t%s /* PBXContainerItemProxy */ = {\n"
             "\t\t\tisa = PBXContainerItemProxy;\n"
@@ -435,18 +470,33 @@ def main() -> None:
             [(ext_embed_bfs["MarkdownKit.framework"], "MarkdownKit.framework in Embed Frameworks"),
              (ext_embed_bfs["SharedTheme.framework"], "SharedTheme.framework in Embed Frameworks")],
             extra="\t\t\tdstPath = \"\";\n\t\t\tdstSubfolderSpec = 10;\n\t\t\tname = \"Embed Frameworks\";\n")
+        + files_phase(
+            oid("phase:ext-embed-xpc"), "PBXCopyFilesBuildPhase", "Embed XPC Services",
+            [(embed_xpc_bf, "LinkOpener.xpc in Embed XPC Services")],
+            # ⚠️ 那个 `dstSubfolderSpec` 的取值是试出来的，别照抄别处的经验值：
+            #
+            # | 写法 | 实际落点 | 结果 |
+            # |---|---|---|
+            # | `16`（Xcode 界面上叫 Embed XPC Services 的那个值） | `<appex>/XPCServices/`（**bundle 根**，和 Contents 平级） | ✗ 签名直接失败：`unsealed contents present in the bundle root` |
+            # | `0` + `$(CONTENTS_FOLDER_PATH)/XPCServices` | 解析失败 | ✗ `The file "LinkOpener.xpc" doesn't exist` |
+            # | **`1` + `Contents/XPCServices`** | `<appex>/Contents/XPCServices/` | ✓ 正确 |
+            #
+            # 也就是 `16` 是 **iOS 语义**（那里 bundle 根就是产品本身）；macOS 包必须把一切
+            # 放在 `Contents/` 下，得自己把它拼出来。
+            extra="\t\t\tdstPath = Contents/XPCServices;\n\t\t\tdstSubfolderSpec = 1;\n\t\t\tname = \"Embed XPC Services\";\n")
         + "/* End PBXCopyFilesBuildPhase section */\n\n")
 
     # --- 文件引用
     fr = "\n/* Begin PBXFileReference section */\n"
     for p in CCMARK_SOURCES:
         fr += file_ref(refs[p], rel_for(p), "sourcecode.c.c")
-    for p in MARKDOWNKIT_SOURCES + SHAREDTHEME_SOURCES + APP_SOURCES + EXT_SOURCES:
+    for p in MARKDOWNKIT_SOURCES + SHAREDTHEME_SOURCES + APP_SOURCES + EXT_SOURCES + LINKOPENER_SOURCES:
         fr += file_ref(refs[p], rel_for(p), "sourcecode.swift")
     fr += file_ref(theme_css_ref, rel_for(SHAREDTHEME_RESOURCE), "text.css")
     fr += file_ref(appicon_ref, rel_for(APP_ICON), "image.icns")
     fr += file_ref(app_plist_ref, rel_for(APP_PLIST), "text.plist.xml")
     fr += file_ref(ext_plist_ref, rel_for(EXT_PLIST), "text.plist.xml")
+    fr += file_ref(linkopener_plist_ref, rel_for(LINKOPENER_PLIST), "text.plist.xml")
     for name, _ in products.items():
         fr += (
             "\t\t%s /* %s */ = {isa = PBXFileReference; explicitFileType = %s; "
@@ -478,11 +528,14 @@ def main() -> None:
             phases[("QuickLookPreview", "Frameworks")], "PBXFrameworksBuildPhase", "Frameworks",
             [(ext_link_bfs["MarkdownKit.framework"], "MarkdownKit.framework in Frameworks"),
              (ext_link_bfs["SharedTheme.framework"], "SharedTheme.framework in Frameworks")]),
+        # XPC 服务只依赖系统框架，不需要链我们的
+        "LinkOpener": empty_phase(phases[("LinkOpener", "Frameworks")],
+                                  "PBXFrameworksBuildPhase", "Frameworks"),
     }
     objects.append(
         "\n/* Begin PBXFrameworksBuildPhase section */\n"
         + "".join(fw_phases[t] for t in ["CcmarkGfm", "MarkdownKit", "SharedTheme",
-                                         "Spacedown", "QuickLookPreview"])
+                                         "Spacedown", "QuickLookPreview", "LinkOpener"])
         + "/* End PBXFrameworksBuildPhase section */\n\n")
 
     # --- 组
@@ -510,6 +563,10 @@ def main() -> None:
         "QuickLookPreview": (oid("group:QuickLookPreview"),
                              src_children(EXT_SOURCES) + [ext_plist_ref + " /* Info.plist */"],
                              "QuickLookPreview"),
+        "LinkOpener": (oid("group:LinkOpener"),
+                       src_children(LINKOPENER_SOURCES)
+                       + [linkopener_plist_ref + " /* Info.plist */"],
+                       "LinkOpener"),
     }
     products_group = oid("group:Products")
     main_group = oid("group:main")
@@ -517,7 +574,7 @@ def main() -> None:
     children_main = [
         groups[t][0] + " /* %s */" % t
         for t in ["CcmarkGfm", "MarkdownKit", "SharedTheme",
-                  "Spacedown", "QuickLookPreview"]
+                  "Spacedown", "QuickLookPreview", "LinkOpener"]
     ] + [products_group + " /* Products */"]
 
     g = "\n/* Begin PBXGroup section */\n"
@@ -526,8 +583,8 @@ def main() -> None:
         g += group(gid, ch, path=path)
     g += group(products_group,
                [prod_refs[n] + " /* %s */" % n for n in
-                ["Spacedown.app", "QuickLookPreview.appex", "MarkdownKit.framework",
-                 "SharedTheme.framework", "libCcmarkGfm.a"]],
+                ["Spacedown.app", "QuickLookPreview.appex", "LinkOpener.xpc",
+                 "MarkdownKit.framework", "SharedTheme.framework", "libCcmarkGfm.a"]],
                name="Products")
     g += "/* End PBXGroup section */\n\n"
     objects.append(g)
@@ -590,8 +647,14 @@ def main() -> None:
                         [phases[("QuickLookPreview", "Sources")],
                          phases[("QuickLookPreview", "Frameworks")],
                          phases[("QuickLookPreview", "Resources")],
-                         oid("phase:ext-embed-fw")],
-                        ["MarkdownKit", "SharedTheme"], {}, cfg_lists["QuickLookPreview"])
+                         oid("phase:ext-embed-fw"), oid("phase:ext-embed-xpc")],
+                        ["MarkdownKit", "SharedTheme", "LinkOpener"], {},
+                        cfg_lists["QuickLookPreview"])
+        + native_target("LinkOpener", "LinkOpener.xpc",
+                        "com.apple.product-type.xpc-service",
+                        [phases[("LinkOpener", "Sources")],
+                         phases[("LinkOpener", "Frameworks")]],
+                        [], {}, cfg_lists["LinkOpener"])
         + "/* End PBXNativeTarget section */\n\n")
 
     # --- project
@@ -656,11 +719,15 @@ def main() -> None:
         "SharedTheme": SHAREDTHEME_SOURCES,
         "Spacedown": APP_SOURCES,
         "QuickLookPreview": EXT_SOURCES,
+        "LinkOpener": LINKOPENER_SOURCES,
     }
+    # 扩展还要多编译一份 XPC 协议（那个文件属于 LinkOpener 组，所以用单独的 build file）
+    src_extra = {"QuickLookPreview": [(ext_protocol_bf, "LinkOpener/LinkOpenerProtocol.swift")]}
     objects.append(
         "\n/* Begin PBXSourcesBuildPhase section */\n"
         + "".join(sources_phase(phases[(t, "Sources")],
-                                [(bfs[p], p) for p in src_map[t]]) for t in src_map)
+                                [(bfs[p], p) for p in src_map[t]] + src_extra.get(t, []))
+                  for t in src_map)
         + "/* End PBXSourcesBuildPhase section */\n\n")
 
     # --- target dependency
@@ -672,7 +739,8 @@ def main() -> None:
             "\t\t\ttarget = %s /* %s */;\n"
             "\t\t\ttargetProxy = %s /* PBXContainerItemProxy */;\n"
             "\t\t};\n" % (deps[t], target_ids[t], t, proxies[t])
-            for t in ["CcmarkGfm", "MarkdownKit", "SharedTheme", "QuickLookPreview"])
+            for t in ["CcmarkGfm", "MarkdownKit", "SharedTheme", "QuickLookPreview",
+                      "LinkOpener"])
         + "/* End PBXTargetDependency section */\n\n")
 
     # --- 构建配置
@@ -682,6 +750,7 @@ def main() -> None:
         "SharedTheme": SHAREDTHEME_SETTINGS,
         "Spacedown": APP_SETTINGS,
         "QuickLookPreview": EXT_SETTINGS,
+        "LinkOpener": LINKOPENER_SETTINGS,
     }
     cfgs = "\n/* Begin XCBuildConfiguration section */\n"
     proj_cfg_ids = {}

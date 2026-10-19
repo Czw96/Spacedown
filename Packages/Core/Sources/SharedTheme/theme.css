@@ -40,6 +40,8 @@
     --text-3: #9a9aa0;
     --hairline: rgba(0, 0, 0, 0.09);
     --hairline-strong: rgba(0, 0, 0, 0.15);
+    /* 勾选框的描边单独一档：hairline 太淡（像装饰），text-3 又太重（发浊），取中间值 */
+    --check-border: rgba(0, 0, 0, 0.22);
     --mark-bg: rgba(0, 0, 0, 0.045);
     --accent: #4f46c9;
     --accent-soft: rgba(79, 70, 201, 0.10);
@@ -55,6 +57,7 @@
         --text-3: #6e6e73;
         --hairline: rgba(255, 255, 255, 0.10);
         --hairline-strong: rgba(255, 255, 255, 0.17);
+    --check-border: rgba(255, 255, 255, 0.26);
         --mark-bg: rgba(255, 255, 255, 0.07);
         --accent: #9b93f2;      /* 深色底上要提亮，否则对比度不够 */
         --accent-soft: rgba(155, 147, 242, 0.14);
@@ -146,6 +149,8 @@ a {
     text-underline-offset: 0.18em;
     text-decoration-color: var(--accent-soft);
     transition: text-decoration-color 120ms ease;
+    /* 显式给手型：Quick Look 面板里的 web view 不一定会自动切指针 */
+    cursor: pointer;
 }
 
 a:hover {
@@ -218,7 +223,10 @@ li::marker {
     color: var(--text-3);
 }
 
-/* 任务列表：原生 checkbox 在深色模式下很难看，隐藏后用 CSS 重画 */
+/* 任务列表：原生 checkbox 在深色模式下很难看，隐藏后用 CSS 重画。
+   ⚠️ 对勾**不能**用 `::after` 画 —— `<input>` 是替换元素，伪元素在它上面不渲染
+   （曾经就是这么写的：结果只有一个紫色圆角块，看起来像"一个没有内容的色块"）。
+   正解是用 `background-image` 塞一个内联 SVG 对勾。 */
 ul:has(> li > input[type="checkbox"]),
 ol:has(> li > input[type="checkbox"]) {
     list-style: none;
@@ -228,40 +236,41 @@ ol:has(> li > input[type="checkbox"]) {
 li:has(> input[type="checkbox"]) {
     list-style: none;
     position: relative;
-    padding-left: 1.7em;
+    /* 1.75em：框 1.15em 之后与文字的间隙约 9px（再宽就显得松散） */
+    padding-left: 1.2em;
 }
 
 li > input[type="checkbox"] {
     position: absolute;
     left: 0;
-    top: 0.42em;
+    /* 位置是**量出来的**：框中心固定在 1.235em（= 首行文字墨迹的中线），
+       所以 top = 1.235em - 框高/2。框从 1.15em 长到 1.3em，top 跟着收到 0.62。
+       比理论值再低约 0.6px —— 真机 QL 面板里量出框比文字墨迹中心高 1.1px，这里补掉。 */
+    top: 0.62em;
     appearance: none;
     -webkit-appearance: none;
     margin: 0;
-    width: 0.95em;
-    height: 0.95em;
-    border: 1.5px solid var(--hairline-strong);
-    border-radius: 3.5px;
-    background: var(--surface);
+    width: 1.3em;
+    height: 1.3em;
+    /* 1.25px + --check-border：比 hairline 实、比 text-3 轻 —— 和旁边的紫色实心块摆一起不抢重量 */
+    border: 1.4px solid var(--check-border);
+    /* 0.3em ≈ 5.5px：贴近 macOS 原生复选框的圆角 */
+    border-radius: 0.34em;
+    background-color: transparent;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 0.84em 0.84em;
+    transition: background-color 120ms ease, border-color 120ms ease;
 }
 
 li > input[type="checkbox"]:checked {
-    background: var(--accent);
+    background-color: var(--accent);
     border-color: var(--accent);
+    /* 白色对勾（SVG 内联，避免额外请求；stroke 用白色，深浅主题都清楚） */
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23fff' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 8.5l3 3 6-6.5'/%3E%3C/svg%3E");
 }
 
-li > input[type="checkbox"]:checked::after {
-    content: "";
-    position: absolute;
-    left: 0.28em;
-    top: 0.44em;
-    width: 0.3em;
-    height: 0.55em;
-    border: solid var(--bg);
-    border-width: 0 1.6px 1.6px 0;
-    transform: rotate(42deg);
-}
-
+/* 已完成的条目：只降一档文字色，不加删除线（删除线在长句里很吵） */
 li:has(> input[type="checkbox"]:checked) {
     color: var(--text-2);
 }
@@ -275,9 +284,44 @@ blockquote {
     color: var(--text-2);
 }
 
-blockquote p:last-child {
-    margin-bottom: 0;
-}
+  blockquote p:last-child {
+      margin-bottom: 0;
+  }
+
+  /* ---- GitHub 风格提示块（`> [!NOTE]` / TIP / IMPORTANT / WARNING / CAUTION）----
+     ⚠️ 刻意**不引入第二、第三个强调色**：本主题的取向是"全篇只有一个强调色"，
+     所以警示类靠「标签文字 + 更粗的左边线」区分，而不是靠红黄蓝。
+     要改成 GitHub 那套彩色的话，加一档 --danger 变量、把下面两条改掉即可。 */
+  blockquote.alert {
+      border-left-width: 3px;
+      border-left-color: var(--accent);
+      background: var(--accent-soft);
+      border-radius: 0 8px 8px 0;
+      padding: 0.9em 1.1em;
+      color: var(--text);
+  }
+  blockquote.alert::before {
+      display: block;
+      font-size: 0.8em;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.4em;
+      color: var(--accent);
+  }
+  blockquote.alert-note::before { content: "注意"; }
+  blockquote.alert-tip::before { content: "提示"; }
+  blockquote.alert-important::before { content: "重要"; }
+  blockquote.alert-warning::before { content: "警告"; }
+  blockquote.alert-caution::before { content: "危险"; }
+  /* 警示两级：左边线加粗 + 标签用实色文字，其余与普通提示块一致 */
+  blockquote.alert-warning,
+  blockquote.alert-caution {
+      border-left-width: 5px;
+  }
+  blockquote.alert-warning::before,
+  blockquote.alert-caution::before {
+      color: var(--text);
+  }
 
 /* ---- 表格 ---- */
 

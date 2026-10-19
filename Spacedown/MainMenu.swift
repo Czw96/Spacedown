@@ -88,6 +88,10 @@ enum MainMenu {
             menuItem.tag = number
             items.append(menuItem)
         }
+        // 空格预览归谁 —— 系统设置里那个 Quick Look 扩展开关在本机 macOS 27 上根本没列出来，
+        // 这个菜单项就是替代入口（内部跑 `pluginkit -e`，只有非沙箱的主 App 能跑）。
+        items.append(.separator())
+        items.append(item("接管 Markdown 空格预览", #selector(MainWindow.claimQuickLookPreview(_:)), ""))
         let menu = holder("显示", items)
         // 每次打开「显示」都把「版心宽度」那一行刷成当前值
         menu.submenu?.delegate = MenuUpdater.shared

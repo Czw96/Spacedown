@@ -24,6 +24,7 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
     /// 当前 `.md` 默认打开方式的说明。出错时同一行变成红色文字（就这一条，不再单独开一行）。
     private let statusLabel = NSTextField(wrappingLabelWithString: "")
     private let setDefaultButton = NSButton()
+    private let uninstallButton = HoverLinkButton()
 
     override init() {
         window = NSWindow(
@@ -129,12 +130,25 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         version.textColor = .tertiaryLabelColor
         version.alignment = .center
 
-        let root = NSStackView(views: [header, action, version])
+        // 卸载：**刻意做得不起眼**（小字、无边框、放在版本行下面）。
+        // 它是"离开"的出口，不该和"设为默认打开方式"抢注意力。
+        uninstallButton.title = "卸载 Spacedown…"
+        uninstallButton.bezelStyle = .inline
+        uninstallButton.isBordered = false
+        uninstallButton.font = .systemFont(ofSize: 11)
+        // 平时是 secondary（tertiary 在浅色下几乎看不见），**悬停才变红** ——
+        // 卸载是不可逆动作，破坏性应该在交互那一刻才显现，而不是一直红着喊。
+        uninstallButton.contentTintColor = .secondaryLabelColor
+        uninstallButton.target = self
+        uninstallButton.action = #selector(uninstall(_:))
+
+        let root = NSStackView(views: [header, action, version, uninstallButton])
         root.orientation = .vertical
         root.alignment = .centerX
         root.spacing = 18
         root.setCustomSpacing(24, after: header)
         root.setCustomSpacing(22, after: action)
+        root.setCustomSpacing(10, after: version)
         root.edgeInsets = NSEdgeInsets(top: 30, left: 34, bottom: 20, right: 34)
 
         let container = NSView(frame: NSRect(x: 0, y: 0, width: 520, height: 416))
@@ -162,7 +176,7 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
 
         statusLabel.textColor = .secondaryLabelColor
         if isUs {
-            statusLabel.stringValue = "双击 .md 已经会用 Spacedown 打开。"
+            statusLabel.stringValue = "双击 .md 使用 Spacedown 打开。"
             setDefaultButton.title = "已是默认打开方式"
             setDefaultButton.isEnabled = false
         } else {
@@ -223,6 +237,91 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         NSImage(named: "AppIcon") ?? NSApp.applicationIconImage
     }
 
+    // MARK: - 卸载
+
+    /// 把 App 本体和所有用户侧残留一起删掉。
+    ///
+    /// **为什么交给一个独立脚本**：App 没法删掉正在运行的自己，脚本会先等本进程退出。
+    /// **为什么逐项删而不是扫目录**：用户目录里不该出现"按前缀删一片"的动作。
+    @objc private func uninstall(_ sender: Any) {
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = "卸载 Spacedown？"
+        alert.informativeText = """
+        会删除以下内容，不可撤销：
+
+        • /Applications/Spacedown.app
+        • 偏好设置（cn.29dev.Spacedown）
+        • 空格预览扩展的沙箱容器与系统登记
+        • 缓存、窗口状态、调试日志
+        """
+        // 第一个按钮是默认（回车）—— 默认**不删**。
+        alert.addButton(withTitle: "取消")
+        alert.addButton(withTitle: "卸载")
+        guard alert.runModal() == .alertSecondButtonReturn else { return }
+
+        Self.runUninstallScript()
+        NSApp.terminate(nil)
+    }
+
+    private static func runUninstallScript() {
+        let lsregister = "/System/Library/Frameworks/CoreServices.framework/Frameworks/"
+            + "LaunchServices.framework/Support/lsregister"
+        let script = """
+        #!/bin/bash
+        # Spacedown 卸载脚本：由 App 写到临时目录后执行，先等 App 退出再清理。
+        set -u
+        APP="$1"; PID="$2"; HOME_DIR="$3"
+        LSREG="\(lsregister)"
+
+        for _ in $(seq 1 100); do
+            kill -0 "$PID" 2>/dev/null || break
+            sleep 0.1
+        done
+
+        # 注销空格预览扩展与 App 自身（**卸载场景下反登记才是对的**）
+        /usr/bin/pluginkit -e ignore -i cn.29dev.Spacedown.QuickLookPreview >/dev/null 2>&1
+        "$LSREG" -u "$APP" >/dev/null 2>&1
+        /usr/bin/qlmanage -r >/dev/null 2>&1
+        /usr/bin/qlmanage -r cache >/dev/null 2>&1
+
+        rm -rf "$APP"
+
+        /usr/bin/defaults delete cn.29dev.Spacedown >/dev/null 2>&1
+        rm -f  "$HOME_DIR/Library/Preferences/cn.29dev.Spacedown.plist"
+        rm -rf "$HOME_DIR/Library/Saved Application State/cn.29dev.Spacedown.savedState"
+        rm -rf "$HOME_DIR/Library/Containers/cn.29dev.Spacedown.QuickLookPreview"
+        rm -rf "$HOME_DIR/Library/Caches/cn.29dev.Spacedown"
+        rm -rf "$HOME_DIR/Library/HTTPStorages/cn.29dev.Spacedown"
+        rm -f  /tmp/spacedown-debug.log
+
+        rm -f "$0"
+        """
+        let path = NSTemporaryDirectory() + "spacedown-uninstall.sh"
+        do {
+            try script.write(toFile: path, atomically: true, encoding: .utf8)
+            try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: path)
+        } catch {
+            DebugLog.write("写卸载脚本失败: \(error.localizedDescription)")
+            return
+        }
+        // `nohup ... &` 让它脱离本进程：App 退出之后脚本还得继续跑完。
+        let command = "nohup /bin/bash " + shellQuoted(path)
+            + " " + shellQuoted(Bundle.main.bundlePath)
+            + " \(getpid()) "
+            + shellQuoted(FileManager.default.homeDirectoryForCurrentUser.path)
+            + " >/dev/null 2>&1 &"
+        let runner = Process()
+        runner.executableURL = URL(fileURLWithPath: "/bin/bash")
+        runner.arguments = ["-c", command]
+        try? runner.run()
+    }
+
+    /// 单引号包裹，路径里有空格/引号也安全。
+    private static func shellQuoted(_ value: String) -> String {
+        "'" + value.replacingOccurrences(of: "'", with: #"'\\''"#) + "'"
+    }
+
     /// 页脚。取 bundle 里的真实版本号；裸可执行文件里拿不到时退回 "1.0"。
     private static var versionLine: String {
         let short = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
@@ -232,3 +331,34 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
 
 /// `.md` / `.markdown` 的实际 UTI（mdls 实测）。见 docs/技术方案.md §6.2。
 let MarkdownUTI = "net.daringfireball.markdown"
+
+/// 悬停时略微加重的文字按钮（用于「卸载…」）。
+///
+/// 为什么不用带边框的按钮：卸载是**低频 + 不可逆**的动作，按 macOS 惯例应当**降权**。
+/// 一个边框按钮会把它和主操作摆成同级、还容易误点 ✗。
+///
+/// 为什么悬停**不变红**：红色是"立刻要出事"的信号，用在这里只是装饰性示警，
+/// 反而显得廉价。灰色加一档（secondary → label）已经足够说明"这是可点的"。
+final class HoverLinkButton: NSButton {
+
+    private var trackArea: NSTrackingArea?
+
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        if let trackArea { removeTrackingArea(trackArea) }
+        // `.activeInActiveApp`：设置窗在前台时才跟踪（后台不需要响应悬停）
+        let area = NSTrackingArea(rect: bounds,
+                                  options: [.mouseEnteredAndExited, .activeInActiveApp],
+                                  owner: self)
+        addTrackingArea(area)
+        trackArea = area
+    }
+
+    override func mouseEntered(with event: NSEvent) {
+        contentTintColor = .labelColor
+    }
+
+    override func mouseExited(with event: NSEvent) {
+        contentTintColor = .secondaryLabelColor
+    }
+}

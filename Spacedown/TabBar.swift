@@ -37,7 +37,9 @@ final class TabItemView: NSView {
         label.stringValue = title
         label.font = .systemFont(ofSize: 12, weight: .medium)
         // 过长中间截断（§5.3）
-        label.lineBreakMode = .byTruncatingMiddle
+        // 尾部截断：中段截断会把文件名切成 `Spacedow…接测试.md`，很难读；
+        // 尾部截断至少保留开头，文件名可辨认。
+        label.lineBreakMode = .byTruncatingTail
         label.usesSingleLineMode = true
         label.cell?.truncatesLastVisibleLine = true
         addSubview(label)
@@ -115,14 +117,12 @@ final class TabItemView: NSView {
             path.fill()
         }
 
-        if isCurrent {
-            // 顶部 2px 强调色条
-            let bar = NSBezierPath(
-                roundedRect: NSRect(x: 0, y: 0, width: bounds.width, height: 2),
-                xRadius: 1, yRadius: 1)
-            Palette.accent.setFill()
-            bar.fill()
-        }
+        // **不再画强调色条**。
+        //
+        // 活动标签现在靠"白底胶囊浮在灰底上"表达（`currentTabFill` + `chromeBackground`），
+        // 本身已经足够清楚。之前那条线画在 `y: 0`（视图是 flipped 的，0 是**顶部**），
+        // 贴在窗口上沿像"窗口的装饰"；挪到底部又会在胶囊里留一小截，反而像 artifact。
+        // 少一个元素，比多一个说不清的元素好。
     }
 
     private func setHovered(_ value: Bool) {

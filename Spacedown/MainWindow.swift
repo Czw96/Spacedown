@@ -12,10 +12,17 @@ import SharedTheme
 ///
 /// 窗口形态用的是 `fullSizeContentView` + 隐藏标题栏，交通灯和自绘标签栏同一行（§5.3）。
 @MainActor
-final class MainWindow: NSObject, NSWindowDelegate, WKNavigationDelegate, NSMenuItemValidation {
+final class MainWindow: NSObject, NSWindowDelegate, WKNavigationDelegate, WKScriptMessageHandler,
+    NSMenuItemValidation {
 
     private let window: SpacedownWindow
-    private let barBackground = NSVisualEffectView()
+    /// 标签栏底色。**不再用 `NSVisualEffectView`**：窗口底已经是灰的，
+    /// 材质在纯色底上只会产生杂色（截图右上那块橙斑），且完全没有"透出"的意义。
+    private let barBackground = NSView()
+
+    /// 内容卡片的圆角与四周留白。
+    private static let cardRadius: CGFloat = 10
+    private static let cardInset: CGFloat = 8
     private let tabBar = TabBarView()
     /// 内容宿主。用 `DropTargetView` 而不是裸 `NSView`：空窗口时的拖放落点就是它。
     private let webHost = DropTargetView()
@@ -65,7 +72,7 @@ final class MainWindow: NSObject, NSWindowDelegate, WKNavigationDelegate, NSMenu
         window.titleVisibility = .hidden
         window.titlebarAppearsTransparent = true
         window.titlebarSeparatorStyle = .none
-        window.backgroundColor = Palette.pageBackground
+        window.backgroundColor = Palette.chromeBackground
         window.minSize = NSSize(width: 560, height: 360)
         window.center()
         window.setFrameAutosaveName("MainWindow")
@@ -107,13 +114,15 @@ final class MainWindow: NSObject, NSWindowDelegate, WKNavigationDelegate, NSMenu
         guard let content = window.contentView else { return }
         content.wantsLayer = true
 
-        barBackground.material = .windowBackground
-        barBackground.blendingMode = .withinWindow
-        barBackground.state = .followsWindowActiveState
+        barBackground.wantsLayer = true
+        barBackground.layer?.backgroundColor = Palette.chromeBackground.cgColor
         content.addSubview(barBackground)
         content.addSubview(tabBar)
 
         webHost.wantsLayer = true
+        // 「内容是一张纸」：圆角 + 裁掉溢出（webview 会被一起裁圆）+ 四周留 8pt 的窗口底色。
+        webHost.layer?.cornerRadius = Self.cardRadius
+        webHost.layer?.masksToBounds = true
         // 空窗口时整块内容区都是拖放落点。有内容时挡住它的是 webview，
         // 那一层由 `SpacedownWebView` 自己接（见文件末尾）。
         webHost.onDropFiles = { [weak self] urls in self?.openDroppedFiles(urls) }
@@ -144,10 +153,11 @@ final class MainWindow: NSObject, NSWindowDelegate, WKNavigationDelegate, NSMenu
             tabBar.trailingAnchor.constraint(equalTo: content.trailingAnchor),
             tabBar.heightAnchor.constraint(equalToConstant: barHeight),
 
+            // 8pt 的窗口底色在四周围出一圈，卡片就"浮"起来了。
             webHost.topAnchor.constraint(equalTo: content.topAnchor, constant: barHeight),
-            webHost.leadingAnchor.constraint(equalTo: content.leadingAnchor),
-            webHost.trailingAnchor.constraint(equalTo: content.trailingAnchor),
-            webHost.bottomAnchor.constraint(equalTo: content.bottomAnchor),
+            webHost.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: Self.cardInset),
+            webHost.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -Self.cardInset),
+            webHost.bottomAnchor.constraint(equalTo: content.bottomAnchor, constant: -Self.cardInset),
 
             emptyState.centerXAnchor.constraint(equalTo: webHost.centerXAnchor),
             emptyState.centerYAnchor.constraint(equalTo: webHost.centerYAnchor),
@@ -465,8 +475,16 @@ final class MainWindow: NSObject, NSWindowDelegate, WKNavigationDelegate, NSMenu
         beginLoading(view)
         do {
             let markdown = try MarkdownRenderer.documentBytes(contentsOf: tab.url)
-            let html = SharedTheme.document(body: renderer.renderHTMLData(markdown),
-                                            measurePercent: MeasureSettings.percent)
+            let body = renderer.renderHTMLData(markdown)
+            let html = SharedTheme.document(body: body, measurePercent: MeasureSettings.percent)
+            // 大文件到底被截到多少、渲染出多大 —— 光看文件大小看不出来，记一笔
+            if DebugLog.isEnabled {
+                // ⚠️ 不能拿字节数跟上限比：截断会**切在换行上**，结果略小于上限（实测 511 KB < 512 KB），
+                // 所以判据只能看正文有没有那条提示（它被拼在最前面）。
+                let truncated = markdown.prefix(64).range(of: Data("已截断显示前".utf8)) != nil
+                DebugLog.write("  render 解析输入=\(markdown.count / 1024)KB"
+                    + " 截断=\(truncated ? "是" : "否") HTML=\(html.count / 1024)KB")
+            }
             view.load(
                 html,
                 mimeType: "text/html",
@@ -495,6 +513,105 @@ final class MainWindow: NSObject, NSWindowDelegate, WKNavigationDelegate, NSMenu
         let target = pendingScroll.removeValue(forKey: ObjectIdentifier(webView)) ?? 0
         guard target > 0 else { return }
         webView.evaluateJavaScript("window.scrollTo(0, \(target))")
+    }
+
+    /// 内容进程被系统回收时的兜底：重载它承载的那个标签。
+    ///
+    /// 不做的话窗口会变成**一片空白**，而且没有任何提示 —— 大文档（接近 512 KB 截断上限、
+    /// 几万个节点）时真的会发生。Quick Look 扩展那边有一模一样的兜底，见
+    /// `PreviewViewController.webViewWebContentProcessDidTerminate`。
+    func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+        guard let tab = tabs.first(where: { pool.residentView(for: $0) === webView }) else { return }
+        DebugLog.write("webcontent_terminated 重载 \(tab.url.lastPathComponent)")
+        load(tab, into: webView, restoreScroll: true)
+    }
+
+    // MARK: - 接管空格预览
+
+    /// 把 markdown 的空格预览判给本 App，并把 WPS 的 Quick Look 扩展关掉。
+    ///
+    /// **为什么必须由主 App 来做**：`pluginkit -e` 在沙箱里会被系统拒绝，
+    /// 而主 App 不在沙箱里。系统设置 → 登录项与扩展 里那个「快速查看」类目在本机
+    /// macOS 27 上**根本没有列出来**，所以这个菜单项就是唯一可用的入口。
+    ///
+    /// 关掉 WPS 那条是安全的：它的 QL 扩展只认 markdown 那 8 个类型，
+    /// docx/xlsx 那些预览走系统的 `Office.qlgenerator`，不受影响。
+    @objc func claimQuickLookPreview(_ sender: Any?) {
+        AppDelegate.claimQuickLookPreview()
+        showToast("已修复空格预览，等几秒生效")
+    }
+
+    // MARK: - 链接
+
+    /// 链接点击（脚本由 `SharedTheme.linkClickScript` 注入）：**单击复制、双击打开**。
+    ///
+    /// 为什么不在导航代理里做：那里分不出单击还是双击。脚本那边用 220ms 的延迟
+    /// 把"双击时顺手复制一次"挡掉了。
+    func userContentController(_ controller: WKUserContentController,
+                               didReceive message: WKScriptMessage) {
+        guard message.name == SharedTheme.linkActionName,
+              let body = message.body as? [String: Any],
+              let type = body["type"] as? String,
+              let raw = body["url"] as? String,
+              let url = URL(string: raw) else { return }
+        switch type {
+        case "copy":
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(raw, forType: .string)
+            DebugLog.write("已复制链接 \(raw)")
+            showToast("已复制链接")
+        case "open":
+            DebugLog.write("双击打开 \(raw)")
+            NSWorkspace.shared.open(url)
+        default:
+            break
+        }
+    }
+
+    /// 兜底：脚本没拦住的导航（中键点击、键盘回车之类）一律取消并交给系统打开 ——
+    /// 否则渲染页会被网页顶掉，文档就没了。CSP 管不住顶层导航。
+    func webView(_ webView: WKWebView,
+                 decidePolicyFor navigationAction: WKNavigationAction,
+                 decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+        guard navigationAction.navigationType == .linkActivated,
+              let url = navigationAction.request.url,
+              let scheme = url.scheme?.lowercased(),
+              scheme == "http" || scheme == "https" || scheme == "mailto" else {
+            decisionHandler(.allow)
+            return
+        }
+        decisionHandler(.cancel)
+        NSWorkspace.shared.open(url)
+    }
+
+    /// 窗口底部弹一条 1.8 秒的提示（"已复制链接"这类轻反馈）。
+    private func showToast(_ text: String) {
+        guard let host = window.contentView else { return }
+        let inset = NSSize(width: 14, height: 8)
+        let field = NSTextField(labelWithString: text)
+        field.font = .systemFont(ofSize: 12, weight: .medium)
+        field.textColor = .white
+        field.sizeToFit()
+        let box = NSView(frame: NSRect(x: 0, y: 0,
+                                       width: field.frame.width + inset.width * 2,
+                                       height: field.frame.height + inset.height * 2))
+        box.wantsLayer = true
+        box.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.78).cgColor
+        box.layer?.cornerRadius = 9
+        field.frame.origin = NSPoint(x: inset.width, y: inset.height)
+        box.addSubview(field)
+        box.frame.origin = NSPoint(x: (host.bounds.width - box.frame.width) / 2,
+                                   y: host.bounds.height - box.frame.height - 26)
+        box.autoresizingMask = [.minXMargin, .maxXMargin, .minYMargin]
+        host.addSubview(box)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) {
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.25
+                box.animator().alphaValue = 0
+            } completionHandler: {
+                box.removeFromSuperview()
+            }
+        }
     }
 
     /// 版心 / 缩放自检：把「设置值 → 实际宽度 → 要不要横向滚」记进调试日志。

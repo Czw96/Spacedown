@@ -20,3 +20,6 @@ Distribution/build/
 
 # 注意：Packages/Core/Sources/CcmarkGfm 下的 vendored C 源码**必须提交**，
 # 那是刻意 vendor 进来的（见 docs/技术方案.md §8.1），不要加进 ignore。
+
+# 项目内的 AI 协作数据（不是缓存，但也不该进仓库）
+.workbuddy/

@@ -98,7 +98,7 @@ public enum SharedTheme {
     ///     100 走的是纯 memcpy 的快路径；其余值才追加一小段覆盖样式。
     ///     ⚠️ 这是**渲染期参数**：改了它，同一份文件也要重新渲染，不能只改 CSS 变量了事。
     public static func document(body: Data, measurePercent: Int = fullMeasurePercent) -> Data {
-        let wrapped = wrappingTables(body)
+        let wrapped = markingAlerts(wrappingTables(body))
         var out = Data()
         out.reserveCapacity(htmlPrefix.count + 48 + wrapped.count + htmlSuffix.count)
         out.append(htmlPrefix)
@@ -180,4 +180,111 @@ public enum SharedTheme {
 
     private static let tableWrapOpen = Data(#"<div class="table-wrap">"#.utf8)
     private static let tableWrapClose = Data("</div>".utf8)
+
+    // MARK: - GitHub 风格提示块
+
+    /// 把 GitHub 的 `> [!NOTE]` 这类提示块转成带 class 的 `<blockquote>`（样式在 `theme.css`）。
+    ///
+    /// 为什么在渲染期做而不是交给 CSS：**cmark 不认识这种语法**（它是 GitHub 自己的约定，
+    /// 不在 GFM 里），产物是普通引用块 + 一行 `[!NOTE]` 字面文本。要靠纯 CSS 认出来，
+    /// 只能对 `p::first-line` 之类做文章 —— 那是猜。这里老老实实做一次字节替换。
+    ///
+    /// 判定很保守：只认「`<blockquote>` 紧跟 `<p>[!` + 全大写类型名 + `]`」，
+    /// 类型名不在表里的**原样放过**（普通引用块一律不动）。代码块里的 `<blockquote>` 早就被
+    /// cmark 转义成 `&lt;blockquote&gt;` 了，所以不会误伤。
+    private static func markingAlerts(_ body: Data) -> Data {
+        let prefix = Data("<blockquote>\n<p>[!".utf8)
+        // 顺序无关，这里按 GitHub 的语义强度排
+        let kinds = [
+            ("NOTE", "note"), ("TIP", "tip"), ("IMPORTANT", "important"),
+            ("WARNING", "warning"), ("CAUTION", "caution"),
+        ]
+
+        var out = Data()
+        out.reserveCapacity(body.count)
+        var cursor = body.startIndex
+
+        while let hit = body.range(of: prefix, in: cursor..<body.endIndex) {
+            out.append(body[cursor..<hit.lowerBound])
+
+            // 读出紧跟的类型名（全大写 ASCII），随后必须是 `]`
+            var scan = hit.upperBound
+            var name = ""
+            while scan < body.endIndex, body[scan] >= 0x41, body[scan] <= 0x5A, name.utf8.count < 9 {
+                name.append(Character(UnicodeScalar(body[scan])))
+                scan = body.index(after: scan)
+            }
+
+            guard scan < body.endIndex, body[scan] == 0x5D,
+                  let kind = kinds.first(where: { $0.0 == name }) else {
+                // 不是认识的形式：原样吐出去，从下一个字节继续找（避免死循环）
+                out.append(body[hit.lowerBound..<body.index(after: hit.lowerBound)])
+                cursor = body.index(after: hit.lowerBound)
+                continue
+            }
+
+            out.append(Data("<blockquote class=\"alert alert-\(kind.1)\">\n<p>".utf8))
+            var rest = body.index(after: scan)                 // 跳过 `]`
+            if rest < body.endIndex, body[rest] == 0x0A {      // 标记独占一行，把它留下的换行也吃掉
+                rest = body.index(after: rest)
+            }
+            cursor = rest
+        }
+
+        out.append(body[cursor...])
+        return out
+    }
 }
+
+// MARK: - 链接的点击语义
+
+public extension SharedTheme {
+
+    /// 链接点击的回调名（`WKScriptMessageHandler` 的注册名）。**两端必须一致**。
+    static let linkActionName = "spacedownLinkAction"
+
+    /// 链接的点击语义：**单击 = 复制地址**（主行为）；**⌘ / ⌃ + 单击 = 交给系统打开**。
+    ///
+    /// ## 为什么放在注入的 JS 里，而不是用原生导航代理
+    ///
+    /// `decidePolicyForNavigationAction` **区分不出修饰键**，也拿不到"用户只是想复制"这层意图；
+    /// 而点击要按修饰键分流（复制 vs 打开），所以在页面里拦最直接。
+    ///
+    /// ## 为什么没有双击
+    ///
+    /// 曾经做过"单击复制 / 双击打开"，为此单击要等 220ms（否则双击会顺手复制一次）——
+    /// **代价是单击后要等一拍才出提示**，体感就是"响应慢"。用户明确要求去掉双击，
+    /// 于是恢复成"单击立刻复制"，打开改到 ⌘/⌃ 点击。
+    ///
+    /// ## 其它细节
+    ///
+    /// - 只接管 `http(s)` / `mailto`；站内锚点（`#…`）放行，让页面自己跳。
+    /// - 主 App 与 Quick Look 扩展**共用这一份**（曾经两端各写一份，改一处就漂）。
+    static let linkClickScript = """
+    (function () {
+        if (window.__sdLinkBound) { return; }
+        window.__sdLinkBound = true;
+        function hrefOf(a) {
+            var href = a && a.getAttribute ? (a.getAttribute('href') || '') : '';
+            return /^(https?:|mailto:)/i.test(href) ? href : null;
+        }
+        function anchorFrom(e) {
+            var el = e.target;
+            return (el && el.closest) ? el.closest('a[href]') : null;
+        }
+        // **单击 = 复制**（这是主行为，必须立刻响应）。
+        // ⌘/⌃ + 单击 = 交给系统浏览器打开（给"想真打开"的人留一个口子，
+        // 也正好让 LinkOpener.xpc 不至于变成死代码）。**没有双击语义**。
+        document.addEventListener('click', function (e) {
+            var href = hrefOf(anchorFrom(e));
+            if (!href) { return; }
+            e.preventDefault();
+            var open = e.metaKey || e.ctrlKey;
+            window.webkit.messageHandlers.\(linkActionName).postMessage({
+                type: open ? 'open' : 'copy', url: href
+            });
+        }, true);
+    })();
+    """
+}
+

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+	  ⚠️ 为什么这个文件是必需的（2026-10-14，踩了一整天才定位）
+
+	  主 App 是普通 App，可以不在沙箱里；但 **App 扩展必须沙箱化** —— macOS 不会加载
+	  没有 `com.apple.security.app-sandbox` 的扩展。不沙箱的后果不是"报错"，而是**静默不加载**：
+	    · 扩展永远不会被拉起来（os_log 里一行都没有）
+	    · 系统设置 → 登录项与扩展 里也看不到它
+	    · 于是空格预览退回去用**别家**已注册的扩展（本机是 WPS，显示"金山文档"）
+	  加了这个之前，我们的 appex 只有 ad-hoc 的 `get-task-allow`，一个沙箱权限都没有。
+
+	  对照：同架构的开源实现 showmd 的扩展权限就是
+	  app-sandbox + application-groups + network.client + files.user-selected.read-only。
+	  我们只需要前两项里的第一项 + 读文件那项。
+	-->
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+
+	<!--
+	  读被预览的那个文件。Quick Look 给的 URL 是 **security-scoped** 的，
+	  光有这个权限还不够 —— 代码里必须配 `startAccessingSecurityScopedResource()`
+	  （见 `PreviewViewController.render(url:)`），否则 `Data(contentsOf:)` 会直接失败。
+	-->
+	<key>com.apple.security.files.user-selected.read-only</key>
+	<true/>
+
+	<!--
+	  ⚠️ 这一项看着"多余"（我们的预览全离线、HTML 单文件自包含、CSP `default-src 'none'`），
+	  但它**是必需的**：不加它，WebKit 的内容进程根本起不来。
+
+	  实测（2026-10-16）：不给这个权限时，扩展进程本身能跑（日志有 `panel_released`），
+	  但 WebKit 反复报
+	      ProcessAssertion::acquireSync Failed to acquire RBS assertion 'Jetsam Boost'
+	      [PID=0] WebProcessProxy::constructor      ← PID 一直是 0，进程就没起来
+	  于是 `webViewWebContentProcessDidTerminate` 每 20ms 触发一次 —— 预览是空白的。
+
+	  规律来自这台机器上三个能用的 QL 扩展（Safari 的、WPS 的、以及 showmd 的）：
+	  它们**都**是 app-sandbox + files.user-selected.read-only + network.client。
+	  ⇒ 照着能用的那份抄，而不是照着自己的直觉裁。
+	-->
+	<key>com.apple.security.network.client</key>
+	<true/>
+</dict>
+</plist>

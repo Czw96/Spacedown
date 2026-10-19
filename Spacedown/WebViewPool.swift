@@ -1,5 +1,6 @@
 import AppKit
 import WebKit
+import SharedTheme
 
 /// LRU `WKWebView` 池 —— 本项目性能方案的核心（docs/技术方案.md §7.2）。
 ///
@@ -208,7 +209,16 @@ final class WebViewPool {
 
     private static func makeBareView(delegate: WKNavigationDelegate) -> SpacedownWebView {
         // 用 SpacedownWebView 而不是裸 WKWebView：它拦下文件拖放并交给我们（见 MainWindow.swift）
-        let view = SpacedownWebView(frame: .zero, configuration: WKWebViewConfiguration())
+        let config = WKWebViewConfiguration()
+        // 链接的点击语义（单击复制 / 双击打开）：脚本定义在 SharedTheme，**与 QL 扩展共用一份**。
+        config.userContentController.addUserScript(WKUserScript(source: SharedTheme.linkClickScript,
+                                                                injectionTime: .atDocumentEnd,
+                                                                forMainFrameOnly: true))
+        // 谁当处理器由调用方决定（MainWindow）；不是处理器就只注入脚本、不注册回调。
+        if let handler = delegate as? WKScriptMessageHandler {
+            config.userContentController.add(handler, name: SharedTheme.linkActionName)
+        }
+        let view = SpacedownWebView(frame: .zero, configuration: config)
         // ⚠️ **不要开 `allowsMagnification`**：那是纯视觉放大（不重排），一放大就压出横向滚动条。
         // 缩放由 `pageZoom` 负责（会重排），见 `MainWindow.setZoom`。
         view.navigationDelegate = delegate

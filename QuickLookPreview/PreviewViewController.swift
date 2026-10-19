@@ -54,14 +54,19 @@ import SharedTheme
 /// ```bash
 /// log stream --predicate 'subsystem == "cn.29dev.Spacedown"' --style compact
 /// ```
-// `@preconcurrency` 是必需的：`QLPreviewingController` 是老的 ObjC 协议，没有隔离标注，
+// `@preconcurrency` 只对 `QLPreviewingController` 是必需的：它是老的 ObjC 协议、没有隔离标注，
 // 而 `NSViewController` 是 main-actor 的 —— Swift 6 严格并发会判定这次 conformance
 // 「跨进 main actor」而报错。Quick Look 本来就在主线程调用它，标注只是把这件事写下来。
+// ⚠️ `WKNavigationDelegate` / `WKScriptMessageHandler` 不需要它（编译器会警告"no effect"）。
 @objc(PreviewViewController)
 final class PreviewViewController: NSViewController, @preconcurrency QLPreviewingController,
-    @preconcurrency WKNavigationDelegate, @preconcurrency WKScriptMessageHandler {
+    WKNavigationDelegate, WKScriptMessageHandler {
 
     private static let renderer = MarkdownRenderer()
+
+    /// 本类型第一次被访问的时刻（≈ 进程起来之后的最早一段）。
+    /// 用来量「扩展进程启动 → 收到 preparePreviewOfFile」这段我们看不到的开销。
+    private static let launchedAt = now()
 
     private static let logger = Logger(subsystem: "cn.29dev.Spacedown", category: "quicklook")
 
@@ -80,6 +85,20 @@ final class PreviewViewController: NSViewController, @preconcurrency QLPreviewin
     private var finished = false
     private var completion: ((Error?) -> Void)?
     private var watchdog: DispatchWorkItem?
+    /// 上一次交出去的 HTML —— 内容进程被回收时用它重载（见
+    /// `webViewWebContentProcessDidTerminate`）。
+    private var lastRenderedHTML: Data?
+    /// 是否已经为这次预览重载过一次。只重试一次，避免"重载 → 又崩"死循环。
+    private var didRecoverFromTermination = false
+
+    /// 打开外部链接用的 XPC 服务（服务端在 `LinkOpener/`，**不在沙箱里**）。
+    ///
+    /// 为什么不是直接 `NSWorkspace`：沙箱里调它会让**本进程被 SIGTRAP 杀掉**，
+    /// 见 `decidePolicyFor` 上方那张实测表。
+    private var linkOpener: LinkOpenerProtocol?
+    /// XPC 连接必须自己持有 —— 代理对象不持有连接，放掉它等于把服务断掉。
+    private var linkOpenerConnection: NSXPCConnection?
+    private static let linkOpenerServiceName = "cn.29dev.Spacedown.LinkOpener"
     /// 当前这次请求对应的导航对象。
     ///
     /// Quick Look 可以**在旧请求还没加载完时就用同一个控制器发新请求**（在 Finder 里
@@ -106,8 +125,40 @@ final class PreviewViewController: NSViewController, @preconcurrency QLPreviewin
 
         webView = web
         view = container
+        // ⚠️ **在渲染之前先把内容进程拉起来**：WebContent 的冷启动要一两百毫秒，
+        // 而"读文件 + 渲染"那几十毫秒正好可以跟它重叠。这里 load 一个空白页，
+        // 真正的 HTML 稍后会顶掉它（同一进程内二次导航很便宜）。
+        if web.url == nil {
+            web.loadHTMLString("<!doctype html><meta charset='utf-8'><body></body>", baseURL: nil)
+        }
+        connectLinkOpener()
         // witness：只要这一行落了盘，就说明**我们的扩展确实被拉起来了**。
         Self.diag("view_loaded")
+    }
+
+    /// 连上"打开链接"用的 XPC 服务。**失败不影响预览** —— 点链接只会记一条日志。
+    private func connectLinkOpener() {
+        let connection = NSXPCConnection(serviceName: Self.linkOpenerServiceName)
+        connection.remoteObjectInterface = NSXPCInterface(with: LinkOpenerProtocol.self)
+        connection.resume()
+        linkOpenerConnection = connection
+        // 异步代理：调用不阻塞。回执在私有队列上回来，用之前自己跳回主队列。
+        linkOpener = connection.remoteObjectProxyWithErrorHandler { [weak self] error in
+            DispatchQueue.main.async {
+                self?.log("link_opener_unavailable \(error.localizedDescription)")
+                // ⚠️ 这里也要给提示：连接/调用失败时**回执根本不会来**，
+                // 只在 openExternal 里提示的话这种情况是静默的。
+                self?.showOpenFailure("XPC 调用失败：" + error.localizedDescription)
+            }
+        } as? LinkOpenerProtocol
+
+        // 一次无副作用的连通性自检：日志里出现 `link_opener_ping ok=true` 就说明
+        // "点链接打不开"不再是 XPC 连接的问题（剩下的只可能是服务侧打开失败）。
+        linkOpener?.ping { ok in
+            DispatchQueue.main.async {
+                Self.logger.notice("link_opener_ping ok=\(ok)")
+            }
+        }
     }
 
     override func viewWillDisappear() {
@@ -127,7 +178,9 @@ final class PreviewViewController: NSViewController, @preconcurrency QLPreviewin
 
     func preparePreviewOfFile(at url: URL, completionHandler: @escaping (Error?) -> Void) {
         _ = view                     // 强制走 loadView，确保 webView 已就位
+        let sinceLaunch = Self.ms(Self.launchedAt, Self.now())
         Self.diag("prepare", ", \"file\": \"\(url.lastPathComponent)\"")
+        Self.logger.notice("prepare file=\(url.lastPathComponent, privacy: .public) since_launch=\(Self.fmt(sinceLaunch), privacy: .public)ms")
         completion = completionHandler
         finished = false
         fileName = url.lastPathComponent
@@ -137,30 +190,62 @@ final class PreviewViewController: NSViewController, @preconcurrency QLPreviewin
         watchdog?.cancel()
         watchdog = nil
 
-        let html: Data
-        do {
-            html = try render(url: url)
-        } catch {
-            Self.logger.error("render_failed file=\(self.fileName, privacy: .public) error=\(error.localizedDescription, privacy: .public)")
-            finish(error)
-            return
+        // ⚠️ 读文件 + 渲染挪到后台队列。这两步在 512 KB 上限下要几十毫秒，
+        // 挂在主线程上会拖住 Quick Look 自己的面板动画 —— 而我们紧接着就要把面板交出去。
+        // （同架构的 showmd 也是在 `DispatchQueue.global(qos: .userInitiated)` 上读文件的。）
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self else { return }
+            do {
+                let rendered = try self.render(url: url)
+                DispatchQueue.main.async { self.present(rendered) }
+            } catch {
+                Self.logger.error("render_failed file=\(self.fileName, privacy: .public) error=\(error.localizedDescription, privacy: .public)")
+                DispatchQueue.main.async { self.finish(error) }
+            }
         }
+    }
 
+    /// 把渲染好的 HTML 交给 web view，并**立刻**把面板交还给 Quick Look。
+    ///
+    /// ## 为什么不再等 `didFinish`（更不等首帧）
+    ///
+    /// 原来的实现把 completion 一直捏到「`didFinish` + 双 rAF 之后」才交，理由是避免
+    /// "空白画面跟面板淡入抢线程"。但真机反馈是"空格预览又慢又卡"，而**同一套架构的
+    /// showmd 不慢** —— 读它的扩展源码，差别就在这一行：它在 `loadHTMLString(...)`
+    /// 之后**立刻**调 `handler(nil)`，`didFinish` 里只留一条 `NSLog`。
+    ///
+    /// 观感差别很大：Quick Look 一拿到 completion 就开始淡入面板，**用户马上看到我们这块**
+    /// （底色 + 内容随后填进来），而不是盯着系统的占位图、等我们"把首帧都画完"才开门。
+    /// 渲染那几十毫秒照旧发生，只是不再挡在门口。
+    ///
+    /// 代价：极端情况下会先看到很短一段底色。这个取舍是刻意的 —— 见 `waitForFirstPaint`
+    /// 现在只负责记录，不再控制交接。
+    private func present(_ rendered: Rendered) {
+        let html = rendered.html
         htmlBytes = html.count
+        readMs = rendered.readMs
+        renderMs = rendered.renderMs
+        wrapMs = rendered.wrapMs
+        lastRenderedHTML = html
+        didRecoverFromTermination = false
         // baseURL 只用来解析相对 URL，而我们的 HTML 是单文件自包含的
-        // （CSS 内联、CSP `default-src 'none'`），所以给个非 file 的 scheme 即可。
+        // （CSS 内联、CSP `default:none`），所以给个非 file 的 scheme 即可。
         // ⚠️ 别传文件目录：那会走进 WebKit 的沙箱扩展 IPC，实测会死锁（技术方案 §15.2）。
         pendingNavigation = webView.load(html,
                                          mimeType: "text/html",
                                          characterEncodingName: "UTF-8",
                                          baseURL: URL(string: "about:blank")!)
+        log("panel_released")
+        finish(nil)
+        startWatchdog()
+    }
 
-        // 看门狗：万一 didFinish 不来（解析失败 / WebKit 卡住），也不能让面板一直转圈。
+    /// 内容迟迟没到就记一笔。**不再参与交接**（面板已经交出去了），只用于诊断。
+    private func startWatchdog() {
         let navigation = pendingNavigation
         let item = DispatchWorkItem { [weak self] in
             guard let self, self.pendingNavigation === navigation else { return }
-            self.log("watchdog_fired")
-            self.finish(nil)
+            self.log("watchdog_fired_still_loading")
         }
         watchdog = item
         DispatchQueue.main.asyncAfter(deadline: .now() + 4, execute: item)
@@ -170,10 +255,12 @@ final class PreviewViewController: NSViewController, @preconcurrency QLPreviewin
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         guard navigation === pendingNavigation else { return }   // 过期请求的回调，丢掉
+        watchdog?.cancel()
+        watchdog = nil
         log("load=\(Self.fmt(Self.ms(startedAt, Self.now())))ms")
         Self.diag("did_finish", ", \"ms\": \(Self.fmt(Self.ms(startedAt, Self.now())))")
         logGeometry()
-        // ⚠️ 不能在这里直接 finish：`didFinish` 只代表"导航完成"，不代表**画出来了**。
+        // 这里的等待**只用于记录**（首帧到底多晚才出来），交接早在 `present()` 里就完成了。
         waitForFirstPaint()
     }
 
@@ -198,10 +285,13 @@ final class PreviewViewController: NSViewController, @preconcurrency QLPreviewin
             guard let self, self.pendingNavigation === navigation else { return }
             Self.logger.notice("""
             first_paint file=\(self.fileName, privacy: .public) \
-            after_didFinish=\(Self.fmt(Self.ms(requestedAt, Self.now())))ms
+            after_didFinish=\(Self.fmt(Self.ms(requestedAt, Self.now())), privacy: .public)ms
             """)
             Self.diag("first_paint", ", \"after_ms\": \(Self.fmt(Self.ms(requestedAt, Self.now())))")
-            self.finish(nil)
+            // ⚠️ 这里**不再**调 finish —— 面板在 `present()` 里就交出去了（那是"看起来快"的关键）。
+            // 收尾只做一件事：预建下一个实例，且故意放在这里，
+            // 免得"建实例 + 加载空白页"跟**这次**的加载抢资源。
+            PreviewWebViewPool.shared.prewarm()
         }
     }
 
@@ -246,7 +336,27 @@ final class PreviewViewController: NSViewController, @preconcurrency QLPreviewin
             inner=\(Self.fmt(innerHeight))px scroll=\(Self.fmt(scrollHeight))px \
             nodes=\(nodes) dpr=\(dpr, privacy: .public)
             """)
+            logHostingChain()
         }
+    }
+
+    /// 把 Quick Look 给我们的**宿主链**记下来（从我们自己的视图往上走到窗口）。
+    ///
+    /// 为什么需要它：用户在真机上反馈"App 里很快、空格预览却首帧与滚动都慢" ——
+    /// 而两者是同一份 HTML、同一套 CSS、同样的 viewport 承载。那就只剩一种可能：
+    /// **QL 给的宿主环境和我们以为的不一样**。最典型的一种是它把我们的视图塞进它自己的
+    /// `NSScrollView`，或者把视图撑成整篇高度 —— 那会直接退化成"每帧主线程同步重绘整屏"。
+    /// `inner= / scroll=` 只能看出视口高，看不出是谁在撑，所以这里连类名与尺寸一起记。
+    private func logHostingChain() {
+        var parts: [String] = []
+        var node: NSView? = view
+        while let current = node, parts.count < 10 {
+            let name = String(describing: type(of: current))
+            let hint = name.contains("Scroll") ? " ⚠️ScrollView" : ""
+            parts.append("\(name)[\(Self.fmt(current.frame.width))x\(Self.fmt(current.frame.height))\(hint)]")
+            node = current.superview
+        }
+        Self.logger.notice("hosting file=\(self.fileName, privacy: .public) \(parts.joined(separator: " ← "), privacy: .public)")
     }
 
     // MARK: - 滚动探针
@@ -291,9 +401,41 @@ final class PreviewViewController: NSViewController, @preconcurrency QLPreviewin
     })();
     """, injectionTime: .atDocumentEnd, forMainFrameOnly: true)
 
+    /// 链接点击的回调名 —— 与脚本一起定义在 `SharedTheme` 里，**两端共用同一份**。
+    static let linkActionName = SharedTheme.linkActionName
+
+    /// 链接点击脚本（单击复制 / 双击打开）。
+    ///
+    /// 细节与理由见 `SharedTheme.linkClickScript`：原生导航代理分不出单击/双击，
+    /// 所以这段逻辑必须落在注入的 JS 里。
+    static let linkScript = WKUserScript(source: SharedTheme.linkClickScript,
+                                         injectionTime: .atDocumentEnd,
+                                         forMainFrameOnly: true)
+
     /// 探针的回执。fps 是按**实际帧间隔均值**反推的，不是理论值。
     func userContentController(_ userContentController: WKUserContentController,
                                didReceive message: WKScriptMessage) {
+        if message.name == Self.linkActionName,
+           let dict = message.body as? [String: Any],
+           let type = dict["type"] as? String,
+           let raw = dict["url"] as? String,
+           let url = URL(string: raw) {
+            // 单击 = 复制，并给一条**原生**提示（`NSTextField`，不走 WebKit 重绘）。
+            switch type {
+            case "copy":
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(raw, forType: .string)
+                log("link_copied")
+                showToast("已复制链接")
+
+            case "open":
+                log("link_double_clicked")
+                openExternal(url)
+            default:
+                break
+            }
+            return
+        }
         guard message.name == Self.probeName,
               let dict = message.body as? [String: Any],
               let count = dict["count"] as? Int else { return }
@@ -309,8 +451,9 @@ final class PreviewViewController: NSViewController, @preconcurrency QLPreviewin
         """)
         Self.logger.notice("""
         scroll_probe file=\(self.fileName, privacy: .public) frames=\(count) \
-        fps=\(Self.fmt(fps)) p50=\(Self.fmt(p50))ms p95=\(Self.fmt(p95))ms \
-        worst=\(Self.fmt(worst))ms dropped=\(dropped)
+        fps=\(Self.fmt(fps), privacy: .public) p50=\(Self.fmt(p50), privacy: .public)ms \
+        p95=\(Self.fmt(p95), privacy: .public)ms worst=\(Self.fmt(worst), privacy: .public)ms \
+        dropped=\(dropped)
         """)
     }
 
@@ -326,26 +469,190 @@ final class PreviewViewController: NSViewController, @preconcurrency QLPreviewin
         finish(nil)
     }
 
+    /// 拦下预览里的链接点击。
+    ///
+    /// ## 为什么"必须拦"
+    ///
+    /// CSP 的 `default-src 'none'` **管不住顶层导航**：不拦的话，点一下链接，
+    /// WebKit 会让整个 web view 导航到目标地址 —— 预览被一个网页顶掉，文档就没了。
+    /// 所以这个方法存在的首要理由是**堵住这个口子**，其次才是"让链接能打开"。
+    ///
+    /// ## ⚠️ 这里**不能**直接调 `NSWorkspace`
+    ///
+    /// 实测（最小探针：同一段代码，加不加 `app-sandbox` 两个版本）：
+    ///
+    /// | | `NSWorkspace.shared.open(url)` |
+    /// |---|---|
+    /// | 不沙箱 | 返回 `true`，浏览器打开 |
+    /// | **沙箱** | **进程被 SIGTRAP 杀掉（退出码 133）** —— 不是返回 false，是直接死 |
+    ///
+    /// 所以在沙箱扩展里直接调它 = **点一下链接就把扩展搞崩**。打开链接必须交给
+    /// 一个不在沙箱里的独立进程：`LinkOpener.xpc`（同架构的 showmd 叫 LinkOpener、
+    /// QLMarkdown 叫 external-launcher，都是同一个理由）。
+    ///
+    /// 现在的分工：**导航永远拦下来**（预览不会被顶掉）；打开交给 XPC。
+    func webView(_ webView: WKWebView,
+                 decidePolicyFor navigationAction: WKNavigationAction,
+                 decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+        guard navigationAction.navigationType == .linkActivated,
+              let url = navigationAction.request.url,
+              let scheme = url.scheme?.lowercased(),
+              scheme == "http" || scheme == "https" || scheme == "mailto" else {
+            // 站内锚点（含被中和成 `#blocked-…` 的那些）与其它形态一律放行：
+            // 它们不会把预览带离当前文档。
+            decisionHandler(.allow)
+            return
+        }
+        decisionHandler(.cancel)
+        openExternal(url)
+    }
+
+    /// 把外部链接交给 XPC 服务打开。服务不可用时只记一笔，绝不在本进程里做危险动作。
+    private func openExternal(_ url: URL) {
+        guard let service = linkOpener else {
+            log("link_clicked no_service")
+            showOpenFailure("XPC 服务未就绪")
+            return
+        }
+        service.open(url) { [weak self] ok in
+            DispatchQueue.main.async {
+                self?.log("link_clicked opened=\(ok)")
+                if !ok { self?.showOpenFailure("系统拒绝打开") }
+            }
+        }
+    }
+
+    /// 打开失败时给一句**看得见**的反馈。
+    ///
+    /// 静默失败是最糟的失败模式：用户只看到"点了没反应"，而原因只写在统一日志里 ——
+    /// 那玩意儿要开终端才读得到。这里注入一条短暂提示（原生 `evaluateJavaScript`
+    /// 不受页面 CSP 限制），并且**把原因编进去**，出问题时用户直接念出来即可。
+    private func showOpenFailure(_ reason: String) {
+        showToast("无法打开链接：" + reason)
+    }
+
+    /// 预览底部弹一条提示。**用原生视图画，不经过 WebKit**。
+    ///
+    /// 之前是 `evaluateJavaScript` 往页面里塞一个 div。实测 `transport` 只有 **0.4–0.7ms**、
+    /// 剪贴板也是亚毫秒，可用户仍觉得"点了要等一下才出来" —— 慢在**注入之后内容进程重绘**那一段。
+    /// 提示这种轻反馈没必要走渲染引擎：`NSTextField` + 圆角层直接上屏，路径短得多，
+    /// 也不受页面 CSP 影响。
+    private func showToast(_ text: String) {
+        view.subviews.filter { $0.identifier?.rawValue == Self.toastID }
+            .forEach { $0.removeFromSuperview() }
+
+        let label = NSTextField(labelWithString: text)
+        label.font = .systemFont(ofSize: 12, weight: .medium)
+        label.textColor = .white
+        label.alignment = .center
+        label.sizeToFit()
+
+        let box = ToastView(frame: NSRect(x: 0, y: 0,
+                                          width: label.frame.width + 26,
+                                          height: label.frame.height + 15))
+        box.identifier = NSUserInterfaceItemIdentifier(Self.toastID)
+        box.wantsLayer = true
+        box.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.82).cgColor
+        box.layer?.cornerRadius = 8
+        label.frame.origin = NSPoint(x: 13, y: 7)
+        box.addSubview(label)
+        box.frame.origin = NSPoint(x: (view.bounds.width - box.frame.width) / 2, y: 20)
+        box.autoresizingMask = [.minXMargin, .maxXMargin, .maxYMargin]
+        view.addSubview(box)
+        // ⚠️ 别等下一个显示周期：这个面板不一定是 key window，AppKit 可能攒着不刷。
+        // 强制同步绘制一次，提示才真的"立刻看见"。
+        // ⚠️ **不要在这里强制重画**。试过 `displayIfNeeded()` 和 `display()`：
+        // 这个窗口里有一整块 WebKit 图层，同步整窗重画会把主线程占住，
+        // 本来是"让提示快出来"，结果反而把它压在重画之后。
+        // 交给正常的显示周期就够了 —— 页面滚动实测 53–55 帧，证明这条路是通的。
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) {
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.22
+                box.animator().alphaValue = 0
+            } completionHandler: {
+                box.removeFromSuperview()
+            }
+        }
+    }
+
+    private static let toastID = "spacedown.toast"
+
+    /// 只负责显示，**不参与命中测试** —— 否则它会挡住底下 web view 的点击。
+    private final class ToastView: NSView {
+        override func hitTest(_ point: NSPoint) -> NSView? { nil }
+    }
+    /// WebKit 的内容进程被系统回收时的兜底（同架构的 showmd 也做了这一步）。
+    ///
+    /// 不做的话表现是**一片空白**：面板早就交出去了、`didFinish` 永远不来，
+    /// 用户既看不到内容也看不到错误。大文档（接近 512 KB 上限、几万个节点）时真的会发生。
+    ///
+    /// 策略：先重载一次；**再被杀就放弃**，改用自己拼的一页说明 ——
+    /// 不能让它在"重载 → 又崩"之间无限循环，那比白屏更糟。
+    func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+        guard !didRecoverFromTermination else {
+            // ⚠️ **这里绝对不能再碰 web view**。原来我用 `loadHTMLString(提示页)` 来显示失败，
+            // 结果那等于又去拉一个刚被系统杀掉的内容进程 —— 实测变成**每 20 毫秒重启一次的死循环**
+            // （日志里 `webcontent_terminated_again` 刷了 299+ 条）。提示必须走不依赖 WebKit 的原生视图。
+            Self.logger.error("webcontent_terminated_again file=\(self.fileName, privacy: .public)")
+            showNativeNotice()
+            return
+        }
+        didRecoverFromTermination = true
+        log("webcontent_terminated_reloading")
+        guard let html = lastRenderedHTML else { return }
+        pendingNavigation = webView.load(html,
+                                         mimeType: "text/html",
+                                         characterEncodingName: "UTF-8",
+                                         baseURL: URL(string: "about:blank")!)
+        startWatchdog()
+    }
+
+    /// 兜底提示：**用原生 `NSTextField`，完全不经过 WebKit**。
+    ///
+    /// 这一条是硬约束：出问题的是渲染引擎本身，再用它去显示错误信息就会变成死循环。
+    private func showNativeNotice() {
+        guard view.subviews.allSatisfy({ $0.identifier?.rawValue != Self.noticeID }) else { return }
+        webView.isHidden = true
+        let label = NSTextField(wrappingLabelWithString: """
+        这个文件的预览没能完成。
+
+        渲染引擎（WebKit 的内容进程）被系统反复终止，重试也没有成功。
+        关掉面板再按一次空格可以再试；用 Spacedown 打开不受这个限制。
+        """)
+        label.identifier = NSUserInterfaceItemIdentifier(Self.noticeID)
+        label.textColor = .secondaryLabelColor
+        label.font = .systemFont(ofSize: 13)
+        label.alignment = .center
+        label.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(label)
+        NSLayoutConstraint.activate([
+            label.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            label.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            label.widthAnchor.constraint(lessThanOrEqualToConstant: 420),
+        ])
+    }
+
+    private static let noticeID = "spacedown.failure.notice"
+
+
     // MARK: - 内部
 
     private func log(_ tail: String) {
         Self.logger.notice("""
         preview file=\(self.fileName, privacy: .public) bytes=\(self.htmlBytes) \
-        read=\(Self.fmt(self.readMs))ms render=\(Self.fmt(self.renderMs))ms \
-        wrap=\(Self.fmt(self.wrapMs))ms \(tail, privacy: .public) \
-        total=\(Self.fmt(Self.ms(self.startedAt, Self.now())))ms
+        read=\(Self.fmt(self.readMs), privacy: .public)ms \
+        render=\(Self.fmt(self.renderMs), privacy: .public)ms \
+        wrap=\(Self.fmt(self.wrapMs), privacy: .public)ms \(tail, privacy: .public) \
+        total=\(Self.fmt(Self.ms(self.startedAt, Self.now())), privacy: .public)ms
         """)
     }
 
     private func finish(_ error: Error?) {
         guard !finished else { return }
         finished = true
-        watchdog?.cancel()
-        watchdog = nil
         let handler = completion
         completion = nil
-        // 交给 Quick Look 之后预建下一个实例：把 74ms 的实例创建挪出关键路径。
-        PreviewWebViewPool.shared.prewarm()
         handler?(error)
     }
 
@@ -389,13 +696,33 @@ final class PreviewViewController: NSViewController, @preconcurrency QLPreviewin
         Double(b - a) / 1_000_000.0
     }
 
+    /// 渲染结果 + 三段耗时。
+    ///
+    /// ⚠️ 耗时**随结果一起返回**，而不是由渲染方写进属性：渲染跑在后台队列上，
+    /// 写属性会让主线程读到半写状态（数据竞争）。属性只在主线程由 `present` 赋值。
+    private struct Rendered {
+        let html: Data
+        let readMs: Double
+        let renderMs: Double
+        let wrapMs: Double
+    }
+
     /// 读文件 → 截断 → 解析 → 拼完整 HTML。与主 App 走同一条链路。
     ///
     /// ⚠️ 截断必须走 `MarkdownRenderer.documentBytes`，**不要在这里再写一份**。
     /// 那个方法存在的唯一理由就是「扩展与主 App 的截断口径必须一致，否则同一个文件
     /// 两处显示会不一样长」—— 而这里曾经复制过一份（连提示文案都抄了），
     /// 两边只要改一处就会漂。上限也由它统一持有（`defaultMaxBytes`）。
-    private func render(url: URL) throws -> Data {
+    ///
+    /// 本方法**可以在后台队列上调用**（`MarkdownRenderer` 与 `SharedTheme` 都无共享可变状态）。
+    private func render(url: URL) throws -> Rendered {
+        // ⚠️ 沙箱里必须显式开启安全作用域访问：Quick Look 交给我们的 URL 是 **security-scoped** 的，
+        // 不 start 的话 `Data(contentsOf:)` 会直接失败（operation not permitted）。
+        // 这是扩展沙箱化（见 `QuickLookPreview.entitlements`）之后**必须**补的一步 ——
+        // showmd 也是在同一个位置这么做的。非沙箱运行时它会返回 false，但读取照样正常。
+        let scoped = url.startAccessingSecurityScopedResource()
+        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+
         let t0 = Self.now()
         let markdown = try MarkdownRenderer.documentBytes(contentsOf: url)
         let t1 = Self.now()
@@ -403,11 +730,10 @@ final class PreviewViewController: NSViewController, @preconcurrency QLPreviewin
         let t2 = Self.now()
         let document = SharedTheme.document(body: body)
         let t3 = Self.now()
-
-        readMs = Self.ms(t0, t1)
-        renderMs = Self.ms(t1, t2)
-        wrapMs = Self.ms(t2, t3)
-        return document
+        return Rendered(html: document,
+                        readMs: Self.ms(t0, t1),
+                        renderMs: Self.ms(t1, t2),
+                        wrapMs: Self.ms(t2, t3))
     }
 }
 
@@ -448,8 +774,10 @@ final class PreviewWebViewPool {
             view = Self.makeView()
         }
         let controller = view.configuration.userContentController
-        controller.removeScriptMessageHandler(forName: PreviewViewController.probeName)
-        controller.add(handler, name: PreviewViewController.probeName)
+        for name in [PreviewViewController.probeName, PreviewViewController.linkActionName] {
+            controller.removeScriptMessageHandler(forName: name)
+            controller.add(handler, name: name)
+        }
         return view
     }
 
@@ -462,8 +790,10 @@ final class PreviewWebViewPool {
             view.removeFromSuperview()
             // 断掉对旧控制器的强引用：`userContentController` 的 handler 是强持有，
             // 不摘的话每个被前缀览用过的控制器都会跟着实例活到最后。
-            view.configuration.userContentController
-                .removeScriptMessageHandler(forName: PreviewViewController.probeName)
+            let controller = view.configuration.userContentController
+            for name in [PreviewViewController.probeName, PreviewViewController.linkActionName] {
+                controller.removeScriptMessageHandler(forName: name)
+            }
             view.loadHTMLString("<!doctype html><meta charset='utf-8'><body></body>", baseURL: nil)
             self.idle = view
             self.recyclingObserved = true
@@ -483,6 +813,7 @@ final class PreviewWebViewPool {
         let config = WKWebViewConfiguration()
         // 探针在文档加载完那一刻生效，之后每次导航都会自动跑一遍。
         config.userContentController.addUserScript(PreviewViewController.probeScript)
+        config.userContentController.addUserScript(PreviewViewController.linkScript)
         let view = WKWebView(frame: NSRect(x: 0, y: 0, width: 800, height: 600),
                              configuration: config)
         // 缩放走 GPU 合成层，不触发重排（主 App 用的是同一招）

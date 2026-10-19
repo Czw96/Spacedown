@@ -3,12 +3,16 @@
 macOS Markdown 速览：Finder 空格键预览 + 只读多标签查看器。
 **平台：macOS 13+ · Apple Silicon**（App target 与 `Package.swift` 的口径已统一为 13.0）。
 
-> **状态（2026-10-08）：主 App 多标签已可用；Quick Look 扩展已改视图型，待真机验收滚动。**
+> **状态（2026-10-19）**
 >
-> 已经能编出完整 `Spacedown.app`（内含 Quick Look 扩展），装到了 `/Applications`。
-> 但**扩展会不会被系统调用、按空格出来的是渲染页还是纯文本**在本环境验证不了
-> （`qlmanage` / `pluginkit` 被沙箱与 TCC 拦），**必须你在 Finder 里按一次空格**。
-> 验收方法见第三节。
+> | 部分 | 状态 |
+> |---|---|
+> | 主 App（双击打开、多标签、版心、缩放） | ✅ **已验收**（三份真实文档首帧 147–202 ms） |
+> | Quick Look 扩展（渲染、提示块、兜底） | ✅ 被选中时正常（实测 `load=314 ms`，无内容进程反复终止） |
+> | 空格预览的**选中权** | ⚠️ **未定** —— 本机 WPS 的 `WPSQuickLook` 认领了同样的 markdown 类型，系统可能选它 |
+> | 预览里点链接 | ⚠️ 代码就位（`LinkOpener.xpc`），**缺一次人工点击验收** |
+>
+> 打包产物：`Distribution/build/Spacedown-1.0.dmg` / `.zip`（ad-hoc 签名，仅供本机/内测）。
 
 ---
 
@@ -45,11 +49,86 @@ qlmanage -r
 pluginkit -a /Applications/Spacedown.app/Contents/PlugIns/QuickLookPreview.appex
 ```
 
+### 4. ⚠️ 两个"静默失效"的坑（都踩过，先查这两条）
+
+**① 扩展必须沙箱化，否则系统静默不加载它。**
+
+`QuickLookPreview.appex` 必须带 `com.apple.security.app-sandbox`（权限在
+`QuickLookPreview/QuickLookPreview.entitlements`，由 `gen_project.py` 挂到 appex 目标上）。
+不带的后果不是报错，而是**静默失效**：扩展永远不会被拉起、`os_log` 里一行都没有、
+系统设置的扩展面板里也看不到它 —— 然后系统退回去用**别家**已注册的扩展，
+按空格看到的是别人的预览（本机是 WPS 的「金山文档」，又慢又卡）。
+
+这条能自查，不用按空格：
+
+```bash
+codesign -d --entitlements - /Applications/Spacedown.app/Contents/PlugIns/QuickLookPreview.appex
+```
+
+必须看到 `com.apple.security.app-sandbox = true`。
+
+**② WPS 会抢 markdown 的空格预览。** 它的 `WPSQuickLook.appex` 认领了**同样 8 个 markdown 类型**
+（含 `net.daringfireball.markdown`，与我们同一个 UTI）。两个都注册时系统只挑一个，实测挑中了 WPS。
+把不想要的那个关掉即可（用户级、可逆；只影响 markdown，docx/xlsx 仍走系统 `Office.qlgenerator`）：
+
+```bash
+pluginkit -e ignore -i com.kingsoft.wpsoffice.mac.WPSQuickLook
+pluginkit -e use    -i cn.29dev.Spacedown.QuickLookPreview
+```
+
+⚠️ **面板右上角那行「通过 Spacedown 打开」说明不了任何问题** —— 它标的是**默认打开程序**
+（Finder 对所有文件都这么标），不是预览提供者。**唯一可靠的判据是看扩展自己的日志**：
+
+```bash
+/usr/bin/log show --last 10m --predicate 'subsystem == "cn.29dev.Spacedown"' --style compact
+```
+
+按几次空格之后再跑：**有 `panel_released` / `load=` / `geometry` / `hosting` = 我们的扩展真的接手了**；
+**一行都没有 = 它压根没被加载**（回去查 ①）。
+（⚠️ 必须写全路径 `/usr/bin/log`：zsh 有个同名内置命令会抢它。）
+
 ⚠️ 先 `kill` 再替换：进程还在跑的时候 `rm -rf` 它的 bundle，会让它进入半死不活的状态
 （`osascript -e 'quit app …'` 也退不掉）。
 
 ⚠️ 目前是 **ad-hoc 签名**（本机没有任何 codesigning identity）。正式分发要做
 Developer ID + Hardened Runtime + 公证，见 `docs/技术方案.md §9`。
+
+### 5. 🚨 本地调试专属的坑：**构建目录的那份 App 会被登记成第二个扩展**
+
+我们的产物在 `build/DerivedData/...`（仓库内）。`xcodebuild` 跑过之后，LaunchServices 里
+**同一个 `pluginIdentifier` 会有两条记录**：一条指向构建目录、一条指向 `/Applications`，
+UUID 不同 —— 系统于是在两者之间拿不准，**静默退回用别家扩展**（本机是 WPS）。
+
+判据（`lsregister -dump` 里数 block，必须是 **1** 条）：
+
+```bash
+lsregister -dump | grep -c "cn.29dev.Spacedown.QuickLookPreview.*pluginIdentifier"   # 不靠谱
+# 用这个：数 path 里带 QuickLookPreview.appex 且同一个 pluginIdentifier 的记录
+```
+
+修法 —— **每次构建完、装完都做一遍**：
+
+```bash
+lsregister -u "$PWD/build/DerivedData/Build/Products/Release/Spacedown.app"
+```
+⚠️ 注销/重登记之后 **pkd 要过几十秒才重新发现**（日志里会先出现
+`LaunchServices observer: Uninstalled plugins`）。这段时间按空格会用别家扩展 ——
+**别在这几十秒里下结论**。
+
+### 6. 打包（本机内测用）
+
+```bash
+xcodebuild -project Spacedown.xcodeproj -scheme Spacedown -configuration Release \
+           -derivedDataPath build/DerivedData clean build
+mkdir -p Distribution/build && rm -rf /tmp/dmgroot && mkdir -p /tmp/dmgroot
+cp -R build/DerivedData/Build/Products/Release/Spacedown.app /tmp/dmgroot/
+ln -s /Applications /tmp/dmgroot/Applications
+hdiutil create -volname "Spacedown 1.0" -srcfolder /tmp/dmgroot -ov -format UDZO \
+         Distribution/build/Spacedown-1.0.dmg
+ditto -c -k --sequesterRsrc --keepParent \
+      build/DerivedData/Build/Products/Release/Spacedown.app \
+      Distribution/build/Spacedown-1.0.zip
+```
 
 ---
 
