@@ -132,7 +132,7 @@ cask "spacedown" do
   desc "Markdown Quick Look preview and read-only multi-tab viewer"
   homepage "https://github.com/$REPO"
 
-  depends_on macos: ">= :ventura"
+  depends_on macos: :ventura
 
   app "Spacedown.app"
 
