@@ -16,7 +16,40 @@ macOS Markdown 速览：Finder 空格键预览 + 只读多标签查看器。
 
 ---
 
-## 一、构建与安装
+## 安装（用户）
+
+两种方式，装出来是同一个 App —— 都用 GitHub Releases 里那份 dmg。
+
+### 方式一：Homebrew Cask（可升级、可干净卸载）
+
+```bash
+brew tap czw96/spacedown
+brew install --cask spacedown
+```
+
+```bash
+brew upgrade --cask spacedown            # 升级
+brew uninstall --cask --zap spacedown    # 卸载：偏好、QL 沙箱容器、缓存一并清掉
+```
+
+### 方式二：直接下载 dmg
+
+1. 打开 [Releases](https://github.com/Czw96/Spacedown/releases)，下载 `Spacedown-<版本>.dmg`
+2. 双击挂载，把 `Spacedown` 拖进「应用程序」
+3. 首次打开：已公证的版本直接双击；内测版（ad-hoc 签名）在图标上右键 → 打开
+
+### 首次启动后（两种方式都要做一次）
+
+1. **先启动一次 Spacedown** —— 系统只在宿主 App 运行过之后才登记它的 Quick Look 扩展
+2. 菜单「**显示 → 接管 Markdown 空格预览**」，等几秒（后台跑 `pluginkit` 选举）
+3. 想让双击 `.md` 也用它：<kbd>⌘</kbd><kbd>,</kbd> 打开设置 → 「设为 .md 默认打开方式」
+
+> ⚠️ 未公证的内测版被 Gatekeeper 拦住时：
+> `xattr -dr com.apple.quarantine /Applications/Spacedown.app`
+> 正式对外发布需要 Developer ID 证书 + 公证（见「六、打包与发布」），
+> 官方 `homebrew-cask` 也只收已公证的 App，未公证之前走上面的自建 tap。
+
+## 一、从源码构建（开发）
 
 ### 1. 生成 / 更新 Xcode 工程
 
@@ -115,20 +148,35 @@ lsregister -u "$PWD/build/DerivedData/Build/Products/Release/Spacedown.app"
 `LaunchServices observer: Uninstalled plugins`）。这段时间按空格会用别家扩展 ——
 **别在这几十秒里下结论**。
 
-### 6. 打包（本机内测用）
+### 6. 打包与发布
 
 ```bash
-xcodebuild -project Spacedown.xcodeproj -scheme Spacedown -configuration Release \
-           -derivedDataPath build/DerivedData clean build
-mkdir -p Distribution/build && rm -rf /tmp/dmgroot && mkdir -p /tmp/dmgroot
-cp -R build/DerivedData/Build/Products/Release/Spacedown.app /tmp/dmgroot/
-ln -s /Applications /tmp/dmgroot/Applications
-hdiutil create -volname "Spacedown 1.0" -srcfolder /tmp/dmgroot -ov -format UDZO \
-         Distribution/build/Spacedown-1.0.dmg
-ditto -c -k --sequesterRsrc --keepParent \
-      build/DerivedData/Build/Products/Release/Spacedown.app \
-      Distribution/build/Spacedown-1.0.zip
+scripts/release.sh                      # 版本取 gen_project.py 的 MARKETING_VERSION
+scripts/release.sh --version 1.1.0      # 指定版本
+scripts/release.sh --version 1.1.0 --publish   # 同时发 GitHub Release
 ```
+
+脚本做四件事：Release 全量构建 →（可选）Developer ID 重签 + 公证 → 出 `dmg` / `zip`
+（dmg 里含 App、`/Applications` 软链与安装说明）→ 生成 `Distribution/build/spacedown.rb`
+（Homebrew Cask，version 与 sha256 已填好）。
+
+**正式发布**还需要一台有 Developer ID 证书的机器，并把公证凭据存进钥匙串：
+
+```bash
+xcrun notarytool store-credentials spacedown \
+  --apple-id <Apple ID> --team-id <Team ID> --password <App 专用密码>
+
+SIGN_IDENTITY="Developer ID Application: Your Name (TEAMID)" \
+NOTARY_PROFILE=spacedown \
+scripts/release.sh --version 1.1.0 --publish
+```
+
+不带 `SIGN_IDENTITY` 时产物是 **ad-hoc 签名**：本机可用，别人下载后首次打开会被
+Gatekeeper 拦（右键 → 打开，或 `xattr -dr com.apple.quarantine`）。
+
+**Cask 发布**：把生成的 `spacedown.rb` 推到 `Czw96/homebrew-spacedown` 仓库的
+`Casks/spacedown.rb`；用户即可 `brew install --cask czw96/spacedown/spacedown`。
+官方 `homebrew-cask` 要求 App 已公证，满足后再提 PR。
 
 ---
 
@@ -308,7 +356,7 @@ defaults delete cn.29dev.Spacedown DebugLayout             # 关掉
 | M3 | 主 App | ✅ **多标签 + LRU 池 + 主菜单 + 文件监听 + 缩放（2026-10-08）** |
 | M4 | 打磨 | 🟨 布局自检 ✅；图片内联 ⬜（现在相对路径图片是坏图） |
 | M5 | 性能回归 | 🟨 滚动口径已建（`ScrollBench`）+ 归因见 `docs/性能分析.md §6`；按渲染规模截断 ⬜ |
-| M6 | 签名公证 + dmg + Homebrew Cask | ⬜ |
+| M6 | 签名公证 + dmg + Homebrew Cask | 🟨 dmg / Cask 已可生成（`scripts/release.sh`）；**签名 + 公证待 Developer ID** |
 
 ---
 
@@ -340,7 +388,7 @@ Spacedown/
 │   ├── Sources/DevTools/         Bench / ScrollBench / WebViewBench
 │   └── XcodeSupport/CcmarkGfm/   Xcode 用的 module.modulemap
 ├── design/logo/                  Logo 源：spacedown-icon.svg + build_logo.py（改几何/配色都改这里再重跑）
-├── scripts/gen_project.py        工程生成器（源文件按目录自动发现）
+├── scripts/                      gen_project.py（工程生成）、release.sh（打包发布）
 ├── docs/技术方案.md               方案（性能指标、风险清单、里程碑）
 ├── docs/benchmarks.md            实测数字与踩坑记录
 └── docs/性能分析.md              耗时归因、"换技术栈"的结论、优化清单
