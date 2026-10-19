@@ -18,7 +18,8 @@ macOS Markdown 速览：Finder 空格键预览 + 只读多标签查看器。
 
 ## 安装（用户）
 
-两种方式，装出来是同一个 App —— 都用 GitHub Releases 里那份 dmg。
+两种方式，装出来是同一个 App —— 都用公开发布仓库（`Czw96/Spacedown-releases`）里那份 dmg。
+源码仓库保持私有，发布仓库只放构建产物。
 
 ### 方式一：Homebrew Cask（可升级、可干净卸载）
 
@@ -34,7 +35,7 @@ brew uninstall --cask --zap spacedown    # 卸载：偏好、QL 沙箱容器、�
 
 ### 方式二：直接下载 dmg
 
-1. 打开 [Releases](https://github.com/Czw96/Spacedown/releases)，下载 `Spacedown-<版本>.dmg`
+1. 打开 [Releases](https://github.com/Czw96/Spacedown-releases/releases)，下载 `Spacedown-<版本>.dmg`
 2. 双击挂载，把 `Spacedown` 拖进「应用程序」
 3. 首次打开：已公证的版本直接双击；内测版（ad-hoc 签名）在图标上右键 → 打开
 
@@ -159,6 +160,9 @@ scripts/release.sh --version 1.1.0 --publish   # 同时发 GitHub Release
 脚本做四件事：Release 全量构建 →（可选）Developer ID 重签 + 公证 → 出 `dmg` / `zip`
 （dmg 里含 App、`/Applications` 软链与安装说明）→ 生成 `Distribution/build/spacedown.rb`
 （Homebrew Cask，version 与 sha256 已填好）。
+
+`--publish` 上传到 **`Czw96/Spacedown-releases`**（公开，只放二进制），源码仓库保持私有；
+Cask 的 `url` 也指向那里。用户下载、`brew install` 都不需要任何账号。
 
 **正式发布**还需要一台有 Developer ID 证书的机器，并把公证凭据存进钥匙串：
 

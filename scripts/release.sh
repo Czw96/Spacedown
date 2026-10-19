@@ -18,7 +18,8 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 APP_NAME="Spacedown"
-REPO="Czw96/Spacedown"
+REPO="Czw96/Spacedown"                      # 源码仓库（私有）
+RELEASE_REPO="Czw96/Spacedown-releases"    # 公开的二进制发布仓库（Cask 从这里下载）
 OUT="Distribution/build"
 DERIVED="build/DerivedData"
 APP="$DERIVED/Build/Products/Release/$APP_NAME.app"
@@ -127,7 +128,7 @@ cask "spacedown" do
   version "$VERSION"
   sha256 "$SHA_DMG"
 
-  url "https://github.com/$REPO/releases/download/v#{version}/Spacedown-#{version}.dmg"
+  url "https://github.com/$RELEASE_REPO/releases/download/v#{version}/Spacedown-#{version}.dmg"
   name "Spacedown"
   desc "Markdown Quick Look preview and read-only multi-tab viewer"
   homepage "https://github.com/$REPO"
@@ -155,12 +156,25 @@ printf "  %-42s\n" "${CASK}（Homebrew Cask，放到 tap 的 Casks/ 下）"
 
 if [[ $PUBLISH -eq 1 ]]; then
     command -v gh >/dev/null || { echo "发布需要 gh（brew install gh）"; exit 1; }
-    echo "==> 发布 GitHub Release v$VERSION"
+    echo "==> 发布 GitHub Release v$VERSION（仓库：$RELEASE_REPO）"
+    NOTES=$(mktemp)
+    cat > "$NOTES" <<TXT
+macOS 13+ / Apple Silicon。源码仓库为私有，这里只放构建产物。
+
+**安装**
+1. 下载 dmg，双击挂载，把 Spacedown 拖进「应用程序」
+2. 首次打开：右键 → 打开（当前为 ad-hoc 签名、未公证）
+3. 启动一次后，菜单「显示 → 接管 Markdown 空格预览」
+
+**Homebrew**
+brew tap czw96/spacedown && brew install --cask spacedown
+TXT
     gh release create "v$VERSION" "$DMG" "$ZIP" \
-        --repo "$REPO" \
+        --repo "$RELEASE_REPO" \
         --title "$APP_NAME $VERSION" \
-        --generate-notes
-    echo "已发布：https://github.com/$REPO/releases/tag/v$VERSION"
+        --notes-file "$NOTES"
+    rm -f "$NOTES"
+    echo "已发布：https://github.com/$RELEASE_REPO/releases/tag/v$VERSION"
 else
     echo ""
     echo "发布：scripts/release.sh --version $VERSION --publish"
