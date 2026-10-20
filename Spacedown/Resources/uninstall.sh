@@ -2,8 +2,8 @@
 # Spacedown 卸载脚本。
 # 由 App 复制到临时目录后执行，参数依次是：App 路径、App 的 pid、用户主目录。
 #
-# App 退出前已经把自己移进废纸篓（可恢复），这里负责它做不到的部分：
-# 偏好、缓存、系统登记。逐项删除 —— 不按前缀扫目录。
+# App 退出前已经删掉了自己的 bundle（运行中的进程持有已 unlink 的 inode，不受影响），
+# 这里负责它做不到的部分：偏好、缓存、系统登记。逐项删除 —— 不按前缀扫目录。
 set -u
 
 APP="$1"
@@ -23,7 +23,7 @@ done
 /usr/bin/qlmanage -r >/dev/null 2>&1
 /usr/bin/qlmanage -r cache >/dev/null 2>&1
 
-# 已经被移进废纸篓时这个路径不存在，rm 是空操作
+# 正常情况下这里已经不存在（App 已自删）；保留作为兜底
 rm -rf "$APP"
 
 /usr/bin/defaults delete cn.29dev.Spacedown >/dev/null 2>&1

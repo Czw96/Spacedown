@@ -1,42 +1,28 @@
 import AppKit
 
-/// 卸载：清理用户侧残留并退出。
+/// 卸载：彻底删除 App 本体与用户侧残留，然后退出。
 ///
-/// 两段式：
-/// 1. **立即**把 App 移进废纸篓 —— 用户点完就能看到结果，也给了反悔的余地；
-/// 2. 退出后由 `uninstall.sh` 完成 App 自己做不到的部分（偏好、缓存、系统登记）。
-///
-/// 脚本先复制到临时目录再执行：它最后会删掉来源 bundle，边读边删不可靠。
+/// **不进废纸篓**。运行中的 App 可以删掉自己的 bundle —— 进程持有的是已经 unlink 的
+/// inode，直到退出都不受影响（实测 `FileManager.removeItem` 返回成功、原路径消失）。
+/// 万一删不掉（权限、bundle 被占用），退出后的 `uninstall.sh` 会再删一次作为兜底。
 @MainActor
 enum Uninstaller {
 
-    static func run(permanently: Bool) {
+    static func run() {
         unregisterSystemEntries()
-        guard let script = stageScript() else { return }
+
+        guard let script = stageScript() else {
+            // 脚本丢了也要尽量把自己删掉，别让用户点了没反应
+            removeBundle()
+            NSApp.terminate(nil)
+            return
+        }
         launch(script)
-
-        if permanently {
-            if removeBundle() {
-                NSApp.terminate(nil)
-                return
-            }
-            // 删不掉（bundle 被占用等）就退回废纸篓，别让用户卡在"什么都没发生"
-        }
-        recycleAndQuit()
+        removeBundle()
+        NSApp.terminate(nil)
     }
 
-    /// 直接从磁盘删除 bundle。失败时由调用方退回废纸篓。
-    private static func removeBundle() -> Bool {
-        do {
-            try FileManager.default.removeItem(at: Bundle.main.bundleURL)
-            return true
-        } catch {
-            DebugLog.write("直接删除失败：\(error.localizedDescription)，改移废纸篓")
-            return false
-        }
-    }
-
-    /// 趁 bundle 还在原路径，先注销系统登记 —— 移进废纸篓之后这个路径就不存在了，
+    /// 趁 bundle 还在原路径，先注销系统登记 —— 删除之后这个路径就不存在了，
     /// 按路径注销会落空。脚本里还会再做一遍，重复调用是幂等的。
     private static func unregisterSystemEntries() {
         ProcessRunner.launch("/usr/bin/pluginkit",
@@ -49,7 +35,7 @@ enum Uninstaller {
 
     private static func stageScript() -> URL? {
         guard let source = Bundle.main.url(forResource: "uninstall", withExtension: "sh") else {
-            DebugLog.write("卸载失败：uninstall.sh 不在 bundle 里")
+            DebugLog.write("卸载：uninstall.sh 不在 bundle 里")
             return nil
         }
 
@@ -62,7 +48,7 @@ enum Uninstaller {
                                                   ofItemAtPath: script.path)
             return script
         } catch {
-            DebugLog.write("卸载失败：写脚本 \(error.localizedDescription)")
+            DebugLog.write("卸载：写脚本失败 \(error.localizedDescription)")
             return nil
         }
     }
@@ -80,30 +66,18 @@ enum Uninstaller {
         do {
             try runner.run()
         } catch {
-            DebugLog.write("卸载失败：无法启动脚本 \(error.localizedDescription)")
+            DebugLog.write("卸载：无法启动脚本 \(error.localizedDescription)")
         }
     }
 
-    // MARK: - 立即效果
+    // MARK: - 删除本体
 
-    /// 把 App 移进废纸篓再退出。
-    ///
-    /// 回收失败（bundle 被占用等）不影响卸载：脚本会用 `rm -rf` 兜底。
-    private static func recycleAndQuit() {
-        NSWorkspace.shared.recycle([Bundle.main.bundleURL]) { _, error in
-            // 回调是 nonisolated 的，取好字符串再跳回主 actor
-            let reason = error?.localizedDescription
-            Task { @MainActor in
-                if let reason {
-                    DebugLog.write("移入废纸篓失败：\(reason)，交给脚本删除")
-                }
-                NSApp.terminate(nil)
-            }
-        }
-        // 回调迟迟不来时别卡住用户；terminate 幂等，重复调用无副作用
-        Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 1_500_000_000)
-            NSApp.terminate(nil)
+    private static func removeBundle() {
+        do {
+            try FileManager.default.removeItem(at: Bundle.main.bundleURL)
+            DebugLog.write("卸载：已删除 \(Bundle.main.bundlePath)")
+        } catch {
+            DebugLog.write("卸载：直接删除失败（\(error.localizedDescription)），交给脚本")
         }
     }
 
