@@ -64,6 +64,8 @@ if [[ $SKIP_BUILD -eq 0 ]]; then
     python3 scripts/gen_project.py
 
     echo "==> 构建"
+    # 构建产物落在仓库里，Spotlight 会把它当成"又一个 Spacedown.app"；标记目录不索引
+    mkdir -p build && touch build/.metadata_never_index
     xcodebuild -project Spacedown.xcodeproj -scheme Spacedown -configuration Release \
         -derivedDataPath "$DERIVED" \
         MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \

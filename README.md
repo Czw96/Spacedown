@@ -411,3 +411,5 @@ Spacedown/
 - Xcode 工程**不引用** SwiftPM 包（本机沙箱下 manifest 编译过不去），源码由原生 target
   直接编译；原因与替代方案见 `docs/技术方案.md §14`
 - 本机 `screencapture` 被系统权限挡住 → UI 改动没法截屏验证，只能靠 `DebugLayout` 的几何数字
+- 构建产物在仓库的 `build/` 下，Spotlight 会把它当成另一个 App（搜 `Spacedown.app` 出现两份）。
+  放一个 `.metadata_never_index` 即可让 Spotlight 跳过该目录（`release.sh` 会自动创建）
