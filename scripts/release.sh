@@ -183,7 +183,9 @@ macOS 13+ / Apple Silicon。源码仓库为私有，这里只放构建产物。
 3. 启动一次后，菜单「显示 → 接管 Markdown 空格预览」
 
 **Homebrew**
-brew tap czw96/spacedown && brew install --cask spacedown
+brew tap czw96/spacedown
+brew trust czw96/spacedown   # 第三方 tap 首次需要显式信任
+brew install --cask spacedown
 TXT
     gh release create "v$VERSION" "$DMG" "$ZIP" \
         --repo "$RELEASE_REPO" \

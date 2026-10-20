@@ -25,6 +25,7 @@ macOS Markdown 速览：Finder 空格键预览 + 只读多标签查看器。
 
 ```bash
 brew tap czw96/spacedown
+brew trust czw96/spacedown        # 第三方 tap 需要显式信任（Homebrew 的安全机制，一次性）
 brew install --cask spacedown
 ```
 
