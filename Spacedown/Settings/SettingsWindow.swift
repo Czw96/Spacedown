@@ -217,10 +217,12 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         • 空格预览扩展的系统登记
         • 缓存、窗口状态、调试日志
         """
-        // 第一个按钮是默认（回车）—— 默认不删
-        alert.addButton(withTitle: "取消")
+        // macOS 惯例：主操作在右侧、是默认按钮（回车）；取消放左边
         alert.addButton(withTitle: "卸载")
-        guard alert.runModal() == .alertSecondButtonReturn else { return }
+        alert.addButton(withTitle: "取消")
+        // 删除是默认动作，所以把 Esc 显式绑给"取消"，不依赖 AppKit 的默认行为
+        alert.buttons.last?.keyEquivalent = "\u{1b}"
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
 
         Uninstaller.run()
     }
