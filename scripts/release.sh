@@ -72,6 +72,7 @@ if [[ $SKIP_BUILD -eq 0 ]]; then
     xcodebuild -project Spacedown.xcodeproj -scheme Spacedown -configuration Release \
         -derivedDataPath "$DERIVED" \
         MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
+        CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO \
         clean build >/tmp/spacedown-release-build.log 2>&1 \
         || { tail -30 /tmp/spacedown-release-build.log; exit 1; }
     grep -E "BUILD (SUCCEEDED|FAILED)" /tmp/spacedown-release-build.log | tail -1
@@ -83,7 +84,8 @@ if [[ $SKIP_BUILD -eq 0 ]]; then
     # 签名：从里往外（先内层 framework / xpc / appex，最后才是 App），否则外层封条会被内层改动破坏
     if [[ -n "${SIGN_IDENTITY:-}" ]]; then
         echo "==> Developer ID 签名：$SIGN_IDENTITY"
-        sign() { codesign --force --timestamp --options runtime --sign "$SIGN_IDENTITY" "$1"; }
+        sign() { codesign --force --timestamp --options runtime \
+            --preserve-metadata=entitlements --sign "$SIGN_IDENTITY" "$1"; }
 
         APPEX="$APP/Contents/PlugIns/QuickLookPreview.appex"
         for framework in "$APP/Contents/Frameworks/"*.framework; do sign "$framework"; done
