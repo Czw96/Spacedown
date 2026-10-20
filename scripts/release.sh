@@ -23,7 +23,10 @@ APP_NAME="Spacedown"
 REPO="Czw96/Spacedown"                      # 源码仓库（私有）
 RELEASE_REPO="Czw96/homebrew-spacedown"     # tap 仓库：Cask 与产物放一起
 OUT="Distribution/build"
-DERIVED="build/DerivedData"
+# 构建目录必须放在 Spotlight 不索引的地方（实测：~/Library/Caches 与 /tmp 不被索引，
+# 仓库内与 ~/Library/Developer 都会被索引）。否则搜 Spacedown.app 会同时命中
+# "已安装的"和"构建产物"，看起来像卸载没生效。
+DERIVED="${DERIVED_PATH:-$HOME/Library/Caches/Spacedown/DerivedData}"
 APP="$DERIVED/Build/Products/Release/$APP_NAME.app"
 
 VERSION=""

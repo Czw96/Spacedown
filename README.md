@@ -66,18 +66,18 @@ python3 scripts/gen_project.py        # 需要 Python 3.10+（用了 `str | None
 xcodebuild -project Spacedown.xcodeproj \
            -scheme Spacedown \
            -configuration Release \
-           -derivedDataPath build/DerivedData \
+           -derivedDataPath ~/Library/Caches/Spacedown/DerivedData \
            build
 ```
 
-产物：`build/DerivedData/Build/Products/Release/Spacedown.app`
+产物：`~/Library/Caches/Spacedown/DerivedData/Build/Products/Release/Spacedown.app`
 
 ### 3. 安装到 /Applications 并让系统重新发现扩展
 
 ```bash
 pgrep -f "Spacedown.app/Contents/MacOS" | xargs -r kill
 rm -rf /Applications/Spacedown.app
-cp -R build/DerivedData/Build/Products/Release/Spacedown.app /Applications/
+cp -R ~/Library/Caches/Spacedown/DerivedData/Build/Products/Release/Spacedown.app /Applications/
 /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -R -f /Applications/Spacedown.app
 qlmanage -r
 pluginkit -a /Applications/Spacedown.app/Contents/PlugIns/QuickLookPreview.appex
@@ -129,7 +129,7 @@ Developer ID + Hardened Runtime + 公证，见 `docs/技术方案.md §9`。
 
 ### 5. 🚨 本地调试专属的坑：**构建目录的那份 App 会被登记成第二个扩展**
 
-我们的产物在 `build/DerivedData/...`（仓库内）。`xcodebuild` 跑过之后，LaunchServices 里
+产物在 `~/Library/Caches/Spacedown/DerivedData/...`。`xcodebuild` 跑过之后，LaunchServices 里
 **同一个 `pluginIdentifier` 会有两条记录**：一条指向构建目录、一条指向 `/Applications`，
 UUID 不同 —— 系统于是在两者之间拿不准，**静默退回用别家扩展**（本机是 WPS）。
 
@@ -143,7 +143,7 @@ lsregister -dump | grep -c "cn.29dev.Spacedown.QuickLookPreview.*pluginIdentifie
 修法 —— **每次构建完、装完都做一遍**：
 
 ```bash
-lsregister -u "$PWD/build/DerivedData/Build/Products/Release/Spacedown.app"
+lsregister -u "$HOME/Library/Caches/Spacedown/DerivedData/Build/Products/Release/Spacedown.app"
 ```
 ⚠️ 注销/重登记之后 **pkd 要过几十秒才重新发现**（日志里会先出现
 `LaunchServices observer: Uninstalled plugins`）。这段时间按空格会用别家扩展 ——
@@ -411,5 +411,7 @@ Spacedown/
 - Xcode 工程**不引用** SwiftPM 包（本机沙箱下 manifest 编译过不去），源码由原生 target
   直接编译；原因与替代方案见 `docs/技术方案.md §14`
 - 本机 `screencapture` 被系统权限挡住 → UI 改动没法截屏验证，只能靠 `DebugLayout` 的几何数字
-- 构建产物在仓库的 `build/` 下，Spotlight 会把它当成另一个 App（搜 `Spacedown.app` 出现两份）。
-  放一个 `.metadata_never_index` 即可让 Spotlight 跳过该目录（`release.sh` 会自动创建）
+- 构建产物必须放在 **Spotlight 不索引**的位置。实测：`~/Library/Caches` 与 `/tmp` 不被索引，
+  仓库内与 `~/Library/Developer` 都会被索引。现在用 `~/Library/Caches/Spacedown/DerivedData`。
+  否则搜 `Spacedown.app` 会同时命中构建产物，看起来像"卸载没生效"。
+  注意：目录里放 `.metadata_never_index` **不管用**，那只对卷根有效
