@@ -26,8 +26,11 @@ macOS Markdown 速览：Finder 空格键预览 + 只读多标签查看器。
 ```bash
 brew tap czw96/spacedown
 brew trust czw96/spacedown        # 第三方 tap 需要显式信任（Homebrew 的安全机制，一次性）
-brew install --cask spacedown
+brew install --cask --no-quarantine spacedown
 ```
+
+> 当前是 ad-hoc 签名（未公证），`--no-quarantine` 让 brew 直接去掉隔离属性，
+> 省掉首次打开的「仍要打开」步骤。不加也行，见下面的手动流程。
 
 ```bash
 brew upgrade --cask spacedown            # 升级
@@ -38,7 +41,7 @@ brew uninstall --cask --zap spacedown    # 卸载：偏好、QL 沙箱容器、�
 
 1. 打开 [Releases](https://github.com/Czw96/homebrew-spacedown/releases)，下载 `Spacedown-<版本>.dmg`
 2. 双击挂载，把 `Spacedown` 拖进「应用程序」
-3. 首次打开：已公证的版本直接双击；内测版（ad-hoc 签名）在图标上右键 → 打开
+3. 首次打开：已公证的版本直接双击；未公证版本按下面的「首次打开」处理
 
 ### 首次启动后（两种方式都要做一次）
 
@@ -46,8 +49,10 @@ brew uninstall --cask --zap spacedown    # 卸载：偏好、QL 沙箱容器、�
 2. 菜单「**显示 → 接管 Markdown 空格预览**」，等几秒（后台跑 `pluginkit` 选举）
 3. 想让双击 `.md` 也用它：<kbd>⌘</kbd><kbd>,</kbd> 打开设置 → 「设为 .md 默认打开方式」
 
-> ⚠️ 未公证的内测版被 Gatekeeper 拦住时：
-> `xattr -dr com.apple.quarantine /Applications/Spacedown.app`
+> ⚠️ 未公证版本首次打开会被 Gatekeeper 拦（提示「Apple 无法验证…」）：
+> 点「完成」→ **系统设置 → 隐私与安全性** → 拉到底 →「仍要打开」→ 输入密码。
+> 或者终端执行 `xattr -dr com.apple.quarantine /Applications/Spacedown.app`。
+> macOS 15 起**「右键 → 打开」已不再有效**。
 > 正式对外发布需要 Developer ID 证书 + 公证（见「六、打包与发布」），
 > 官方 `homebrew-cask` 也只收已公证的 App，未公证之前走上面的自建 tap。
 

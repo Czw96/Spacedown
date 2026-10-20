@@ -121,11 +121,12 @@ if [[ $SKIP_BUILD -eq 0 ]]; then
     cat > "$STAGE/安装说明.txt" <<'TXT'
 把 Spacedown 拖到左边的「应用程序」文件夹即可。
 
-首次打开：
-- 已公证的版本：直接双击。
-- 未公证的版本（内测）：在「应用程序」里右键 Spacedown → 打开 → 再点「打开」。
-  仍然被拦的话，在终端执行：
-      xattr -dr com.apple.quarantine /Applications/Spacedown.app
+首次打开（未公证版本）：
+- 双击后若提示「Apple 无法验证 Spacedown.app」，点「完成」；
+- 打开 系统设置 → 隐私与安全性 → 拉到底部，点「仍要打开」，输入密码/Touch ID；
+- 或在终端执行：xattr -dr com.apple.quarantine /Applications/Spacedown.app
+
+（macOS 15 起，「右键 → 打开」不再能绕过这个提示。）
 
 空格预览：
 1. 先启动一次 Spacedown（系统才会登记它的快速查看扩展）。
@@ -181,7 +182,7 @@ macOS 13+ / Apple Silicon。源码仓库为私有，这里只放构建产物。
 
 **安装**
 1. 下载 dmg，双击挂载，把 Spacedown 拖进「应用程序」
-2. 首次打开：右键 → 打开（当前为 ad-hoc 签名、未公证）
+2. 首次打开：按提示去「系统设置 → 隐私与安全性 → 仍要打开」（未公证版本）
 3. 启动一次后，菜单「显示 → 接管 Markdown 空格预览」
 
 **Homebrew**
