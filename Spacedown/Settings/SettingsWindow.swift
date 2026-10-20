@@ -210,12 +210,13 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         alert.alertStyle = .warning
         alert.messageText = "卸载 Spacedown？"
         alert.informativeText = """
-        会删除以下内容，不可撤销：
+        Spacedown 会移到废纸篓，其余一并清理：
 
-        • /Applications/Spacedown.app
         • 偏好设置（cn.29dev.Spacedown）
-        • 空格预览扩展的沙箱容器与系统登记
+        • 空格预览扩展的系统登记
         • 缓存、窗口状态、调试日志
+
+        沙箱容器由系统托管，可能仍留下约 20 KB 元数据。
         """
         // 第一个按钮是默认（回车）—— 默认不删
         alert.addButton(withTitle: "取消")

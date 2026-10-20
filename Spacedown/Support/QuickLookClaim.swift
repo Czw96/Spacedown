@@ -15,7 +15,8 @@ enum QuickLookClaim {
 
     static let extensionBundleID = "cn.29dev.Spacedown.QuickLookPreview"
     private static let wpsBundleID = "com.kingsoft.wpsoffice.mac.WPSQuickLook"
-    private static let lsregister = "/System/Library/Frameworks/CoreServices.framework/"
+    /// LaunchServices 的注册工具。卸载时也要用同一份路径。
+    static let lsregisterPath = "/System/Library/Frameworks/CoreServices.framework/"
         + "Frameworks/LaunchServices.framework/Support/lsregister"
 
     /// 执行整套动作。同步阻塞约 2.4 秒，调用方不要放在主线程上。
@@ -24,7 +25,7 @@ enum QuickLookClaim {
             .appendingPathComponent("Contents/PlugIns/QuickLookPreview.appex").path
 
         let steps: [(path: String, arguments: [String])] = [
-            (lsregister, ["-f", Bundle.main.bundlePath]),
+            (lsregisterPath, ["-f", Bundle.main.bundlePath]),
             ("/usr/bin/pluginkit", ["-a", appex]),
             ("/usr/bin/pluginkit", ["-e", "use", "-i", extensionBundleID]),
             ("/usr/bin/pluginkit", ["-e", "ignore", "-i", wpsBundleID]),

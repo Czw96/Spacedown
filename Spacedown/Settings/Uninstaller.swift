@@ -1,20 +1,37 @@
-import Foundation
+import AppKit
 
-/// 卸载：把 App 本体和用户侧残留一起删掉，然后退出。
+/// 卸载：清理用户侧残留并退出。
 ///
-/// App 没法删掉正在运行的自己，所以清理交给 bundle 里的 `uninstall.sh`：
-/// 它先等本进程退出，再逐项删除（**不按前缀扫目录** —— 用户目录里不该出现
-/// "删一片"的动作）。
+/// 两段式：
+/// 1. **立即**把 App 移进废纸篓 —— 用户点完就能看到结果，也给了反悔的余地；
+/// 2. 退出后由 `uninstall.sh` 完成 App 自己做不到的部分（偏好、缓存、系统登记）。
+///
+/// 脚本先复制到临时目录再执行：它最后会删掉来源 bundle，边读边删不可靠。
+@MainActor
 enum Uninstaller {
 
-    /// 复制脚本到临时目录再执行。
-    ///
-    /// 不直接执行 bundle 里的那份：脚本最后会 `rm -rf` 掉自己所在的 bundle，
-    /// 边读边删是件不可靠的事。
     static func run() {
+        unregisterSystemEntries()
+        guard let script = stageScript() else { return }
+        launch(script)
+        recycleAndQuit()
+    }
+
+    /// 趁 bundle 还在原路径，先注销系统登记 —— 移进废纸篓之后这个路径就不存在了，
+    /// 按路径注销会落空。脚本里还会再做一遍，重复调用是幂等的。
+    private static func unregisterSystemEntries() {
+        ProcessRunner.launch("/usr/bin/pluginkit",
+                             arguments: ["-e", "ignore", "-i", "cn.29dev.Spacedown.QuickLookPreview"])
+        ProcessRunner.launch(QuickLookClaim.lsregisterPath,
+                             arguments: ["-u", Bundle.main.bundlePath])
+    }
+
+    // MARK: - 脚本
+
+    private static func stageScript() -> URL? {
         guard let source = Bundle.main.url(forResource: "uninstall", withExtension: "sh") else {
             DebugLog.write("卸载失败：uninstall.sh 不在 bundle 里")
-            return
+            return nil
         }
 
         let script = URL(fileURLWithPath: NSTemporaryDirectory())
@@ -24,12 +41,15 @@ enum Uninstaller {
             try FileManager.default.copyItem(at: source, to: script)
             try FileManager.default.setAttributes([.posixPermissions: 0o755],
                                                   ofItemAtPath: script.path)
+            return script
         } catch {
             DebugLog.write("卸载失败：写脚本 \(error.localizedDescription)")
-            return
+            return nil
         }
+    }
 
-        // nohup + `&`：App 退出之后脚本还得继续跑完
+    /// `nohup + &`：App 退出之后脚本还得继续跑完。
+    private static func launch(_ script: URL) {
         let command = ["nohup", "/bin/bash", shellQuoted(script.path),
                        shellQuoted(Bundle.main.bundlePath), "\(getpid())",
                        shellQuoted(FileManager.default.homeDirectoryForCurrentUser.path)]
@@ -42,6 +62,29 @@ enum Uninstaller {
             try runner.run()
         } catch {
             DebugLog.write("卸载失败：无法启动脚本 \(error.localizedDescription)")
+        }
+    }
+
+    // MARK: - 立即效果
+
+    /// 把 App 移进废纸篓再退出。
+    ///
+    /// 回收失败（bundle 被占用等）不影响卸载：脚本会用 `rm -rf` 兜底。
+    private static func recycleAndQuit() {
+        NSWorkspace.shared.recycle([Bundle.main.bundleURL]) { _, error in
+            // 回调是 nonisolated 的，取好字符串再跳回主 actor
+            let reason = error?.localizedDescription
+            Task { @MainActor in
+                if let reason {
+                    DebugLog.write("移入废纸篓失败：\(reason)，交给脚本删除")
+                }
+                NSApp.terminate(nil)
+            }
+        }
+        // 回调迟迟不来时别卡住用户；terminate 幂等，重复调用无副作用
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 1_500_000_000)
+            NSApp.terminate(nil)
         }
     }
 
