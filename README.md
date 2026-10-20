@@ -26,11 +26,11 @@ macOS Markdown 速览：Finder 空格键预览 + 只读多标签查看器。
 ```bash
 brew tap czw96/spacedown
 brew trust czw96/spacedown        # 第三方 tap 需要显式信任（Homebrew 的安全机制，一次性）
-brew install --cask --no-quarantine spacedown
+brew install --cask spacedown
 ```
 
-> 当前是 ad-hoc 签名（未公证），`--no-quarantine` 让 brew 直接去掉隔离属性，
-> 省掉首次打开的「仍要打开」步骤。不加也行，见下面的手动流程。
+> 当前是 ad-hoc 签名（未公证），首次打开仍会被 Gatekeeper 拦一次，见下面的「首次打开」。
+> （新版 Homebrew 已移除 `--no-quarantine` 选项，只能安装后清一次 `com.apple.quarantine`。）
 
 ```bash
 brew upgrade --cask spacedown            # 升级
