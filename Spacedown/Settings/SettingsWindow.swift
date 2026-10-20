@@ -210,7 +210,7 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         alert.alertStyle = .warning
         alert.messageText = "卸载 Spacedown？"
         alert.informativeText = """
-        Spacedown 会移到废纸篓，其余一并清理：
+        Spacedown 会移到废纸篓（可恢复），其余一并清理：
 
         • 偏好设置（cn.29dev.Spacedown）
         • 空格预览扩展的系统登记
@@ -218,13 +218,20 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
 
         沙箱容器由系统托管，可能仍留下约 20 KB 元数据。
         """
+
+        // 想"删干净"的人不必绕一趟废纸篓；勾了就不可恢复，所以默认不勾
+        let permanent = NSButton(checkboxWithTitle: "直接彻底删除（不经过废纸篓）",
+                                 target: nil, action: nil)
+        permanent.state = .off
+        permanent.sizeToFit()
+        alert.accessoryView = permanent
+
         // 第一个按钮是默认（回车）—— 默认不删
         alert.addButton(withTitle: "取消")
         alert.addButton(withTitle: "卸载")
         guard alert.runModal() == .alertSecondButtonReturn else { return }
 
-        Uninstaller.run()
-        NSApp.terminate(nil)
+        Uninstaller.run(permanently: permanent.state == .on)
     }
 
     // MARK: - 素材

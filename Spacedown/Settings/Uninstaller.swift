@@ -10,11 +10,30 @@ import AppKit
 @MainActor
 enum Uninstaller {
 
-    static func run() {
+    static func run(permanently: Bool) {
         unregisterSystemEntries()
         guard let script = stageScript() else { return }
         launch(script)
+
+        if permanently {
+            if removeBundle() {
+                NSApp.terminate(nil)
+                return
+            }
+            // 删不掉（bundle 被占用等）就退回废纸篓，别让用户卡在"什么都没发生"
+        }
         recycleAndQuit()
+    }
+
+    /// 直接从磁盘删除 bundle。失败时由调用方退回废纸篓。
+    private static func removeBundle() -> Bool {
+        do {
+            try FileManager.default.removeItem(at: Bundle.main.bundleURL)
+            return true
+        } catch {
+            DebugLog.write("直接删除失败：\(error.localizedDescription)，改移废纸篓")
+            return false
+        }
     }
 
     /// 趁 bundle 还在原路径，先注销系统登记 —— 移进废纸篓之后这个路径就不存在了，
