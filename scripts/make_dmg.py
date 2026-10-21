@@ -48,15 +48,19 @@ def draw_background(path: Path, scale: int) -> None:
                       for a, b in zip(GRADIENT_TOP, GRADIENT_BOTTOM))
         draw.line([(0, y), (width, y)], fill=color)
 
-    # 中间的箭头：一段横杆 + 圆头箭头，和 App 标记的圆头风格一致
-    cx, cy = width // 2, (190 * scale)
-    shaft, head, thickness = 30 * scale, 12 * scale, 6 * scale
-    draw.line([(cx - shaft - head, cy), (cx + head // 2, cy)],
-              fill=ARROW, width=thickness)
-    draw.line([(cx - head // 2, cy - head), (cx + head // 2, cy)],
-              fill=ARROW, width=thickness)
-    draw.line([(cx - head // 2, cy + head), (cx + head // 2, cy)],
-              fill=ARROW, width=thickness)
+    # 中间的箭头：细横杆 + 圆头箭头。圆头靠端点补小圆实现 —— Pillow 的 line()
+    # 只画平头，直接画两条线会得到一个带缺口的实心三角形。
+    cx, cy = width // 2, 190 * scale
+    length, head, thickness = 46 * scale, 15 * scale, 5 * scale
+    tail, tip = cx - length // 2, cx + length // 2
+    radius = thickness // 2
+
+    draw.line([(tail, cy), (tip - head + radius, cy)], fill=ARROW, width=thickness)
+    draw.line([(tip - head, cy - head), (tip - radius, cy)], fill=ARROW, width=thickness)
+    draw.line([(tip - head, cy + head), (tip - radius, cy)], fill=ARROW, width=thickness)
+    for point in [(tail, cy), (tip - head, cy - head), (tip - head, cy + head), (tip, cy)]:
+        draw.ellipse([point[0] - radius, point[1] - radius,
+                      point[0] + radius, point[1] + radius], fill=ARROW)
 
     font = next((ImageFont.truetype(path, 13 * scale)
                  for path in FONTS if Path(path).exists()),
