@@ -19,8 +19,8 @@ import tempfile
 from pathlib import Path
 
 WIDTH, HEIGHT = 660, 420
-APP_POS = (172, 200)
-LINK_POS = (488, 200)
+APP_POS = (170, 190)
+LINK_POS = (490, 190)
 ARROW = (176, 180, 194)
 TEXT_COLOR = (128, 132, 146)
 GRADIENT_TOP = (250, 251, 252)
@@ -48,21 +48,27 @@ def draw_background(path: Path, scale: int) -> None:
                       for a, b in zip(GRADIENT_TOP, GRADIENT_BOTTOM))
         draw.line([(0, y), (width, y)], fill=color)
 
-    # 中间的箭头：两条圆头线段（和 App 标记的圆头风格一致）
-    cx, cy = width // 2, height // 2
-    arm, head, thickness = 58 * scale, 32 * scale, 8 * scale
-    draw.line([(cx - arm, cy - head), (cx, cy)], fill=ARROW, width=thickness)
-    draw.line([(cx - arm, cy + head), (cx, cy)], fill=ARROW, width=thickness)
+    # 中间的箭头：一段横杆 + 圆头箭头，和 App 标记的圆头风格一致
+    cx, cy = width // 2, (190 * scale)
+    shaft, head, thickness = 30 * scale, 12 * scale, 6 * scale
+    draw.line([(cx - shaft - head, cy), (cx + head // 2, cy)],
+              fill=ARROW, width=thickness)
+    draw.line([(cx - head // 2, cy - head), (cx + head // 2, cy)],
+              fill=ARROW, width=thickness)
+    draw.line([(cx - head // 2, cy + head), (cx + head // 2, cy)],
+              fill=ARROW, width=thickness)
 
-    font = next((ImageFont.truetype(path, 15 * scale)
+    font = next((ImageFont.truetype(path, 13 * scale)
                  for path in FONTS if Path(path).exists()),
                 ImageFont.load_default())
     text = "拖到「应用程序」完成安装"
     text_width = draw.textlength(text, font=font)
-    draw.text(((width - text_width) / 2, height - 56 * scale),
+    draw.text(((width - text_width) / 2, 330 * scale),
               text, font=font, fill=TEXT_COLOR)
 
-    image.save(path)
+    # ⚠️ DPI 必须写对：1x=72、2x=144。只给像素尺寸的话 tiffutil 会把两张图
+    # 当成同一分辨率合并，Finder 会按 2x 尺寸显示背景（箭头被放大、文字被裁掉）。
+    image.save(path, dpi=(72 * scale, 72 * scale))
 
 
 def build(app: Path, out: Path, version: str, icon: Path | None) -> None:
