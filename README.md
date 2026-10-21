@@ -18,7 +18,7 @@ macOS Markdown 速览：Finder 空格键预览 + 只读多标签查看器。
 
 ## 安装（用户）
 
-两种方式，装出来是同一个 App —— 都用 tap 仓库（`Czw96/homebrew-spacedown`）Release 里那份 dmg。
+三种方式，装出来是同一个 App —— 都用 tap 仓库（`Czw96/homebrew-spacedown`）Release 里那份 dmg。
 源码仓库保持私有；Cask 与产物放在同一个公开仓库，少一个要同步的地方。
 
 ### 方式一：Homebrew Cask（可升级、可干净卸载）
@@ -43,7 +43,16 @@ brew uninstall --cask --zap spacedown    # 卸载：偏好、QL 沙箱容器、�
 2. 双击挂载，把 `Spacedown` 拖进「应用程序」
 3. 首次打开：已公证的版本直接双击；未公证版本按下面的「首次打开」处理
 
-### 首次启动后（两种方式都要做一次）
+### 方式三：一行脚本（自动清隔离属性）
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Czw96/homebrew-spacedown/main/install.sh | bash
+```
+
+下载最新 dmg → 校验 sha256 → 装进「应用程序」→ 去掉 quarantine → 启动一次。
+不想直接 pipe 的话：`curl -fsSL … -o install.sh && less install.sh && bash install.sh`。
+
+### 首次启动后（三种方式都要做一次）
 
 1. **先启动一次 Spacedown** —— 系统只在宿主 App 运行过之后才登记它的 Quick Look 扩展
 2. 菜单「**显示 → 接管 Markdown 空格预览**」，等几秒（后台跑 `pluginkit` 选举）
