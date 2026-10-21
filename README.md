@@ -18,7 +18,7 @@ macOS Markdown 速览：Finder 空格键预览 + 只读多标签查看器。
 
 ## 安装（用户）
 
-三种方式，装出来是同一个 App —— 都用 tap 仓库（`Czw96/homebrew-spacedown`）Release 里那份 dmg。
+两种方式，装出来是同一个 App —— 都用 tap 仓库（`Czw96/homebrew-spacedown`）Release 里那份 dmg。
 源码仓库保持私有；Cask 与产物放在同一个公开仓库，少一个要同步的地方。
 
 ### 方式一：Homebrew Cask（可升级、可干净卸载）
@@ -43,16 +43,7 @@ brew uninstall --cask --zap spacedown    # 卸载：偏好、QL 沙箱容器、�
 2. 双击挂载，把 `Spacedown` 拖进「应用程序」
 3. 首次打开：已公证的版本直接双击；未公证版本按下面的「首次打开」处理
 
-### 方式三：一行脚本（自动清隔离属性）
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/Czw96/homebrew-spacedown/main/install.sh | bash
-```
-
-下载最新 dmg → 校验 sha256 → 装进「应用程序」→ 去掉 quarantine → 启动一次。
-不想直接 pipe 的话：`curl -fsSL … -o install.sh && less install.sh && bash install.sh`。
-
-### 首次启动后（三种方式都要做一次）
+### 首次启动后（两种方式都要做一次）
 
 1. **先启动一次 Spacedown** —— 系统只在宿主 App 运行过之后才登记它的 Quick Look 扩展
 2. 菜单「**显示 → 接管 Markdown 空格预览**」，等几秒（后台跑 `pluginkit` 选举）
@@ -172,6 +163,9 @@ scripts/release.sh --version 1.1.0                    # 指定版本
 scripts/release.sh --version 1.1.0 --publish --update-tap   # 一条命令发完
 scripts/release.sh --version 1.1.0 --skip-build --update-tap  # 只重推 Cask
 ```
+
+dmg 的窗口布局由 `scripts/make_dmg.py` 生成（`pip install dmgbuild pillow`）；
+没装这两个依赖时脚本会自动回退成普通 `hdiutil` dmg —— 功能一样，只是没有背景/图标摆位。
 
 脚本做四件事：Release 全量构建 →（可选）Developer ID 重签 + 公证 → 出 `dmg` / `zip`
 （dmg 里含 App、`/Applications` 软链与安装说明）→ 生成 `Distribution/build/spacedown.rb`

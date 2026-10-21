@@ -115,10 +115,19 @@ if [[ $SKIP_BUILD -eq 0 ]]; then
     rm -rf "$OUT"
     mkdir -p "$OUT"
 
-    STAGE=$(mktemp -d)
-    cp -R "$APP" "$STAGE/"
-    ln -s /Applications "$STAGE/Applications"
-    cat > "$STAGE/安装说明.txt" <<'TXT'
+    # 优先用 dmgbuild 生成带 Finder 布局的 dmg（背景/图标坐标/窗口大小都会写进
+    # .DS_Store）；没装依赖时回退普通 hdiutil，功能一致只是不好看
+    DMG_PY="${DMG_PYTHON:-python3}"
+    if "$DMG_PY" -c 'import dmgbuild, PIL' >/dev/null 2>&1; then
+        "$DMG_PY" scripts/make_dmg.py \
+            --app "$APP" --out "$DMG" --version "$VERSION" \
+            --icon Spacedown/Resources/AppIcon.icns
+    else
+        echo "    提示：未安装 dmgbuild/pillow，回退普通 dmg（pip install dmgbuild pillow 可启用美化布局）"
+        STAGE=$(mktemp -d)
+        cp -R "$APP" "$STAGE/"
+        ln -s /Applications "$STAGE/Applications"
+        cat > "$STAGE/安装说明.txt" <<'TXT'
 把 Spacedown 拖到左边的「应用程序」文件夹即可。
 
 首次打开（未公证版本）：
@@ -127,14 +136,11 @@ if [[ $SKIP_BUILD -eq 0 ]]; then
 - 或在终端执行：xattr -dr com.apple.quarantine /Applications/Spacedown.app
 
 （macOS 15 起，「右键 → 打开」不再能绕过这个提示。）
-
-空格预览：
-1. 先启动一次 Spacedown（系统才会登记它的快速查看扩展）。
-2. 菜单「显示 → 接管 Markdown 空格预览」，等几秒生效。
 TXT
 
-    hdiutil create -volname "$APP_NAME $VERSION" -srcfolder "$STAGE" -ov -format UDZO "$DMG" >/dev/null
-    rm -rf "$STAGE"
+        hdiutil create -volname "$APP_NAME $VERSION" -srcfolder "$STAGE" -ov -format UDZO "$DMG" >/dev/null
+        rm -rf "$STAGE"
+    fi
 
     ditto -c -k --sequesterRsrc --keepParent "$APP" "$ZIP"
     SHA_DMG=$(shasum -a 256 "$DMG" | awk '{print $1}')
