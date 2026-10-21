@@ -31,6 +31,7 @@ enum AppMenu {
             .separator(),
             // ⌘, 是 macOS 的肌肉记忆；设置窗同时是"没开文件"时的启动窗
             item("设置…", action: #selector(AppDelegate.showSettings(_:)), key: ","),
+            item("检查更新…", action: #selector(AppDelegate.checkForUpdates(_:))),
             .separator(),
             item("隐藏 Spacedown", action: #selector(NSApplication.hide(_:)), key: "h", target: NSApp),
             item("隐藏其他", action: #selector(NSApplication.hideOtherApplications(_:)),

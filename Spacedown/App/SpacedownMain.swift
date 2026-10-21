@@ -15,6 +15,12 @@ enum SpacedownMain {
 
     @MainActor
     static func main() {
+        // 诊断用：不起界面，直接打印检查更新的结果
+        if CommandLine.arguments.contains("--check-updates") {
+            UpdateChecker.printStatus()
+            return
+        }
+
         let application = NSApplication.shared
         // 纯代码启动不会自动设激活策略；不设就没有菜单栏、不接收键盘事件
         application.setActivationPolicy(.regular)

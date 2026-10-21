@@ -17,6 +17,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         DebugLog.write("didFinishLaunching")
         QuickLookDiagnostics.exportIfRequested()
         activate()
+        // 延迟几秒再查，避开启动时建窗口/webview 的高峰
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 5_000_000_000)
+            UpdateChecker.shared.autoCheckIfNeeded()
+        }
         // 双击文件启动时，open(_:) 与这里的先后在不同系统版本上并不一致：
         // 让出一个任务再判断，别抢着弹设置窗（万一还是弹了，openDocument 会把它收掉）。
         Task { @MainActor in
@@ -54,6 +59,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// 不用默认面板：它渲染的版本行是 `Version {short} ({build})`，括号里的 build 号
     /// 对用户没有意义。只传 `.version` 一个选项才是干净的 `Version 1.0`；
     /// 同时传 `.applicationVersion` 会让括号回来。
+    /// 「检查更新…」。
+    @objc func checkForUpdates(_ sender: Any?) {
+        UpdateChecker.shared.check(manual: true)
+    }
+
     @objc func showAbout(_ sender: Any?) {
         let shortVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
         NSApp.orderFrontStandardAboutPanel(options: [.version: shortVersion ?? "1.0"])
