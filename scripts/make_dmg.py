@@ -34,7 +34,7 @@ FONTS = (
 )
 
 
-def draw_background(path: Path, scale: int) -> None:
+def draw_background(path: Path, scale: int, arrow: bool = True) -> None:
     from PIL import Image, ImageDraw, ImageFont
 
     width, height = WIDTH * scale, HEIGHT * scale
@@ -50,17 +50,19 @@ def draw_background(path: Path, scale: int) -> None:
 
     # 中间的箭头：细横杆 + 圆头箭头。圆头靠端点补小圆实现 —— Pillow 的 line()
     # 只画平头，直接画两条线会得到一个带缺口的实心三角形。
+    # `arrow=False` 时整块跳过，只留底部一行提示（更克制的观感）。
     cx, cy = width // 2, 190 * scale
     length, head, thickness = 46 * scale, 15 * scale, 5 * scale
     tail, tip = cx - length // 2, cx + length // 2
     radius = thickness // 2
 
-    draw.line([(tail, cy), (tip - head + radius, cy)], fill=ARROW, width=thickness)
-    draw.line([(tip - head, cy - head), (tip - radius, cy)], fill=ARROW, width=thickness)
-    draw.line([(tip - head, cy + head), (tip - radius, cy)], fill=ARROW, width=thickness)
-    for point in [(tail, cy), (tip - head, cy - head), (tip - head, cy + head), (tip, cy)]:
-        draw.ellipse([point[0] - radius, point[1] - radius,
-                      point[0] + radius, point[1] + radius], fill=ARROW)
+    if arrow:
+        draw.line([(tail, cy), (tip - head + radius, cy)], fill=ARROW, width=thickness)
+        draw.line([(tip - head, cy - head), (tip - radius, cy)], fill=ARROW, width=thickness)
+        draw.line([(tip - head, cy + head), (tip - radius, cy)], fill=ARROW, width=thickness)
+        for point in [(tail, cy), (tip - head, cy - head), (tip - head, cy + head), (tip, cy)]:
+            draw.ellipse([point[0] - radius, point[1] - radius,
+                          point[0] + radius, point[1] + radius], fill=ARROW)
 
     font = next((ImageFont.truetype(path, 13 * scale)
                  for path in FONTS if Path(path).exists()),
@@ -75,16 +77,16 @@ def draw_background(path: Path, scale: int) -> None:
     image.save(path, dpi=(72 * scale, 72 * scale))
 
 
-def build(app: Path, out: Path, version: str, icon: Path | None) -> None:
+def build(app: Path, out: Path, version: str, icon: Path | None, arrow: bool) -> None:
     import dmgbuild
 
     out.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory() as tmp_name:
         tmp = Path(tmp_name)
         background = tmp / "background.png"
-        draw_background(background, scale=1)
+        draw_background(background, scale=1, arrow=arrow)
         # dmgbuild 会自动找同名 @2x 文件并用 tiffutil 合成 HiDPI 背景
-        draw_background(tmp / "background@2x.png", scale=2)
+        draw_background(tmp / "background@2x.png", scale=2, arrow=arrow)
 
         settings = {
             "volume_name": f"Spacedown {version}",
@@ -114,6 +116,8 @@ def main() -> int:
     parser.add_argument("--out", required=True, type=Path)
     parser.add_argument("--version", required=True)
     parser.add_argument("--icon", type=Path)
+    parser.add_argument("--no-arrow", action="store_true",
+                        help="不画中间的箭头，只保留底部提示")
     args = parser.parse_args()
 
     if not args.app.exists():
@@ -121,7 +125,7 @@ def main() -> int:
         return 1
 
     try:
-        build(args.app, args.out, args.version, args.icon)
+        build(args.app, args.out, args.version, args.icon, arrow=not args.no_arrow)
     except ImportError:
         print("缺少依赖：pip install dmgbuild pillow", file=sys.stderr)
         return 2
