@@ -59,6 +59,8 @@ final class UpdateChecker {
             let alert = NSAlert()
             alert.messageText = "已是最新版本"
             alert.informativeText = "当前版本 \(currentVersion)。"
+            // 不显式加按钮的话，AppKit 会给一个英文 "OK"
+            alert.addButton(withTitle: "好")
             alert.runModal()
         }
     }
@@ -78,6 +80,7 @@ final class UpdateChecker {
         let alert = NSAlert()
         alert.messageText = "检查更新失败"
         alert.informativeText = error?.localizedDescription ?? "无法连接发布仓库，请稍后再试。"
+        alert.addButton(withTitle: "好")
         alert.runModal()
     }
 
