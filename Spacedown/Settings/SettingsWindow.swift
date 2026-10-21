@@ -75,12 +75,12 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         icon.imageScaling = .scaleProportionallyUpOrDown
         icon.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
-            icon.widthAnchor.constraint(equalToConstant: 104),
-            icon.heightAnchor.constraint(equalToConstant: 104),
+            icon.widthAnchor.constraint(equalToConstant: 92),
+            icon.heightAnchor.constraint(equalToConstant: 92),
         ])
 
         let title = NSTextField(labelWithString: "Spacedown")
-        title.font = .systemFont(ofSize: 22, weight: .semibold)
+        title.font = .systemFont(ofSize: 24, weight: .semibold)
         title.alignment = .center
 
         let tagline = NSTextField(
