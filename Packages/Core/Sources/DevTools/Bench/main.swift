@@ -154,9 +154,11 @@ if let idx = args.firstIndex(of: "--file"), idx + 1 < args.count {
     if args.contains("--print") {
         print(renderer.renderHTML(data))
     } else if let oi = args.firstIndex(of: "--out"), oi + 1 < args.count {
-        // 端到端：Markdown → HTML 片段 → SharedTheme 完整文档 → 落盘，供肉眼检查
+        // 端到端：Markdown → HTML 片段 → SharedTheme 完整文档 → 落盘，供肉眼检查。
+        // 带上基准目录，相对路径图片才会像 App 里那样内联成 base64（只影响 --out，
+        // 计时与 --print 不内联，避免把文件 IO 算进渲染耗时）。
         let body = Data(renderer.renderHTML(data).utf8)
-        let doc = SharedTheme.document(body: body)
+        let doc = SharedTheme.document(body: body, baseDirectory: url.deletingLastPathComponent())
         try! doc.write(to: URL(fileURLWithPath: args[oi + 1]))
         print("wrote \(doc.count) bytes -> \(args[oi + 1])")
     } else {

@@ -3,16 +3,17 @@
 macOS Markdown 速览：Finder 空格键预览 + 只读多标签查看器。
 **平台：macOS 13+ · Apple Silicon**（App target 与 `Package.swift` 的口径已统一为 13.0）。
 
-> **状态（2026-10-19）**
+> **状态（2026-10-23）**
 >
 > | 部分 | 状态 |
 > |---|---|
 > | 主 App（双击打开、多标签、版心、缩放） | ✅ **已验收**（三份真实文档首帧 147–202 ms） |
-> | Quick Look 扩展（渲染、提示块、兜底） | ✅ 被选中时正常（实测 `load=314 ms`，无内容进程反复终止） |
-> | 空格预览的**选中权** | ⚠️ **未定** —— 本机 WPS 的 `WPSQuickLook` 认领了同样的 markdown 类型，系统可能选它 |
-> | 预览里点链接 | ⚠️ 代码就位（`LinkOpener.xpc`），**缺一次人工点击验收** |
+> | Quick Look 扩展（渲染、提示块、图片内联、兜底） | ✅ 被选中时正常（实测 `load=314 ms`，无内容进程反复终止） |
+> | 空格预览的**选中权** | ✅ 有入口：菜单「显示 → 接管 Markdown 空格预览」（`QuickLookClaim`：登记 + `pluginkit` 选举 + 重建索引）。不必去系统设置里找——本机根本没有「快速查看」类目 |
+> | 预览里点链接 | 🟨 代码就位（单击复制、⌘/⌃ + 单击打开，走 `LinkOpener.xpc`），**仍缺一次人工点击验收** |
 >
-> 打包产物：`Distribution/build/Spacedown-1.0.dmg` / `.zip`（ad-hoc 签名，仅供本机/内测）。
+> 分发现状：`v1.0.2` 已发布在 tap 仓库的 Release，`brew install --cask spacedown` 可直接装
+> （见下面的「安装」）。`Distribution/build/` 只是本地打包的落地目录，跑完 `release.sh` 才有内容。
 
 ---
 
@@ -139,12 +140,9 @@ Developer ID + Hardened Runtime + 公证，见 `docs/技术方案.md §9`。
 **同一个 `pluginIdentifier` 会有两条记录**：一条指向构建目录、一条指向 `/Applications`，
 UUID 不同 —— 系统于是在两者之间拿不准，**静默退回用别家扩展**（本机是 WPS）。
 
-判据（`lsregister -dump` 里数 block，必须是 **1** 条）：
-
-```bash
-lsregister -dump | grep -c "cn.29dev.Spacedown.QuickLookPreview.*pluginIdentifier"   # 不靠谱
-# 用这个：数 path 里带 QuickLookPreview.appex 且同一个 pluginIdentifier 的记录
-```
+判据：`lsregister -dump` 里搜 `cn.29dev.Spacedown.QuickLookPreview`，同一个
+`pluginIdentifier` 下**只应出现 1 条**指向 `QuickLookPreview.appex` 的 `path:` 记录。
+出现两条（构建目录 + `/Applications`）就是踩了这个坑。
 
 修法 —— **每次构建完、装完都做一遍**：
 
@@ -191,10 +189,12 @@ scripts/release.sh --version 1.1.0 --publish
 ```
 
 不带 `SIGN_IDENTITY` 时产物是 **ad-hoc 签名**：本机可用，别人下载后首次打开会被
-Gatekeeper 拦（右键 → 打开，或 `xattr -dr com.apple.quarantine`）。
+Gatekeeper 拦 —— **macOS 15 起「右键 → 打开」已失效**，只能走「系统设置 → 隐私与安全性 →
+仍要打开」，或 `xattr -dr com.apple.quarantine /Applications/Spacedown.app`。
 
-**Cask 发布**：把生成的 `spacedown.rb` 推到 `Czw96/homebrew-spacedown` 仓库的
-`Casks/spacedown.rb`；用户即可 `brew install --cask czw96/spacedown/spacedown`。
+**Cask 发布**：日常用 `--update-tap` 一条命令推到 `Czw96/homebrew-spacedown` 的
+`Casks/spacedown.rb`（该仓库默认分支是 **master**）。用户侧多一道 `brew trust`：
+未信任的第三方 tap 不会被搜索索引，`brew info` 会直接报 `Refusing to load cask`。
 官方 `homebrew-cask` 要求 App 已公证，满足后再提 PR。
 
 ---
@@ -233,7 +233,7 @@ AppKit 实现（不是 SwiftUI —— 见 `docs/技术方案.md §7.1`）。一�
 | 用默认编辑器打开 | <kbd>⌥</kbd> <kbd>⌘</kbd> <kbd>E</kbd> |
 
 > 缩放那三条：**<kbd>⌘=</kbd> 也管用**（等价于 ⇧<kbd>⌘=</kbd>，也就是大家心里的「⌘+」）。
-> 物理键盘上并没有单独的 `+` 键，所以菜单匹配不能写成 `"+"` —— 见 `MainMenu.hiddenAlias` 的注释，
+> 物理键盘上并没有单独的 `+` 键，所以菜单匹配不能写成 `"+"` —— 见 `AppMenu.shortcutAlias` 的注释，
 > 那里有一张实测表格。
 >
 > 版心那三条：**默认铺满**（`--measure: 100%`），范围 40%~100%、每次 10%。
@@ -269,13 +269,16 @@ LSHandlerRoleAll     => com.microsoft.vscode      ← 就是这条
 
 ---
 
-## 三、现在需要你做的验收（2 个动作）
+## 三、遗留验收（装好后按一次空格）
 
-在 Finder 里随便选中一个 `.md` 文件，**按空格**，告诉我两件事：
+下面是**还没被真人确认**的几项，已确认的（渲染、表格、提示块、首帧耗时）不再列：
 
-1. **出来的是渲染后的页面，还是一堆 `#` `**` 的纯文本？**
-   → 判断扩展有没有被系统启用（风险 R1）
-2. **滚动跟不跟手**（尤其是 100KB 以上的大文件、以及猛甩一下）
+1. **滚动跟不跟手**（尤其是 100KB 以上的大文件、以及猛甩一下）—— 扩展是视图型，
+   web view 尺寸等于面板尺寸，这一项靠肉眼，脚本量不出来
+2. **相对路径图片出不出来** —— 渲染期由 `ImageInliner` 内联成 base64；如果沙箱读不到
+   被预览文件同级目录的图片，会静默保留原 `src`（日志里有一行「图片读不到」）
+3. **预览里点链接** —— 单击复制地址、⌘/⌃ + 单击交给系统打开
+4. **⌘± 缩放是否被 QL 面板吞掉**（风险 R3）
 
 > 扩展已从**数据型**改成**视图型**（自建 viewport 尺寸的 `WKWebView`）——
 > 原因与实测数据见 `docs/性能分析.md §6`。**改了扩展的形态就必须重装**（第一节的
@@ -309,7 +312,7 @@ swift build -c release --disable-sandbox
 open /tmp/preview.html
 ```
 
-产出的 HTML **单文件自包含**（CSS 内联、明暗双主题），拖进浏览器即可。
+产出的 HTML **单文件自包含**（CSS 内联、明暗双主题、相对路径图片内联成 base64），拖进浏览器即可。
 这是验收「渲染出来好不好看」最直接的途径，也用来判断扩展是不是真的在工作
 ——两边看到的效果应当一致。
 
@@ -370,13 +373,13 @@ defaults delete cn.29dev.Spacedown DebugLayout             # 关掉
 
 | 里程碑 | 内容 | 状态 |
 |---|---|---|
-| M0 | Spike：UTI 判定、QL 扩展跑通、webview 冷启实测、键盘事件是否可达 | 🟨 代码完成；**R1 / R3 待真机** ⬜ |
+| M0 | Spike：UTI 判定、QL 扩展跑通、webview 冷启实测、键盘事件是否可达 | 🟨 代码完成；**R3（⌘± 是否被 QL 面板吞）仍待真机**；R1 已由「接管空格预览」菜单缓解 |
 | M1 | 渲染内核 + 主题 + Bench CLI | ✅ 内核 / 主题 / Bench；**缓存决定不做**（收益 ≈ 0，见性能分析 §2.4） |
 | M2 | Quick Look 扩展做完整 | 🟨 **已由数据型改为视图型**（自建 viewport 尺寸 WKWebView + 实例复用 + `os_log` 埋点），已安装，待真机验收滚动 |
 | M3 | 主 App | ✅ **多标签 + LRU 池 + 主菜单 + 文件监听 + 缩放（2026-10-08）** |
 | M4 | 打磨 | 🟨 布局自检 ✅；图片内联 ✅（`SharedTheme/ImageInliner`，单张 ≤ 2 MB / 总计 ≤ 20 MB） |
-| M5 | 性能回归 | 🟨 滚动口径已建（`ScrollBench`）+ 归因见 `docs/性能分析.md §6`；按渲染规模截断 ⬜ |
-| M6 | 签名公证 + dmg + Homebrew Cask | 🟨 dmg / Cask 已可生成（`scripts/release.sh`）；**签名 + 公证待 Developer ID** |
+| M5 | 性能回归 | 🟨 滚动口径已建（`ScrollBench`）+ 归因见 `docs/性能分析.md §6`；固定 512 KB 截断 ✅（`MarkdownDocument`），自适应阈值未做 |
+| M6 | 签名公证 + dmg + Homebrew Cask | 🟨 dmg / Cask / tap 已跑通（`v1.0.2` 可 `brew install`）；**签名 + 公证待 Developer ID** |
 
 ---
 
@@ -404,14 +407,17 @@ Spacedown/
 ├── Packages/Core/                SwiftPM 包（仅 macOS ≥13，仅 arm64）
 │   ├── Sources/CcmarkGfm/        vendored cmark-gfm 0.29.0.gfm.7
 │   ├── Sources/MarkdownKit/      文档装载（截断）、cmark 渲染、危险 scheme 中和
-│   ├── Sources/SharedTheme/      主题与 HTML 外壳、文档后处理、链接语义、色板、Toast
+│   ├── Sources/SharedTheme/      主题与 HTML 外壳、文档后处理、图片内联、链接语义、色板、Toast
 │   ├── Sources/DevTools/         Bench / ScrollBench / WebViewBench
 │   └── XcodeSupport/CcmarkGfm/   Xcode 用的 module.modulemap
 ├── design/logo/                  Logo 源：spacedown-icon.svg + build_logo.py（改几何/配色都改这里再重跑）
 ├── scripts/                      gen_project.py（工程生成）、release.sh（打包发布）
 ├── docs/技术方案.md               方案（性能指标、风险清单、里程碑）
+├── docs/样式总览.md               内容样式的视觉口径（配合 theme.css 看）
 ├── docs/benchmarks.md            实测数字与踩坑记录
-└── docs/性能分析.md              耗时归因、"换技术栈"的结论、优化清单
+├── docs/性能分析.md              耗时归因、"换技术栈"的结论、优化清单
+├── docs/代码审查.md              2026-10-12 的一次性审查记录（历史存档，不代表现状）
+└── docs/修复记录-2026-10-10.md   2026-10-10 的修复清单（历史存档）
 ```
 
 ## 八、环境注意
