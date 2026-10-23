@@ -372,7 +372,11 @@ final class MainWindow: NSObject, NSWindowDelegate {
         do {
             let markdown = try MarkdownDocument.bytes(contentsOf: tab.url)
             let body = renderer.renderHTMLData(markdown)
-            let html = SharedTheme.document(body: body, measurePercent: MeasureSettings.percent)
+            let html = SharedTheme.document(
+                body: body,
+                measurePercent: MeasureSettings.percent,
+                baseDirectory: tab.url.deletingLastPathComponent()
+            )
             logRender(markdown: markdown, html: html)
             WebViewDocument.load(html, into: view)
         } catch {

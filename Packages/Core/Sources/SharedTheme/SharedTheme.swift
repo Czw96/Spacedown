@@ -63,8 +63,17 @@ public enum SharedTheme {
     ///   - measurePercent: 版心宽度，占**可用宽度**的百分比，100 表示铺满。
     ///     非 100 时追加一小段覆盖样式，因此它是**渲染期参数** —— 改了它，
     ///     同一份文件也要重新生成 HTML。
-    public static func document(body: Data, measurePercent: Int = fullMeasurePercent) -> Data {
-        let content = DocumentRewriter.process(body)
+    ///   - baseDirectory: Markdown 文件所在目录。给了它才会把相对路径图片内联成
+    ///     base64（见 `ImageInliner`）；不给则图片保持相对地址，等于不显示。
+    public static func document(
+        body: Data,
+        measurePercent: Int = fullMeasurePercent,
+        baseDirectory: URL? = nil
+    ) -> Data {
+        var content = DocumentRewriter.process(body)
+        if let baseDirectory {
+            content = ImageInliner.rewrite(content, baseDirectory: baseDirectory)
+        }
 
         var document = Data()
         document.reserveCapacity(htmlPrefix.count + content.count + htmlSuffix.count + 48)

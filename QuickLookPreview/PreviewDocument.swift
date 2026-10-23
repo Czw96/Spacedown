@@ -31,7 +31,7 @@ struct PreviewDocument {
         let body = renderer.renderHTMLData(markdown)
         let renderFinished = PreviewDiagnostics.now()
 
-        let html = SharedTheme.document(body: body)
+        let html = SharedTheme.document(body: body, baseDirectory: url.deletingLastPathComponent())
         let wrapFinished = PreviewDiagnostics.now()
 
         return PreviewDocument(

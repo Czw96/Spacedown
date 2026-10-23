@@ -374,7 +374,7 @@ defaults delete cn.29dev.Spacedown DebugLayout             # 关掉
 | M1 | 渲染内核 + 主题 + Bench CLI | ✅ 内核 / 主题 / Bench；**缓存决定不做**（收益 ≈ 0，见性能分析 §2.4） |
 | M2 | Quick Look 扩展做完整 | 🟨 **已由数据型改为视图型**（自建 viewport 尺寸 WKWebView + 实例复用 + `os_log` 埋点），已安装，待真机验收滚动 |
 | M3 | 主 App | ✅ **多标签 + LRU 池 + 主菜单 + 文件监听 + 缩放（2026-10-08）** |
-| M4 | 打磨 | 🟨 布局自检 ✅；图片内联 ⬜（现在相对路径图片是坏图） |
+| M4 | 打磨 | 🟨 布局自检 ✅；图片内联 ✅（`SharedTheme/ImageInliner`，单张 ≤ 2 MB / 总计 ≤ 20 MB） |
 | M5 | 性能回归 | 🟨 滚动口径已建（`ScrollBench`）+ 归因见 `docs/性能分析.md §6`；按渲染规模截断 ⬜ |
 | M6 | 签名公证 + dmg + Homebrew Cask | 🟨 dmg / Cask 已可生成（`scripts/release.sh`）；**签名 + 公证待 Developer ID** |
 
