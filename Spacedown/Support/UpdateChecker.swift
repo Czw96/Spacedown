@@ -3,7 +3,7 @@ import AppKit
 /// 检查新版本。
 ///
 /// 数据源是公开发布仓库的 `releases/latest`（源码仓库是私有的，那里没有可匿名读取的
-/// Release）。只做**检测与提示**：真正的替换交给安装方式（dmg / brew / install.sh），
+/// Release）。只做**检测与提示**：真正的替换交给安装方式（dmg / brew），
 /// 避免在没有签名的前提下自己重写 Sparkle 那套原子替换逻辑。
 @MainActor
 final class UpdateChecker {
