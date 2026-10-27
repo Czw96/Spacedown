@@ -17,6 +17,7 @@ enum AppMenu {
         let main = NSMenu()
         main.addItem(applicationMenu())
         main.addItem(fileMenu())
+        main.addItem(editMenu())
         main.addItem(viewMenu())
         main.addItem(windowMenu())
         return main
@@ -52,6 +53,18 @@ enum AppMenu {
                  key: "r", modifiers: [.command, .shift]),
             item("用默认编辑器打开", action: #selector(MainWindow.openInDefaultEditor(_:)),
                  key: "e", modifiers: [.command, .option]),
+        ])
+    }
+
+    /// 编辑菜单**不能省**：⌘C / ⌘A 的按键匹配就挂在菜单项上（见文件头注释）。
+    /// 少了它，web view 里的文字选得中却复制不出来 —— 这是 v1.0.2 之前的一个真 bug。
+    ///
+    /// 只读查看器给「复制 / 全选」两项就够，剪切/粘贴/删除没有意义。
+    /// 动作走响应链（target 为 nil），最终由 `WKWebView` 的 `copy:` / `selectAll:` 接住。
+    private static func editMenu() -> NSMenuItem {
+        menu("编辑", items: [
+            item("复制", action: #selector(NSText.copy(_:)), key: "c"),
+            item("全选", action: #selector(NSText.selectAll(_:)), key: "a"),
         ])
     }
 

@@ -231,6 +231,8 @@ AppKit 实现（不是 SwiftUI —— 见 `docs/技术方案.md §7.1`）。一�
 | 版心加宽 / 收窄 / 铺满 | <kbd>⌥</kbd> <kbd>⌘</kbd> <kbd>=</kbd> / <kbd>⌥</kbd> <kbd>⌘</kbd> <kbd>−</kbd> / <kbd>⌥</kbd> <kbd>⌘</kbd> <kbd>0</kbd> |
 | 在 Finder 中显示 | <kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>R</kbd> |
 | 用默认编辑器打开 | <kbd>⌥</kbd> <kbd>⌘</kbd> <kbd>E</kbd> |
+| 复制选中文字 | <kbd>⌘</kbd> <kbd>C</kbd> |
+| 全选 | <kbd>⌘</kbd> <kbd>A</kbd> |
 
 > 缩放那三条：**<kbd>⌘=</kbd> 也管用**（等价于 ⇧<kbd>⌘=</kbd>，也就是大家心里的「⌘+」）。
 > 物理键盘上并没有单独的 `+` 键，所以菜单匹配不能写成 `"+"` —— 见 `AppMenu.shortcutAlias` 的注释，

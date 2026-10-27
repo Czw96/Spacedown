@@ -315,6 +315,7 @@ final class MainWindow: NSObject, NSWindowDelegate {
                 view.alphaValue = 1
                 webHost.addSubview(view)
             }
+            focusForCopy(view)
             return
         }
         for extra in others where extra !== outgoing {
@@ -324,6 +325,7 @@ final class MainWindow: NSObject, NSWindowDelegate {
             view.alphaValue = 0
             webHost.addSubview(view)
         }
+        focusForCopy(view)
 
         // 120ms 交叉淡入。收尾不用 runAnimationGroup 的 completionHandler
         // （它在 Swift 6 里是非隔离的，碰 alphaValue 会报隔离告警），
@@ -352,6 +354,14 @@ final class MainWindow: NSObject, NSWindowDelegate {
                 other.alphaValue = 1
             }
         }
+    }
+
+    /// 把第一响应者交给 web view。
+    ///
+    /// 「编辑 → 复制 / 全选」是不设 target 的菜单项，靠响应链找到 `copy:` / `selectAll:`；
+    /// 第一响应者不是 web view 时（比如刚点过标签栏），这两个快捷键会落空。
+    private func focusForCopy(_ view: WKWebView) {
+        view.window?.makeFirstResponder(view)
     }
 
     private func removeAllWebViews() {
