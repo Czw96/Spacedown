@@ -216,6 +216,7 @@ AppKit 实现（不是 SwiftUI —— 见 `docs/技术方案.md §7.1`）。一�
 | 宽表格 | 渲染期给 `<table>` 套 `overflow-x: auto` 容器，窄面板里横着滚而不是撑破版心 |
 | 版心宽度 | 「显示 → 版心宽度」，默认铺满，可收到 40%~100%；⌥⌘= / ⌥⌘− / ⌥⌘0，设置会记住 |
 | 检查更新 | 启动 5 秒后自动查（24 小时一次），也可手动「Spacedown → 检查更新…」 |
+| 查找 | <kbd>⌘</kbd><kbd>F</kbd> 在内容右上角浮出查找条，边输入边定位、原生高亮；<kbd>↩</kbd> / <kbd>⇧</kbd><kbd>↩</kbd> 前后跳，<kbd>esc</kbd> 收起。检索走 WebKit 自己的 `find`，不注入 JS |
 
 ### 快捷键
 
@@ -233,6 +234,7 @@ AppKit 实现（不是 SwiftUI —— 见 `docs/技术方案.md §7.1`）。一�
 | 用默认编辑器打开 | <kbd>⌥</kbd> <kbd>⌘</kbd> <kbd>E</kbd> |
 | 复制选中文字 | <kbd>⌘</kbd> <kbd>C</kbd> |
 | 全选 | <kbd>⌘</kbd> <kbd>A</kbd> |
+| 查找… / 下一个 / 上一个 | <kbd>⌘</kbd> <kbd>F</kbd> / <kbd>⌘</kbd> <kbd>G</kbd> / <kbd>⇧</kbd> <kbd>⌘</kbd> <kbd>G</kbd> |
 
 > 缩放那三条：**<kbd>⌘=</kbd> 也管用**（等价于 ⇧<kbd>⌘=</kbd>，也就是大家心里的「⌘+」）。
 > 物理键盘上并没有单独的 `+` 键，所以菜单匹配不能写成 `"+"` —— 见 `AppMenu.shortcutAlias` 的注释，

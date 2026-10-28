@@ -65,6 +65,13 @@ enum AppMenu {
         menu("编辑", items: [
             item("复制", action: #selector(NSText.copy(_:)), key: "c"),
             item("全选", action: #selector(NSText.selectAll(_:)), key: "a"),
+            .separator(),
+            // 查找走 web view 自己的 `find(_:configuration:completionHandler:)`，
+            // 没有文档时这些动作会被方法体里的 guard 挡掉
+            item("查找…", action: #selector(MainWindow.showFind(_:)), key: "f"),
+            item("查找下一个", action: #selector(MainWindow.findNext(_:)), key: "g"),
+            item("查找上一个", action: #selector(MainWindow.findPrevious(_:)),
+                 key: "g", modifiers: [.command, .shift]),
         ])
     }
 

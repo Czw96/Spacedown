@@ -25,10 +25,13 @@ final class MainWindow: NSObject, NSWindowDelegate {
 
     private let barBackground = NSView()
     /// 内容宿主。用 `DropTargetView` 而不是裸 `NSView`：空窗口时的拖放落点就是它。
-    private let webHost = DropTargetView()
+    /// 非 private：`MainWindow+Find.swift` 要把查找条浮在它上面。
+    let webHost = DropTargetView()
     /// 空状态：图标 + 一句话 + 快捷键提示。
     private let emptyState = NSStackView()
     private let spinner = NSProgressIndicator()
+    /// 查找条（浮在内容卡片右上角）。同样是跨文件使用，故不设 private。
+    let findBar = FindBar()
 
     private let renderer = MarkdownRenderer()
     private let watcher = FileWatcher.shared
@@ -78,6 +81,7 @@ final class MainWindow: NSObject, NSWindowDelegate {
 
         buildContent()
         wireTabBar()
+        wireFindBar()
         alignTrafficLights()
         // 窗口一建出来就预热 web view：等用户按 ⌘O 再建要多付一次 WebContent 启动
         pool.prewarm()
@@ -305,6 +309,8 @@ final class MainWindow: NSObject, NSWindowDelegate {
 
     private func present(_ view: WKWebView) {
         emptyState.isHidden = true
+        // 查找条属于"上一个文档"：换标签就收起来，免得对着新内容还显示旧关键词
+        findBar.dismiss()
 
         let others = webHost.subviews.compactMap { $0 as? WKWebView }.filter { $0 !== view }
         view.frame = webHost.bounds
