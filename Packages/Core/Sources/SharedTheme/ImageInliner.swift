@@ -103,7 +103,10 @@ enum ImageInliner {
                 resolved[key] = replacement
             }
 
-            append(html[cursor..<source.lowerBound], to: &output)
+            // 上一行已经把 [cursor..<tagStart] 抄完了，这里只补 tagStart 到 src 值之间的
+            // 那段（`<img alt="…" src=`）。写成 `cursor..<source.lowerBound` 会把开头到
+            // 这里的正文再抄一遍 —— 文档里有 ≥2 张图时，前面的正文整体重复一次。
+            append(html[tagStart..<source.lowerBound], to: &output)
             append(Data(replacement.utf8), to: &output)
             cursor = source.upperBound
 
