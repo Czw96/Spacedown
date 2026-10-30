@@ -12,6 +12,8 @@ final class TabItemView: NSView {
     static let height: CGFloat = 30
 
     private static let closeButtonSize: CGFloat = 16
+    /// 标题行高。比标签高度小一圈，垂直居中后上下各留一点呼吸。
+    private static let labelHeight: CGFloat = 16
     private static let horizontalInset: CGFloat = 8
 
     let index: Int
@@ -77,8 +79,8 @@ final class TabItemView: NSView {
         let labelLeft = inset + 2
         let labelRight = bounds.width - inset - closeSize - 2
 
-        label.frame = NSRect(x: labelLeft, y: (bounds.height - 16) / 2,
-                             width: max(0, labelRight - labelLeft), height: 16)
+        label.frame = NSRect(x: labelLeft, y: (bounds.height - Self.labelHeight) / 2,
+                             width: max(0, labelRight - labelLeft), height: Self.labelHeight)
         closeButton.frame = NSRect(x: bounds.width - inset - closeSize,
                                    y: (bounds.height - closeSize) / 2,
                                    width: closeSize, height: closeSize)

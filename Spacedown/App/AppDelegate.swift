@@ -63,19 +63,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return true
     }
 
-    /// 「关于 Spacedown」。
-    ///
-    /// 不用默认面板：它渲染的版本行是 `Version {short} ({build})`，括号里的 build 号
-    /// 对用户没有意义。只传 `.version` 一个选项才是干净的 `Version 1.0`；
-    /// 同时传 `.applicationVersion` 会让括号回来。
     /// 「检查更新…」。
     @objc func checkForUpdates(_ sender: Any?) {
         UpdateChecker.shared.check(manual: true)
     }
 
+    /// 「关于 Spacedown」。
+    ///
+    /// 不用默认面板：它渲染的版本行是 `Version {short} ({build})`，括号里的 build 号
+    /// 对用户没有意义。只传 `.version` 一个选项才是干净的 `Version 1.0`；
+    /// 同时传 `.applicationVersion` 会让括号回来。
     @objc func showAbout(_ sender: Any?) {
-        let shortVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
-        NSApp.orderFrontStandardAboutPanel(options: [.version: shortVersion ?? "1.0"])
+        NSApp.orderFrontStandardAboutPanel(options: [.version: AppInfo.version])
     }
 
     // MARK: - 窗口

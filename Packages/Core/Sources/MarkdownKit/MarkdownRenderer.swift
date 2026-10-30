@@ -86,7 +86,7 @@ public struct MarkdownRenderer: Sendable {
 
         let bytes = UnsafeBufferPointer(start: rendered, count: strlen(rendered))
         // 绝大多数文档不含危险 scheme：先做一次只读扫描，命中才进重建路径。
-        guard DangerousURLFilter.containsDangerousScheme(bytes) else {
+        guard DangerousURLFilter.needsNeutralizing(bytes) else {
             return Data(bytes: rendered, count: bytes.count)
         }
         return DangerousURLFilter.neutralized(bytes)

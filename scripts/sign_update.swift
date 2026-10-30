@@ -11,7 +11,7 @@ import CryptoKit
 // 用法：
 //   swift scripts/sign_update.swift --generate
 //       生成 ~/.spacedown-signing/update-signing.key（600），并把公钥打印出来，
-//       粘贴进 Spacedown/Support/UpdateSigning.swift 的 publicKeyBase64。
+//       粘贴进 Spacedown/Update/UpdateSigning.swift 的 publicKeyBase64。
 //   swift scripts/sign_update.swift --sign <file>
 //       在同目录写出 <file>.sig（base64 的单行签名）。
 //
@@ -42,7 +42,7 @@ func generate() {
 
     print("私钥已写入 \(keyURL.path)（权限 600，勿入库、勿外传）")
     print("")
-    print("把下面这行粘进 Spacedown/Support/UpdateSigning.swift：")
+    print("把下面这行粘进 Spacedown/Update/UpdateSigning.swift：")
     print("    static let publicKeyBase64 = \"\(publicKey)\"")
 }
 

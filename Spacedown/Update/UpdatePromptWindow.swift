@@ -191,7 +191,9 @@ final class UpdatePromptWindow: NSPanel {
         NSApp.activate(ignoringOtherApps: true)
     }
 
-    /// 进入"正在更新"状态：按钮让位给进度条。
+    /// 进入「正在更新」状态：按钮行让位给进度条。
+    ///
+    /// 下载中唯一的动作是「取消更新」，而它就挂在进度行右侧，所以按钮行整行收起。
     func beginProgress() {
         noteLabel.isHidden = false
         noteLabel.stringValue = "正在下载…"
@@ -199,13 +201,11 @@ final class UpdatePromptWindow: NSPanel {
         updateButton.title = "立即更新"
         buttonRow.isHidden = true
         progressRow.isHidden = false
-        buttonRow.isHidden = true         // 下载中动作只有「取消更新」，它就在进度行右侧
         cancelButton.isHidden = false
-        updateButton.isHidden = false     // 回到按钮行时仍是「立即更新」
-        resizeToFit()
         progressBar.isIndeterminate = false
         progressBar.doubleValue = 0
         statusLabel.stringValue = ""
+        resizeToFit()
     }
 
     /// - Parameter fraction: 0…1；`nil` 表示"在忙但量不出来"（验签、解压）。
@@ -249,6 +249,9 @@ final class UpdatePromptWindow: NSPanel {
         progressBar.stopAnimation(nil)
         progressBar.isIndeterminate = false
         progressBar.doubleValue = 0
+        statusLabel.stringValue = ""
+        // 不复位说明文字的话，面板会一直停在上一次的字样（「正在取消…」）
+        noteLabel.stringValue = "已取消更新。"
         progressRow.isHidden = true
         buttonRow.isHidden = false
         updateButton.isHidden = false
@@ -256,6 +259,7 @@ final class UpdatePromptWindow: NSPanel {
         laterButton.title = "稍后"
         laterButton.isHidden = false
         cancelButton.isHidden = true
+        resizeToFit()
     }
 
     /// 失败：原地显示原因 + 「前往下载」，不另开一个弹窗。

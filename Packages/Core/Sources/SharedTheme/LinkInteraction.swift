@@ -80,4 +80,15 @@ public enum LinkInteraction {
         default: return false
         }
     }
+
+    /// 这些 scheme 一律不许导航：它们要么执行脚本，要么把页面顶成一份内嵌文档。
+    ///
+    /// 顶层导航不在 CSP `default-src` 的管辖范围内（`form-action` 只管表单提交），
+    /// 所以必须在导航代理里显式拦掉，不能指望 CSP。
+    public static func isBlocked(_ url: URL) -> Bool {
+        switch url.scheme?.lowercased() {
+        case "javascript", "vbscript", "data": return true
+        default: return false
+        }
+    }
 }

@@ -79,25 +79,21 @@ for path in args {
         : String(format: "%dKB", size / 1024)
 
     // 1. 冷启动
-    let t0 = now()
     let wv1 = newWebView()
     let cold = load(wv1, url)
-    let coldTotal = ms(t0, now())
 
     // 2. 同一 webview 二次导航
     let nav2 = load(wv1, url)
 
-    // 3. 第二个 webview（进程已热）
+    // 3. 第二个 webview（进程已热）：建实例与载入合并计时
     let t2 = now()
     let wv2 = newWebView()
-    let load2 = load(wv2, url)
+    _ = load(wv2, url)
     let wv2Total = ms(t2, now())
 
-    _ = coldTotal
     print(String(format: "%-34@ %10.1f %10.1f %10.1f",
                  "\(url.lastPathComponent) (\(sizeStr))" as NSString,
                  cold, nav2, wv2Total))
-    _ = load2
 }
 
 print("")

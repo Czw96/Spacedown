@@ -20,20 +20,19 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
     /// 内容列宽：状态行的折行宽度与居中区域共用它。
     private static let columnWidth: CGFloat = 400
 
-    private let window: NSWindow
+    private let window: SpacedownWindow
     private let statusLabel = NSTextField(wrappingLabelWithString: "")
     private let setDefaultButton = NSButton()
     private let uninstallButton = HoverLinkButton()
 
     override init() {
-        window = NSWindow(
+        // 用 SpacedownWindow：它已经处理了"关窗时多释放一次"的段错误（见该类型的注释）
+        window = SpacedownWindow(
             contentRect: NSRect(x: 0, y: 0, width: 520, height: 416),
             styleMask: [.titled, .closable, .miniaturizable],
             backing: .buffered,
             defer: false
         )
-        // 不关掉这个标志，关窗时会因"多释放一次"而崩溃，见 SpacedownWindow
-        window.isReleasedWhenClosed = false
         // 不设标题：头部已有图标 + 名字
         window.title = ""
         super.init()
@@ -212,7 +211,7 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         alert.informativeText = """
         会删除以下内容：
 
-        • /Applications/Spacedown.app
+        • \(Bundle.main.bundlePath)
         • 偏好设置（cn.29dev.Spacedown）
         • 空格预览扩展的系统登记
         • 缓存、窗口状态、调试日志
@@ -235,9 +234,5 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
         NSImage(named: "AppIcon") ?? NSApp.applicationIconImage
     }
 
-    /// 取 bundle 里的真实版本号；裸可执行文件里拿不到时退回 "1.0"。
-    private static var versionLine: String {
-        let short = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
-        return "版本 \(short ?? "1.0")"
-    }
+    private static var versionLine: String { "版本 \(AppInfo.version)" }
 }

@@ -38,12 +38,13 @@ final class WebViewPool {
     /// 实例可能被 A 用到一半、进备用区、再被 B 拿走，那时 A 上的"我载过了"就是过期信息。
     private var contentOwner: [ObjectIdentifier: ObjectIdentifier] = [:]
 
-    private let delegate: WKNavigationDelegate
+    /// 池只借用委托，不持有 —— 窗口持有池，池再强持窗口就成环，关窗后两者都不释放。
+    private weak var delegate: (any WKNavigationDelegate)?
 
     /// 文件被拖到某个 web view 上时回调。
     var onDropFiles: (([URL]) -> Void)?
 
-    init(delegate: WKNavigationDelegate) {
+    init(delegate: any WKNavigationDelegate) {
         self.delegate = delegate
     }
 
@@ -65,18 +66,18 @@ final class WebViewPool {
 
     /// 取这个标签的 web view。`needsLoad == true` 表示里面没有这个标签的内容。
     func acquire(_ tab: DocumentTab) -> (view: WKWebView, needsLoad: Bool) {
+        let view: WKWebView
         if let slot = slots.first(where: { $0.tab === tab }) {
             touch(slot)
-            // 实例是复用的，缩放不会自己回到 1
-            slot.view.pageZoom = tab.zoom
-            return (slot.view, contentOwner[ObjectIdentifier(slot.view)] != ObjectIdentifier(tab))
+            view = slot.view
+        } else {
+            view = spare.popLast() ?? makeView()
+            slots.append(Slot(view: view, tab: tab))
+            evictOverflow()
         }
-
-        let view = spare.popLast() ?? makeView()
+        // 实例是复用的，缩放不会自己回到 1
         view.pageZoom = tab.zoom
-        slots.append(Slot(view: view, tab: tab))
-        evictOverflow()
-        return (view, contentOwner[ObjectIdentifier(view)] != ObjectIdentifier(tab))
+        return (view, !holds(view, tab))
     }
 
     /// 内容载入完成后登记归属，下次取到时才知道是热的。
@@ -135,6 +136,11 @@ final class WebViewPool {
         }
     }
 
+    /// 实例此刻装的是不是这个标签的内容（判"热"的唯一依据）。
+    private func holds(_ view: WKWebView, _ tab: DocumentTab) -> Bool {
+        contentOwner[ObjectIdentifier(view)] == ObjectIdentifier(tab)
+    }
+
     // MARK: - 内部
 
     private func touch(_ slot: Slot) {
@@ -174,7 +180,7 @@ final class WebViewPool {
         return view
     }
 
-    private static func makeBareView(delegate: WKNavigationDelegate) -> SpacedownWebView {
+    private static func makeBareView(delegate: (any WKNavigationDelegate)?) -> SpacedownWebView {
         let configuration = WKWebViewConfiguration()
         configuration.userContentController.addUserScript(LinkInteraction.userScript)
         // 谁当处理器由调用方决定：不是处理器就只注入脚本、不注册回调

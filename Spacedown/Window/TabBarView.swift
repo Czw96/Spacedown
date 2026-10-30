@@ -17,6 +17,10 @@ final class TabBarView: NSView {
     private static let stripGap: CGFloat = 10
     /// 缩放按钮的方框边长（正方形，垂直居中）。
     private static let zoomBoxSide: CGFloat = 22
+    /// 「新建标签」按钮的方框边长，与缩放按钮同规格。
+    private static let newTabSide: CGFloat = 22
+    /// 右侧操作区距窗口右缘的留白。
+    private static let trailingInset: CGFloat = 14
     private static let zoomLabelWidth: CGFloat = 46
     /// 缩放数字的字体。排版要用它反推位置（见 `alignedLabelFrame`），
     /// 所以字号只能从这里改。
@@ -125,7 +129,7 @@ final class TabBarView: NSView {
     override func layout() {
         super.layout()
 
-        let layoutRight = bounds.width - 14
+        let layoutRight = bounds.width - Self.trailingInset
         let zoomInFrame = NSRect(x: layoutRight - Self.zoomBoxSide, y: 8,
                                  width: Self.zoomBoxSide, height: Self.zoomBoxSide)
         zoomInButton.frame = zoomInFrame
@@ -150,7 +154,7 @@ final class TabBarView: NSView {
 
         // 容器内的坐标是相对容器的，所以这里 x 从 0 起算
         guard !items.isEmpty else {
-            newTabButton.frame = NSRect(x: tabsStart, y: 8, width: 22, height: 22)
+            newTabButton.frame = Self.newTabFrame(x: tabsStart, y: 8)
             return
         }
 
@@ -166,8 +170,8 @@ final class TabBarView: NSView {
 
         // `+` 跟着最后一个标签走；标签铺满时钉在标签区右缘 ——
         // 宁可压住最后一个标签，也不能把右侧操作区顶掉
-        newTabButton.frame = NSRect(x: min(tabsStart + x + 4, tabsEnd - 22),
-                                    y: 8, width: 22, height: 22)
+        newTabButton.frame = Self.newTabFrame(x: min(tabsStart + x + 4, tabsEnd - Self.newTabSide),
+                                              y: 8)
     }
 
     // MARK: - 交互
@@ -221,6 +225,10 @@ final class TabBarView: NSView {
     @objc private func zoomInTapped() { onZoomIn?() }
     @objc private func zoomOutTapped() { onZoomOut?() }
     @objc private func zoomResetTapped() { onZoomReset?() }
+
+    private static func newTabFrame(x: CGFloat, y: CGFloat) -> NSRect {
+        NSRect(x: x, y: y, width: newTabSide, height: newTabSide)
+    }
 
     private static func symbolButton(_ name: String, _ description: String, pointSize: CGFloat) -> NSButton {
         let button = NSButton()

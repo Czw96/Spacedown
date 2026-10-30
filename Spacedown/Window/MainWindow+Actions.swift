@@ -1,7 +1,5 @@
 import AppKit
 
-import SharedTheme
-
 /// 菜单与工具栏动作。
 extension MainWindow {
 
@@ -58,7 +56,7 @@ extension MainWindow {
 
     @objc func reloadDocument(_ sender: Any?) {
         guard let tab = currentTab, let view = pool.residentView(for: tab) else { return }
-        load(tab, into: view, restoreScroll: true)
+        load(tab, into: view)
     }
 
     @objc func revealInFinder(_ sender: Any?) {
@@ -142,7 +140,7 @@ extension MainWindow {
         view.evaluateJavaScript("window.scrollY") { [weak self] result, _ in
             guard let self else { return }
             tab.scrollY = (result as? NSNumber)?.doubleValue ?? 0
-            self.load(tab, into: view, restoreScroll: true)
+            self.load(tab, into: view)
         }
     }
 

@@ -14,7 +14,6 @@ final class UpdateInstaller {
 
     struct Release {
         let version: String
-        let page: URL
         let archive: URL
         /// 与 zip 同名的 `.sig` 资产；缺失就拒绝安装。
         let signature: URL?
@@ -84,17 +83,10 @@ final class UpdateInstaller {
         activeDownload?.cancel()
     }
 
-    /// 往更新日志里补一行（界面上看不到的东西都靠它）。
+    /// 往更新日志里补一行（界面上看不到的东西都靠它）。`swap.sh` 也往同一个文件追加。
     static func note(_ line: String) {
         let stamp = ISO8601DateFormatter().string(from: Date())
-        let data = Data("[\(stamp)] \(line)\n".utf8)
-        if let handle = try? FileHandle(forWritingTo: logURL) {
-            defer { try? handle.close() }
-            _ = try? handle.seekToEnd()
-            try? handle.write(contentsOf: data)
-        } else {
-            try? data.write(to: logURL)
-        }
+        FileLog.append("[\(stamp)] \(line)", to: logURL.path)
     }
 
     /// 第一步：下载 + 校验 + 解压，产出待安装的包。这一步不会动当前 App。
@@ -108,7 +100,9 @@ final class UpdateInstaller {
 
         let work = FileManager.default.temporaryDirectory
             .appendingPathComponent("spacedown-update-\(UUID().uuidString)")
-        try? FileManager.default.createDirectory(at: work, withIntermediateDirectories: true)
+        // 0700：待安装的包会在这里落到换包那一刻，别让同一台机器上的其他用户进得来
+        try? FileManager.default.createDirectory(at: work, withIntermediateDirectories: true,
+                                                attributes: [.posixPermissions: 0o700])
 
         do {
             let archive = work.appendingPathComponent("update.zip")
@@ -135,8 +129,7 @@ final class UpdateInstaller {
             onPhase(.preparing)
             // 3. 解压
             let staged = work.appendingPathComponent("staged")
-            try FileManager.default.createDirectory(at: staged, withIntermediateDirectories: true)
-            try run("/usr/bin/ditto", ["-x", "-k", archive.path, staged.path])
+            try unzip(archive, into: staged)
             guard let newApp = try? FileManager.default.contentsOfDirectory(at: staged, includingPropertiesForKeys: nil)
                 .first(where: { $0.pathExtension == "app" }), newApp.lastPathComponent == "Spacedown.app" else {
                 throw Failure.unexpectedBundle
@@ -162,7 +155,7 @@ final class UpdateInstaller {
     /// 第二步：用户点了「重新启动」。换包脚本起来后我们退出，剩下的交给它。
     func apply(_ prepared: Prepared) throws {
         try scheduleSwap(app: prepared.app, staged: prepared.staged, work: prepared.work)
-        append("准备换包：\(prepared.app.path) ← \(prepared.staged.path)（\(prepared.version)）")
+        Self.note("准备换包：\(prepared.app.path) ← \(prepared.staged.path)（\(prepared.version)）")
         NSApp.terminate(nil)
     }
 
@@ -257,30 +250,10 @@ final class UpdateInstaller {
 
     // MARK: - 杂项
 
-    private func run(_ path: String, _ arguments: [String]) throws {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: path)
-        process.arguments = arguments
-        process.standardOutput = Pipe()
-        process.standardError = Pipe()
-        do {
-            try process.run()
-        } catch {
-            throw Failure.unzipFailed
-        }
-        process.waitUntilExit()
-        guard process.terminationStatus == 0 else { throw Failure.unzipFailed }
-    }
-
-    private func append(_ line: String) {
-        let stamp = ISO8601DateFormatter().string(from: Date())
-        let data = Data("[\(stamp)] \(line)\n".utf8)
-        if let handle = try? FileHandle(forWritingTo: Self.logURL) {
-            defer { try? handle.close() }
-            _ = try? handle.seekToEnd()
-            try? handle.write(contentsOf: data)
-        } else {
-            try? data.write(to: Self.logURL)
-        }
+    /// 解压到 `destination`。非 0 退出码一律当作解压失败 —— 后面还有 bundle 校验兜底。
+    private func unzip(_ archive: URL, into destination: URL) throws {
+        try FileManager.default.createDirectory(at: destination, withIntermediateDirectories: true)
+        let status = ProcessRunner.status("/usr/bin/ditto", arguments: ["-x", "-k", archive.path, destination.path])
+        guard status == 0 else { throw Failure.unzipFailed }
     }
 }

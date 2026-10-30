@@ -64,7 +64,8 @@ final class FileWatcher {
     /// 把监听集合对齐到这批文件。多退少补，重复调用是幂等的。
     func watch(_ urls: [URL]) {
         let wanted = Set(urls)
-        for url in entries.keys where !wanted.contains(url) {
+        // 先落地成数组再停：`entries.keys` 是字典的视图，边遍历边删是未定义行为
+        for url in entries.keys.filter({ !wanted.contains($0) }) {
             stop(url)
         }
         for url in wanted where entries[url] == nil {

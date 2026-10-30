@@ -212,7 +212,7 @@ scripts/release.sh --version 1.0.6 --publish --update-tap
 
 - 私钥：`~/.spacedown-signing/update-signing.key`（600）。**丢了就只能换新密钥**，
   而老版本里烘焙的是旧公钥 —— 那种情况只能让用户手动下载一次。
-- 公钥：`Spacedown/Support/UpdateSigning.swift` 的 `publicKeyBase64`。
+- 公钥：`Spacedown/Update/UpdateSigning.swift` 的 `publicKeyBase64`。
 - 没有私钥时 `release.sh` 会跳过签名（别人 clone 也能打包），这种包**不会**被自动安装，
   用户会看到「请手动下载」。
 - 只校 sha256 没有意义：那个值也是 GitHub 算的，账号被盗就一起被换掉。
@@ -423,8 +423,10 @@ Spacedown/
 │   ├── Content/                  LRU web view 池、拖放落点、SpacedownWebView
 │   ├── Document/                 markdown 文件类型判定、文件监听、版心偏好
 │   ├── Settings/                 设置窗、悬停按钮、卸载
-│   ├── Support/                  调试日志、命令行调用、空格预览接管与诊断
-│   └── Resources/                Info.plist、AppIcon.icns、uninstall.sh
+│   ├── QuickLook/                空格预览接管（pluginkit 选举）与诊断导出
+│   ├── Update/                   检查更新、下载验签、换包、更新面板
+│   ├── Support/                  调试日志、命令行调用、版本信息
+│   └── Resources/                Info.plist、AppIcon.icns、uninstall.sh、swap.sh
 ├── QuickLookPreview/             Quick Look 扩展 target（视图型）
 │   ├── PreviewViewController.swift   QLPreviewingController：交接、导航、链接、兜底
 │   ├── PreviewDocument.swift         读文件 → 截断 → 渲染 → 拼文档
@@ -436,7 +438,7 @@ Spacedown/
 ├── Packages/Core/                SwiftPM 包（仅 macOS ≥13，仅 arm64）
 │   ├── Sources/CcmarkGfm/        vendored cmark-gfm 0.29.0.gfm.7
 │   ├── Sources/MarkdownKit/      文档装载（截断）、cmark 渲染、危险 scheme 中和
-│   ├── Sources/SharedTheme/      主题与 HTML 外壳、文档后处理、图片内联、链接语义、色板、Toast
+│   ├── Sources/SharedTheme/      主题与 HTML 外壳、文档后处理、图片内联、链接语义与导航策略、色板、Toast
 │   ├── Sources/DevTools/         Bench / ScrollBench / WebViewBench
 │   └── XcodeSupport/CcmarkGfm/   Xcode 用的 module.modulemap
 ├── design/logo/                  Logo 源：spacedown-icon.svg + build_logo.py（改几何/配色都改这里再重跑）

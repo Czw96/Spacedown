@@ -14,9 +14,10 @@ enum DebugLog {
 
     static let path = "/tmp/spacedown-debug.log"
 
+    /// 每次启动的第一条日志会重建文件，所以要知道"这次启动写过没有"。
     private static let lock = NSLock()
     /// 由 `lock` 保护；`nonisolated(unsafe)` 只是让 Swift 6 允许这个可变全局。
-    nonisolated(unsafe) private static var handle: FileHandle?
+    nonisolated(unsafe) private static var started = false
 
     static var isEnabled: Bool {
         UserDefaults.standard.bool(forKey: "DebugLayout")
@@ -29,21 +30,12 @@ enum DebugLog {
         lock.lock()
         defer { lock.unlock() }
 
-        guard let handle = openIfNeeded() else { return }
-        try? handle.write(contentsOf: Data((line + "\n").utf8))
-        try? handle.synchronize()
-    }
-
-    /// 首次写入时重建文件，并留下本次启动的时间戳。
-    private static func openIfNeeded() -> FileHandle? {
-        if let handle { return handle }
-
-        FileManager.default.createFile(atPath: path, contents: nil)
-        guard let handle = FileHandle(forWritingAtPath: path) else { return nil }
-        self.handle = handle
-        // 新建的句柄停在偏移 0，先把表头写进去，后续写入才是追加
-        try? handle.write(contentsOf: Data("--- Spacedown launch \(Date()) ---\n".utf8))
-        return handle
+        // 首次写入时重建文件，并留下本次启动的时间戳
+        if !started {
+            started = true
+            FileLog.append("--- Spacedown launch \(Date()) ---", to: path, truncate: true)
+        }
+        FileLog.append(line, to: path)
     }
 }
 

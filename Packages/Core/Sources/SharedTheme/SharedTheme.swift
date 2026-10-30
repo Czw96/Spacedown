@@ -29,6 +29,10 @@ public enum SharedTheme {
     ///
     /// CSP 只额外放行 `data:` 图片与内联样式：文档是单文件自包含的（CSS 内联、
     /// 图片在渲染期已是 base64），不需要任何远程资源与脚本。
+    ///
+    /// `form-action` 与 `base-uri` **不继承** `default-src`，必须单独写：前者挡住
+    /// 裸 HTML 里的 `<form action="https://…">` 把内容提交出去，后者挡住 `<base href>`
+    /// 改写页面内的相对地址。
     public static let htmlPrefix: Data = {
         var prefix = Data()
         prefix.append(Data(#"""
@@ -36,7 +40,7 @@ public enum SharedTheme {
         <html lang="zh">
         <head>
         <meta charset="utf-8">
-        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'; form-action 'none'; base-uri 'none'">
         <style>
         """#.utf8))
         prefix.append(css)

@@ -20,9 +20,8 @@ final class UpdateChecker {
     private static let lastCheckKey = "UpdateLastCheck"
     private static let interval: TimeInterval = 24 * 3600
 
-    var currentVersion: String {
-        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0"
-    }
+    /// 裸可执行文件（`--check-updates` 自检）里没有版本号，按 0 处理 —— 任何发布都算更新。
+    var currentVersion: String { AppInfo.marketingVersion ?? "0" }
 
     /// 启动时调用：24 小时内只查一次，失败静默。
     func autoCheckIfNeeded() {
@@ -33,33 +32,40 @@ final class UpdateChecker {
 
     /// `manual` 决定"已是最新"和"检查失败"要不要弹窗 —— 自动检查只在有新版本时打扰用户。
     func check(manual: Bool) {
+        // 面板已经开着就别再开一个：连点两次菜单会叠出两个同样的窗口
+        if let prompt {
+            prompt.show()
+            return
+        }
         var request = URLRequest(url: Self.feed)
         request.timeoutInterval = 12
         request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
 
-        URLSession.shared.dataTask(with: request) { data, _, error in
+        URLSession.shared.dataTask(with: request) { data, response, error in
             Task { @MainActor in
-                UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: Self.lastCheckKey)
-                self.handle(data: data, error: error, manual: manual)
+                self.handle(data: data, response: response, error: error, manual: manual)
             }
         }.resume()
     }
 
     // MARK: - 结果
 
-    private func handle(data: Data?, error: Error?, manual: Bool) {
+    private func handle(data: Data?, response: URLResponse?, error: Error?, manual: Bool) {
         guard let data,
+              (response as? HTTPURLResponse)?.statusCode == 200,
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let tag = json["tag_name"] as? String else {
+            // 失败不记时间戳：否则一次网络抖动就能让自动检查静默一整天
             if manual { presentFailure(error) }
             return
         }
+        UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: Self.lastCheckKey)
 
         let latest = tag.hasPrefix("v") ? String(tag.dropFirst()) : tag
         let page = (json["html_url"] as? String) ?? Self.releasesPage
 
         if Self.isNewer(latest, than: currentVersion) {
-            guard let release = Self.release(from: json, version: latest, page: page) else {
+            guard let release = Self.release(from: json, version: latest) else {
                 // 缺 zip 或签名：当作"只能手动下载"处理，别假装能自动更新
                 if manual { presentManualOnly(latest: latest, page: page) }
                 return
@@ -78,7 +84,7 @@ final class UpdateChecker {
     /// 从 release JSON 里挑出自动更新需要的三个东西：zip、同名 `.sig`、sha256 摘要。
     ///
     /// 缺任何一个都返回 nil —— 没有签名的包一律不自动安装（见 `UpdateSigning` 的理由）。
-    private static func release(from json: [String: Any], version: String, page: String) -> UpdateInstaller.Release? {
+    private static func release(from json: [String: Any], version: String) -> UpdateInstaller.Release? {
         guard let assets = json["assets"] as? [[String: Any]] else { return nil }
         func url(_ asset: [String: Any]) -> URL? {
             (asset["browser_download_url"] as? String).flatMap(URL.init(string:))
@@ -94,7 +100,6 @@ final class UpdateChecker {
         }
         return UpdateInstaller.Release(
             version: version,
-            page: URL(string: page) ?? URL(string: releasesPage)!,
             archive: archive,
             signature: sigAsset.flatMap(url),
             sha256: digest
@@ -197,7 +202,7 @@ final class UpdateChecker {
     /// 用于排查「检查更新没反应」——能分清是网络不通还是版本号判断出错。
     nonisolated static func printStatus() {
         let semaphore = DispatchSemaphore(value: 0)
-        let current = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0"
+        let current = AppInfo.marketingVersion ?? "0"
 
         var request = URLRequest(url: feed)
         request.timeoutInterval = 12

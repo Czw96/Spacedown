@@ -367,8 +367,8 @@ def main() -> None:
 
     appicon_ref = oid("ref:" + APP_ICON)
     appicon_bf = oid("bf:appicon")
-    # 每个资源都单独建 build file —— 之前只给 uninstall.sh 开了后门，
-    # 新加的 swap.sh 因此只进了文件树、没进 Resources 构建阶段，bundle 里根本没有它。
+    # 每个资源都单独建 build file。共用同一份引用会让后加的资源只出现在文件树里、
+    # 不进 Resources 构建阶段 —— 包能打出来，但 bundle 里根本没有那个文件。
     resource_refs = {p: oid("ref:" + p) for p in APP_RESOURCES}
     resource_bfs = {p: oid("bf:res:" + p) for p in APP_RESOURCES}
     theme_css_ref = oid("ref:" + SHAREDTHEME_RESOURCE)

@@ -229,21 +229,16 @@ final class PreviewViewController: NSViewController, @preconcurrency QLPreviewin
     ///
     /// 首要理由是堵住顶层导航：CSP 的 `default-src 'none'` 管不住它，
     /// 不拦的话点一下链接，整个 web view 就导航走，预览被网页顶掉。
+    /// 判定与主 App 共用 `LinkPolicy`，两端行为不会漂移。
     ///
     /// ⚠️ 这里不能直接调 `NSWorkspace`：沙箱里调它会让本进程被 SIGTRAP 杀掉。
     /// 打开链接必须交给不在沙箱里的 `LinkOpener.xpc`。
     func webView(_ webView: WKWebView,
                  decidePolicyFor navigationAction: WKNavigationAction,
                  decisionHandler: @escaping @MainActor (WKNavigationActionPolicy) -> Void) {
-        guard navigationAction.navigationType == .linkActivated,
-              let url = navigationAction.request.url,
-              LinkInteraction.isExternal(url) else {
-            // 站内锚点（含被中和成 `#blocked-…` 的）与其它形态放行：不会把预览带离文档
-            decisionHandler(.allow)
-            return
+        LinkPolicy.decide(navigationAction, using: decisionHandler) { url in
+            openExternal(url)
         }
-        decisionHandler(.cancel)
-        openExternal(url)
     }
 
     private func openExternal(_ url: URL) {

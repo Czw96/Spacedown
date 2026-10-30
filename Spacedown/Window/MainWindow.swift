@@ -85,7 +85,7 @@ final class MainWindow: NSObject, NSWindowDelegate {
         alignTrafficLights()
         // 窗口一建出来就预热 web view：等用户按 ⌘O 再建要多付一次 WebContent 启动
         pool.prewarm()
-        refresh()
+        syncChrome()
     }
 
     // MARK: - 对外
@@ -104,7 +104,7 @@ final class MainWindow: NSObject, NSWindowDelegate {
             return
         }
         tabs.append(DocumentTab(url: url))
-        refresh()
+        syncChrome()
         select(tabs.count - 1)
         show()
     }
@@ -217,7 +217,8 @@ final class MainWindow: NSObject, NSWindowDelegate {
 
     // MARK: - 标签
 
-    private func refresh() {
+    /// 把标签栏、窗口标题、空状态、监听集合对齐到当前的标签状态。
+    private func syncChrome() {
         tabBar.reload(titles: tabs.map(\.title), current: currentIndex)
         emptyState.isHidden = !tabs.isEmpty
 
@@ -244,10 +245,10 @@ final class MainWindow: NSObject, NSWindowDelegate {
         let tab = tabs[index]
         let (view, needsLoad) = pool.acquire(tab)
         if needsLoad {
-            load(tab, into: view, restoreScroll: true)
+            load(tab, into: view)
         }
         present(view)
-        refresh()
+        syncChrome()
     }
 
     func closeTab(at index: Int) {
@@ -260,7 +261,7 @@ final class MainWindow: NSObject, NSWindowDelegate {
         guard !tabs.isEmpty else {
             currentIndex = -1
             removeAllWebViews()
-            refresh()
+            syncChrome()
             return
         }
         // 关掉当前标签后落到右邻居；关的是最后一个就落到新的最后一个
@@ -379,8 +380,9 @@ final class MainWindow: NSObject, NSWindowDelegate {
 
     // MARK: - 载入
 
-    func load(_ tab: DocumentTab, into view: WKWebView, restoreScroll: Bool) {
-        pendingScroll[ObjectIdentifier(view)] = restoreScroll ? tab.scrollY : 0
+    /// 重新出 HTML 并交给 `view`，滚动位置在 `didFinish` 之后还原。
+    func load(_ tab: DocumentTab, into view: WKWebView) {
+        pendingScroll[ObjectIdentifier(view)] = tab.scrollY
         loadStartedAt[ObjectIdentifier(view)] = DispatchTime.now().uptimeNanoseconds
         view.pageZoom = tab.zoom
         beginLoading(view)
@@ -426,7 +428,7 @@ final class MainWindow: NSObject, NSWindowDelegate {
     private func documentChanged(at url: URL) {
         guard let tab = tabs.first(where: { $0.url == url }),
               let view = pool.residentView(for: tab) else { return }
-        load(tab, into: view, restoreScroll: true)
+        load(tab, into: view)
     }
 
     // MARK: - 加载指示

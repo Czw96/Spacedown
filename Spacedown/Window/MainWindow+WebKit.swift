@@ -38,7 +38,7 @@ extension MainWindow: WKNavigationDelegate, WKScriptMessageHandler {
     func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
         guard let tab = tabs.first(where: { pool.residentView(for: $0) === webView }) else { return }
         DebugLog.write("webcontent_terminated 重载 \(tab.url.lastPathComponent)")
-        load(tab, into: webView, restoreScroll: true)
+        load(tab, into: webView)
     }
 
     private func restoreScrollIfNeeded(in webView: WKWebView) {
@@ -66,18 +66,13 @@ extension MainWindow: WKNavigationDelegate, WKScriptMessageHandler {
         }
     }
 
-    /// 兜底：脚本没拦住的导航（中键、键盘回车之类）一律取消并交给系统打开 ——
-    /// 否则渲染页会被网页顶掉。CSP 管不住顶层导航。
+    /// 兜底：脚本没拦住的导航（中键、键盘回车之类）按统一策略处理 ——
+    /// 外链一律取消并交给系统打开，否则渲染页会被网页顶掉。CSP 管不住顶层导航。
     func webView(_ webView: WKWebView,
                  decidePolicyFor navigationAction: WKNavigationAction,
                  decisionHandler: @escaping @MainActor (WKNavigationActionPolicy) -> Void) {
-        guard navigationAction.navigationType == .linkActivated,
-              let url = navigationAction.request.url,
-              LinkInteraction.isExternal(url) else {
-            decisionHandler(.allow)
-            return
+        LinkPolicy.decide(navigationAction, using: decisionHandler) { url in
+            NSWorkspace.shared.open(url)
         }
-        decisionHandler(.cancel)
-        NSWorkspace.shared.open(url)
     }
 }
