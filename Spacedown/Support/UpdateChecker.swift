@@ -97,15 +97,13 @@ final class UpdateChecker {
             page: URL(string: page) ?? URL(string: releasesPage)!,
             archive: archive,
             signature: sigAsset.flatMap(url),
-            sha256: digest,
-            downloadBytes: zip["size"] as? Int
+            sha256: digest
         )
     }
 
     private func presentUpdate(_ release: UpdateInstaller.Release) {
         let prompt = UpdatePromptWindow(version: release.version,
-                                        currentVersion: currentVersion,
-                                        downloadBytes: release.downloadBytes)
+                                        currentVersion: currentVersion)
         prompt.onInstall = { [weak self, weak prompt] in
             guard let self, let prompt else { return }
             self.startInstall(release, in: prompt)

@@ -20,8 +20,6 @@ final class UpdateInstaller {
         let signature: URL?
         /// GitHub 给的 sha256（`digest` 字段），拿得到就再校一遍。
         let sha256: String?
-        /// zip 的字节数，用来在界面上显示真实大小（不要写死"约 1 MB"）。
-        let downloadBytes: Int?
     }
 
     /// 进度阶段。下载有真实百分比；校验与解压量不出来，用不确定态。

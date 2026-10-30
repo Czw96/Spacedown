@@ -43,11 +43,7 @@ final class UpdatePromptWindow: NSPanel {
     private static let topInset: CGFloat = 16
     private static let actionHeight: CGFloat = 30
 
-    /// 初始说明（按真实下载体积生成；拿不到体积就不提大小）。
-    private let idleNote: String
-
-    init(version: String, currentVersion: String, downloadBytes: Int? = nil) {
-        idleNote = Self.idleNoteText(bytes: downloadBytes)
+    init(version: String, currentVersion: String) {
         // `.fullSizeContentView` 让 contentView 铺到标题栏下面。
         // 只用 `.titled` 时内容整体被推下 ~28pt，看起来就是"上面留了一大气白"。
         super.init(contentRect: NSRect(x: 0, y: 0, width: Self.width, height: 180),
@@ -78,10 +74,10 @@ final class UpdatePromptWindow: NSPanel {
         subtitleLabel.stringValue = "当前 \(currentVersion)"
         subtitleLabel.font = .systemFont(ofSize: 12)
         subtitleLabel.textColor = .secondaryLabelColor
-        noteLabel.stringValue = idleNote
         noteLabel.font = .systemFont(ofSize: 12)
         noteLabel.textColor = .secondaryLabelColor
         // 失败原因是完整句子（最长两行），必须折行；固定宽之后 label 才知道在哪断
+        noteLabel.isHidden = true   // 初始状态不显示说明文字，进度/失败时才出现
         noteLabel.lineBreakMode = .byWordWrapping
         noteLabel.maximumNumberOfLines = 3
         noteLabel.preferredMaxLayoutWidth = Self.width - Self.inset * 2
@@ -105,13 +101,19 @@ final class UpdatePromptWindow: NSPanel {
         statusLabel.font = .systemFont(ofSize: 11)
         statusLabel.textColor = .secondaryLabelColor
         statusLabel.alignment = .right
-        statusLabel.widthAnchor.constraint(equalToConstant: 36).isActive = true
+        // 定宽 + 右对齐：百分比从 9% 跳到 100% 时进度条长度不要跟着变
+        statusLabel.widthAnchor.constraint(equalToConstant: 40).isActive = true
 
-        cancelButton.title = "取消"
-        // 无边框 + 次要色：进度条右边那个胶囊状小标签不好看，也不像"操作"
+        // 用 ✕ 图标而不是「取消」两个字：文字会跟右边的百分比抢注意力，
+        // 而且看起来像一条链接。图标按钮是 macOS 下载类界面的通行做法。
         cancelButton.isBordered = false
-        cancelButton.font = .systemFont(ofSize: 12)
+        cancelButton.image = NSImage(systemSymbolName: "xmark", accessibilityDescription: "取消下载")
+        cancelButton.imagePosition = .imageOnly
         cancelButton.contentTintColor = .secondaryLabelColor
+        cancelButton.toolTip = "取消下载"
+        cancelButton.setAccessibilityLabel("取消下载")
+        cancelButton.widthAnchor.constraint(equalToConstant: 16).isActive = true
+        cancelButton.heightAnchor.constraint(equalToConstant: 16).isActive = true
         cancelButton.target = self
         cancelButton.action = #selector(cancel(_:))
 
@@ -190,6 +192,7 @@ final class UpdatePromptWindow: NSPanel {
 
     /// 进入"正在更新"状态：按钮让位给进度条。
     func beginProgress() {
+        noteLabel.isHidden = false
         noteLabel.stringValue = "正在下载…"
         readyToRestart = false
         updateButton.title = "立即更新"
@@ -225,6 +228,7 @@ final class UpdatePromptWindow: NSPanel {
     /// 下载与校验都完成了，等用户点「重新启动」。
     func showReady(version: String) {
         readyToRestart = true
+        noteLabel.isHidden = false
         noteLabel.stringValue = "已下载并校验完成，重启后即为 \(version)。"
         progressRow.isHidden = true
         buttonRow.isHidden = false
@@ -238,7 +242,6 @@ final class UpdatePromptWindow: NSPanel {
 
     /// 取消后回到初始状态，让用户能再点一次。
     func reset() {
-        noteLabel.stringValue = idleNote
         updateButton.title = "立即更新"
         progressBar.stopAnimation(nil)
         progressBar.isIndeterminate = false
@@ -253,6 +256,7 @@ final class UpdatePromptWindow: NSPanel {
 
     /// 失败：原地显示原因 + 「前往下载」，不另开一个弹窗。
     func showFailure(_ message: String) {
+        noteLabel.isHidden = false
         noteLabel.stringValue = message
         progressRow.isHidden = true
         buttonRow.isHidden = false
@@ -276,19 +280,6 @@ final class UpdatePromptWindow: NSPanel {
     }
 
     // MARK: - 内部
-
-    /// "更新包 988 KB，下载后重启一次即可完成。"
-    ///
-    /// 不用写死的"约 1 MB"：包一大就变成假话，而这种谎话没人会去改。
-    private static func idleNoteText(bytes: Int?) -> String {
-        guard let bytes, bytes > 0 else { return "下载后重启一次即可完成。" }
-        let formatter = ByteCountFormatter()
-        // 用二进制换算：1009930 字节显示成 "986 KB"，比 .file 的 "1 MB" 更接近实际
-        formatter.countStyle = .binary
-        formatter.allowedUnits = [.useKB, .useMB]
-        let size = formatter.string(fromByteCount: Int64(bytes))
-        return "更新包 \(size)，下载后重启一次即可完成。"
-    }
 
     @objc private func install(_ sender: Any?) {
         if readyToRestart {
