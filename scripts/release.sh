@@ -247,6 +247,17 @@ if [[ $UPDATE_TAP -eq 1 ]]; then
     fi
 fi
 
+# ---------------------------------------------------------------- 清理登记
+
+# xcodebuild 会把构建目录那份 App 也登记进 LaunchServices。两份副本会让 pkd 拿不准
+# 该用哪个 Quick Look 扩展（实测会退回别家扩展，空格预览直接失效）。打包完就注销它。
+LSREGISTER="/System/Library/Frameworks/CoreServices.framework/Frameworks/"
+LSREGISTER+="LaunchServices.framework/Support/lsregister"
+if [[ -x "$LSREGISTER" ]]; then
+    "$LSREGISTER" -u "$APP" >/dev/null 2>&1 || true
+    echo "==> 已注销构建目录的登记（避免与 /Applications 形成两份副本）"
+fi
+
 # ---------------------------------------------------------------- 汇总
 
 echo ""
