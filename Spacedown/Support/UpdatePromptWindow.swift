@@ -97,21 +97,20 @@ final class UpdatePromptWindow: NSPanel {
         progressBar.isIndeterminate = false
         progressBar.minValue = 0
         progressBar.maxValue = 1
-        progressBar.controlSize = .small
-        statusLabel.font = .systemFont(ofSize: 11)
+        progressBar.controlSize = .regular
+        statusLabel.font = .systemFont(ofSize: 12.5)
         statusLabel.textColor = .secondaryLabelColor
         statusLabel.alignment = .right
         // 定宽 + 右对齐：百分比从 9% 跳到 100% 时进度条长度不要跟着变
-        statusLabel.widthAnchor.constraint(equalToConstant: 40).isActive = true
+        statusLabel.widthAnchor.constraint(equalToConstant: 42).isActive = true
 
         // 「取消更新」放在按钮行的固定位置（右下），而不是挂在进度条右边：
         // 所有状态的动作都在同一处，面板不会因为多了个按钮就变形。
         // 用描边次要样式，不跟「立即更新」抢注意力。
-        // 放在进度行最右：单占一行会让面板下半部分空一块
+        // 与「稍后」同一规格：同一块界面里出现两种高度的按钮会显得杂乱
         cancelButton.title = "取消更新"
         cancelButton.bezelStyle = .rounded
-        cancelButton.controlSize = .mini      // 比进度条上的字略小，不喧宾夺主
-        cancelButton.font = .systemFont(ofSize: 11.5)
+        cancelButton.controlSize = .regular
         cancelButton.target = self
         cancelButton.action = #selector(cancel(_:))
 
