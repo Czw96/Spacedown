@@ -197,6 +197,31 @@ Gatekeeper 拦 —— **macOS 15 起「右键 → 打开」已失效**，只能�
 未信任的第三方 tap 不会被搜索索引，`brew info` 会直接报 `Refusing to load cask`。
 官方 `homebrew-cask` 要求 App 已公证，满足后再提 PR。
 
+### 应用内自动更新（签名）
+
+没有 Developer ID，Apple 不会为更新包背书，所以「这个包确实是我们发的」只能自己保证：
+发布时用 **Ed25519** 私钥签 zip，App 里用烘焙的公钥验签（等价于 Sparkle 的 EdDSA）。
+
+```bash
+# 首次：生成密钥对（私钥落在仓库外，公钥按提示粘进源码）
+swift scripts/sign_update.swift --generate
+
+# 之后每次发布：release.sh 会在打包后自动签名，产出 Spacedown-<ver>.zip.sig 一起上传
+scripts/release.sh --version 1.0.6 --publish --update-tap
+```
+
+- 私钥：`~/.spacedown-signing/update-signing.key`（600）。**丢了就只能换新密钥**，
+  而老版本里烘焙的是旧公钥 —— 那种情况只能让用户手动下载一次。
+- 公钥：`Spacedown/Support/UpdateSigning.swift` 的 `publicKeyBase64`。
+- 没有私钥时 `release.sh` 会跳过签名（别人 clone 也能打包），这种包**不会**被自动安装，
+  用户会看到「请手动下载」。
+- 只校 sha256 没有意义：那个值也是 GitHub 算的，账号被盗就一起被换掉。
+- 换包由 `Spacedown/Resources/swap.sh` 完成：等进程退出 → ditto 到 `.updating` → 两次
+  rename 交换 → 启动成功才删 `.old`，任何一步失败都会回滚。
+
+⚠️ **自更新只解决"升级"**：首次安装仍是未公证的 ad-hoc 包，会被 Gatekeeper 拦一次。
+⚠️ 通过 Homebrew 装的副本自更新后，Caskroom 记录的版本会滞后 —— 之后 `brew upgrade` 会绕一圈。
+
 ---
 
 ## 二、主 App：只读多标签查看器
@@ -215,7 +240,7 @@ AppKit 实现（不是 SwiftUI —— 见 `docs/技术方案.md §7.1`）。一�
 | 缩放 | `webView.pageZoom`（**会重排**，所以放大不出横向滚动条），每个标签各自记 |
 | 宽表格 | 渲染期给 `<table>` 套 `overflow-x: auto` 容器，窄面板里横着滚而不是撑破版心 |
 | 版心宽度 | 「显示 → 版心宽度」，默认铺满，可收到 40%~100%；⌥⌘= / ⌥⌘− / ⌥⌘0，设置会记住 |
-| 检查更新 | 启动 5 秒后自动查（24 小时一次），也可手动「Spacedown → 检查更新…」 |
+| 检查更新 | 启动 5 秒后自动查（24 小时一次），也可手动「Spacedown → 检查更新…」。有新版时「立即更新」会**自己下载、验签、换包并重启**，不用再拖 dmg |
 | 查找 | <kbd>⌘</kbd><kbd>F</kbd> 在内容右上角浮出查找条，边输入边定位、原生高亮；<kbd>↩</kbd> / <kbd>⇧</kbd><kbd>↩</kbd> 前后跳，<kbd>esc</kbd> 收起。检索走 WebKit 自己的 `find`，不注入 JS |
 
 ### 快捷键
