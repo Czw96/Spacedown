@@ -22,6 +22,13 @@ final class UpdateInstaller {
         let sha256: String?
     }
 
+    /// 进度阶段。下载有真实百分比；验签与解压量不出来，用不确定态。
+    enum Phase {
+        case downloading(Double)
+        case verifying
+        case installing
+    }
+
     enum Failure: LocalizedError {
         case notInApplications
         case missingSignature
@@ -56,8 +63,11 @@ final class UpdateInstaller {
 
     private static let logURL = URL(fileURLWithPath: "/tmp/spacedown-update.log")
 
+    /// 下载进度观察者。必须在任务存活期间持有，否则 KVO 立刻失效。
+    private var progressObservation: NSKeyValueObservation?
+
     /// 点「立即更新」后走这里。成功时 App 会自己退出，失败抛错由调用方提示。
-    func install(_ release: Release) async throws {
+    func install(_ release: Release, onPhase: @escaping @MainActor (Phase) -> Void) async throws {
         let appURL = Bundle.main.bundleURL
         guard appURL.deletingLastPathComponent().standardizedFileURL.path == "/Applications" else {
             throw Failure.notInApplications
@@ -71,8 +81,13 @@ final class UpdateInstaller {
 
         let archive = work.appendingPathComponent("update.zip")
         let signatureFile = work.appendingPathComponent("update.zip.sig")
-        try await download(release.archive, to: archive)
-        try await download(signatureURL, to: signatureFile)
+        onPhase(.downloading(0))
+        try await download(release.archive, to: archive) { fraction in
+            onPhase(.downloading(fraction))
+        }
+        // 签名文件只有几十字节，不报进度
+        try await download(signatureURL, to: signatureFile) { _ in }
+        onPhase(.verifying)
 
         // 1. 签名（谁能签出这个包）—— 这是唯一不依赖 GitHub 的凭据
         let signatureText = (try? String(contentsOf: signatureFile, encoding: .utf8)) ?? ""
@@ -105,6 +120,7 @@ final class UpdateInstaller {
         }
 
         // 5. 交给脚本，退出自己
+        onPhase(.installing)
         try scheduleSwap(app: appURL, staged: newApp, work: work)
         append("准备换包：\(appURL.path) ← \(newApp.path)（\(release.version)）")
         NSApp.terminate(nil)
@@ -112,18 +128,39 @@ final class UpdateInstaller {
 
     // MARK: - 下载
 
-    private func download(_ url: URL, to destination: URL) async throws {
+    private func download(_ url: URL, to destination: URL,
+                          onProgress: @escaping @MainActor (Double) -> Void) async throws {
         var request = URLRequest(url: url)
         request.timeoutInterval = 60
+
+        let (temporary, response, error) = try await downloadTask(request, onProgress: onProgress)
+        guard error == nil,
+              (response as? HTTPURLResponse)?.statusCode == 200,
+              let temporary else {
+            throw Failure.downloadFailed
+        }
         do {
-            let (temporary, response) = try await URLSession.shared.download(for: request)
-            guard (response as? HTTPURLResponse)?.statusCode == 200 else { throw Failure.downloadFailed }
             try? FileManager.default.removeItem(at: destination)
             try FileManager.default.moveItem(at: temporary, to: destination)
-        } catch is Failure {
-            throw Failure.downloadFailed
         } catch {
             throw Failure.downloadFailed
+        }
+    }
+
+    /// `downloadTask` 的 `Progress` 在服务器给了 `Content-Length` 时会给出真实比例，
+    /// 不用自己数字节。GitHub 的 Release 资产都有长度，所以这里能出确定进度条。
+    private func downloadTask(_ request: URLRequest,
+                              onProgress: @escaping @MainActor (Double) -> Void)
+        async throws -> (URL?, URLResponse?, Error?) {
+        try await withCheckedThrowingContinuation { continuation in
+            let task = URLSession.shared.downloadTask(with: request) { temporary, response, error in
+                continuation.resume(returning: (temporary, response, error))
+            }
+            progressObservation = task.progress.observe(\.fractionCompleted, options: [.new]) { progress, _ in
+                let value = progress.fractionCompleted
+                Task { @MainActor in onProgress(value) }
+            }
+            task.resume()
         }
     }
 

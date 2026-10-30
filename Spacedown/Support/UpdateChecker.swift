@@ -12,6 +12,9 @@ final class UpdateChecker {
 
     nonisolated private static let feed = URL(string: "https://api.github.com/repos/Czw96/homebrew-spacedown/releases/latest")!
     private static let releasesPage = "https://github.com/Czw96/homebrew-spacedown/releases"
+    /// 正在显示的更新面板。不持有引用的话，窗口一失去焦点就可能被释放。
+    private var prompt: UpdatePromptWindow?
+
     private static let lastCheckKey = "UpdateLastCheck"
     private static let interval: TimeInterval = 24 * 3600
 
@@ -97,21 +100,42 @@ final class UpdateChecker {
     }
 
     private func presentUpdate(_ release: UpdateInstaller.Release) {
-        let alert = NSAlert()
-        alert.messageText = "有新版本 \(release.version)"
-        alert.informativeText = "当前版本 \(currentVersion)。\n点「立即更新」会自动下载、验签并重启，不用再拖拽。"
-        alert.addButton(withTitle: "立即更新")
-        alert.addButton(withTitle: "稍后")
-        guard alert.runModal() == .alertFirstButtonReturn else { return }
+        let prompt = UpdatePromptWindow(version: release.version, currentVersion: currentVersion)
+        prompt.onInstall = { [weak self, weak prompt] in
+            guard let self, let prompt else { return }
+            self.startInstall(release, in: prompt)
+        }
+        prompt.onLater = { [weak self, weak prompt] in
+            prompt?.orderOut(nil)
+            self?.prompt = nil
+        }
+        prompt.onManualDownload = { [weak self, weak prompt] in
+            NSWorkspace.shared.open(release.page)
+            prompt?.orderOut(nil)
+            self?.prompt = nil
+        }
+        self.prompt = prompt
+        prompt.show()
+    }
 
-        UpdateProgress.show("正在更新到 \(release.version)…")
+    /// 点「立即更新」之后的全过程。成功时 App 会自己退出，走不到 catch。
+    private func startInstall(_ release: UpdateInstaller.Release, in prompt: UpdatePromptWindow) {
+        prompt.beginProgress()
         Task { @MainActor in
             do {
-                // 成功的话 App 会自己退出，走不到下一行
-                try await UpdateInstaller.shared.install(release)
+                try await UpdateInstaller.shared.install(release) { phase in
+                    switch phase {
+                    case .downloading(let fraction):
+                        prompt.updateProgress(fraction, note: "正在下载…")
+                    case .verifying:
+                        prompt.updateProgress(nil, note: "正在验签…")
+                    case .installing:
+                        prompt.updateProgress(nil, note: "正在安装，完成后自动重启…")
+                    }
+                }
             } catch {
-                UpdateProgress.hide()
-                presentInstallFailure(error, page: release.page)
+                let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+                prompt.showFailure(message)
             }
         }
     }
@@ -125,18 +149,6 @@ final class UpdateChecker {
         alert.addButton(withTitle: "稍后")
         if alert.runModal() == .alertFirstButtonReturn, let url = URL(string: page) {
             NSWorkspace.shared.open(url)
-        }
-    }
-
-    private func presentInstallFailure(_ error: Error, page: URL) {
-        let alert = NSAlert()
-        alert.messageText = "自动更新没有完成"
-        alert.informativeText = (error as? LocalizedError)?.errorDescription
-            ?? error.localizedDescription
-        alert.addButton(withTitle: "前往下载")
-        alert.addButton(withTitle: "好")
-        if alert.runModal() == .alertFirstButtonReturn {
-            NSWorkspace.shared.open(page)
         }
     }
 
@@ -187,60 +199,5 @@ final class UpdateChecker {
         }.resume()
 
         _ = semaphore.wait(timeout: .now() + 20)
-    }
-}
-
-/// 更新过程中的小浮窗：一个转圈 + 一行字。
-///
-/// 用面板而不是模态 alert：下载、验签、解压都在后台，主线程不该被一个模态循环占住
-/// （`NSApp.terminate` 也需要主线程能继续跑）。
-@MainActor
-private enum UpdateProgress {
-
-    private static var window: NSPanel?
-
-    static func show(_ text: String) {
-        hide()
-
-        let panel = NSPanel(contentRect: NSRect(x: 0, y: 0, width: 330, height: 96),
-                            styleMask: [.titled], backing: .buffered, defer: false)
-        panel.title = "Spacedown 更新"
-        // ⚠️ 程序化创建的窗口必须关掉，否则关窗时多释放一次 → 段错误
-        panel.isReleasedWhenClosed = false
-        panel.level = .floating
-        panel.hidesOnDeactivate = false
-
-        let spinner = NSProgressIndicator()
-        spinner.style = .spinning
-        spinner.controlSize = .small
-        spinner.startAnimation(nil)
-
-        let label = NSTextField(labelWithString: text)
-        label.font = .systemFont(ofSize: 13)
-        label.textColor = .labelColor
-        label.lineBreakMode = .byTruncatingTail
-
-        let stack = NSStackView(views: [spinner, label])
-        stack.orientation = .horizontal
-        stack.alignment = .centerY
-        stack.spacing = 10
-        stack.translatesAutoresizingMaskIntoConstraints = false
-
-        let content = panel.contentView!
-        content.addSubview(stack)
-        NSLayoutConstraint.activate([
-            stack.centerXAnchor.constraint(equalTo: content.centerXAnchor),
-            stack.centerYAnchor.constraint(equalTo: content.centerYAnchor),
-            stack.leadingAnchor.constraint(greaterThanOrEqualTo: content.leadingAnchor, constant: 16),
-        ])
-
-        panel.center()
-        panel.makeKeyAndOrderFront(nil)
-        window = panel
-    }
-
-    static func hide() {
-        window?.orderOut(nil)
-        window = nil
     }
 }
