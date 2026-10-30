@@ -109,10 +109,8 @@ final class UpdateChecker {
             prompt?.orderOut(nil)
             self?.prompt = nil
         }
-        prompt.onManualDownload = { [weak self, weak prompt] in
-            NSWorkspace.shared.open(release.page)
-            prompt?.orderOut(nil)
-            self?.prompt = nil
+        prompt.onCancel = {
+            UpdateInstaller.shared.cancel()
         }
         self.prompt = prompt
         prompt.show()
@@ -133,8 +131,13 @@ final class UpdateChecker {
                         prompt.updateProgress(nil, note: "正在安装，完成后自动重启…")
                     }
                 }
+            } catch is CancellationError {
+                // 用户自己点的取消：回到初始态，让他能再点一次
+                UpdateInstaller.note("用户取消更新")
+                prompt.reset()
             } catch {
                 let message = (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+                UpdateInstaller.note("更新失败：\(message)")
                 prompt.showFailure(message)
             }
         }

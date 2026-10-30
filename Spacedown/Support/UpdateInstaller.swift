@@ -65,6 +65,26 @@ final class UpdateInstaller {
 
     /// 下载进度观察者。必须在任务存活期间持有，否则 KVO 立刻失效。
     private var progressObservation: NSKeyValueObservation?
+    /// 当前在跑的下载任务，供「取消」用。
+    private var activeDownload: URLSessionDownloadTask?
+
+    /// 取消正在进行的下载。非下载阶段（验签、换包）取消没有意义，会自己忽略。
+    func cancel() {
+        activeDownload?.cancel()
+    }
+
+    /// 往更新日志里补一行（界面上看不到的东西都靠它）。
+    static func note(_ line: String) {
+        let stamp = ISO8601DateFormatter().string(from: Date())
+        let data = Data("[\(stamp)] \(line)\n".utf8)
+        if let handle = try? FileHandle(forWritingTo: logURL) {
+            defer { try? handle.close() }
+            _ = try? handle.seekToEnd()
+            try? handle.write(contentsOf: data)
+        } else {
+            try? data.write(to: logURL)
+        }
+    }
 
     /// 点「立即更新」后走这里。成功时 App 会自己退出，失败抛错由调用方提示。
     func install(_ release: Release, onPhase: @escaping @MainActor (Phase) -> Void) async throws {
@@ -133,8 +153,31 @@ final class UpdateInstaller {
         var request = URLRequest(url: url)
         request.timeoutInterval = 60
 
-        let (temporary, response, error) = try await downloadTask(request, onProgress: onProgress)
-        guard error == nil,
+        // GitHub 的资产下载在这个网络下会随机被重置（实测 3 次里 2 次 exit 56），
+        // 所以自己重试几次；每次退避递增，失败也写进日志。
+        var attempt = 0
+        var temporary: URL?
+        var response: URLResponse?
+        var lastError: Error?
+        while attempt < 3 {
+            attempt += 1
+            let result = try await downloadTask(request, onProgress: onProgress)
+            temporary = result.0
+            response = result.1
+            lastError = result.2
+            if let error = lastError as NSError?, error.code == NSURLErrorCancelled {
+                throw CancellationError()
+            }
+            if lastError == nil, (response as? HTTPURLResponse)?.statusCode == 200, temporary != nil {
+                break
+            }
+            Self.note("下载失败（第 \(attempt) 次）：\(lastError?.localizedDescription ?? "状态码 \((response as? HTTPURLResponse)?.statusCode ?? -1)")")
+            if attempt < 3 {
+                try? await Task.sleep(nanoseconds: UInt64(attempt) * 800_000_000)
+            }
+        }
+
+        guard lastError == nil,
               (response as? HTTPURLResponse)?.statusCode == 200,
               let temporary else {
             throw Failure.downloadFailed
@@ -156,6 +199,7 @@ final class UpdateInstaller {
             let task = URLSession.shared.downloadTask(with: request) { temporary, response, error in
                 continuation.resume(returning: (temporary, response, error))
             }
+            activeDownload = task
             progressObservation = task.progress.observe(\.fractionCompleted, options: [.new]) { progress, _ in
                 let value = progress.fractionCompleted
                 Task { @MainActor in onProgress(value) }
