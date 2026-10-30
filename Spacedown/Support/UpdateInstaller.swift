@@ -22,11 +22,22 @@ final class UpdateInstaller {
         let sha256: String?
     }
 
-    /// 进度阶段。下载有真实百分比；验签与解压量不出来，用不确定态。
+    /// 进度阶段。下载有真实百分比；校验与解压量不出来，用不确定态。
     enum Phase {
         case downloading(Double)
         case verifying
-        case installing
+        case preparing
+    }
+
+    /// 已经下载并校验好的更新包，等着用户点「重新启动」。
+    ///
+    /// 之所以不在下载完成后立刻换包：那样窗口会突然消失、App 自己重启，
+    /// 用户来不及反应。拆成两步，重启这件事由用户决定。
+    struct Prepared {
+        let app: URL
+        let staged: URL
+        let work: URL
+        let version: String
     }
 
     enum Failure: LocalizedError {
@@ -86,8 +97,9 @@ final class UpdateInstaller {
         }
     }
 
-    /// 点「立即更新」后走这里。成功时 App 会自己退出，失败抛错由调用方提示。
-    func install(_ release: Release, onPhase: @escaping @MainActor (Phase) -> Void) async throws {
+    /// 第一步：下载 + 校验 + 解压，产出待安装的包。这一步不会动当前 App。
+    func prepare(_ release: Release,
+                 onPhase: @escaping @MainActor (Phase) -> Void) async throws -> Prepared {
         let appURL = Bundle.main.bundleURL
         guard appURL.deletingLastPathComponent().standardizedFileURL.path == "/Applications" else {
             throw Failure.notInApplications
@@ -97,53 +109,66 @@ final class UpdateInstaller {
         let work = FileManager.default.temporaryDirectory
             .appendingPathComponent("spacedown-update-\(UUID().uuidString)")
         try? FileManager.default.createDirectory(at: work, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: work) }
 
-        let archive = work.appendingPathComponent("update.zip")
-        let signatureFile = work.appendingPathComponent("update.zip.sig")
-        onPhase(.downloading(0))
-        try await download(release.archive, to: archive) { fraction in
-            onPhase(.downloading(fraction))
+        do {
+            let archive = work.appendingPathComponent("update.zip")
+            let signatureFile = work.appendingPathComponent("update.zip.sig")
+            onPhase(.downloading(0))
+            try await download(release.archive, to: archive) { fraction in
+                onPhase(.downloading(fraction))
+            }
+            // 校验文件只有几十字节，不报进度
+            try await download(signatureURL, to: signatureFile) { _ in }
+            onPhase(.verifying)
+
+            // 1. 校验更新包确实由我们发布（Ed25519 签名，唯一不依赖 GitHub 的凭据）
+            let signatureText = (try? String(contentsOf: signatureFile, encoding: .utf8)) ?? ""
+            try UpdateSigning.verify(fileURL: archive, signatureBase64: signatureText)
+
+            // 2. 摘要（传输是否损坏），两道都过才解压
+            if let expected = release.sha256 {
+                let actual = SHA256.hash(data: try Data(contentsOf: archive, options: .mappedIfSafe))
+                    .map { String(format: "%02x", $0) }.joined()
+                guard actual == expected.lowercased() else { throw Failure.checksumMismatch }
+            }
+
+            onPhase(.preparing)
+            // 3. 解压
+            let staged = work.appendingPathComponent("staged")
+            try FileManager.default.createDirectory(at: staged, withIntermediateDirectories: true)
+            try run("/usr/bin/ditto", ["-x", "-k", archive.path, staged.path])
+            guard let newApp = try? FileManager.default.contentsOfDirectory(at: staged, includingPropertiesForKeys: nil)
+                .first(where: { $0.pathExtension == "app" }), newApp.lastPathComponent == "Spacedown.app" else {
+                throw Failure.unexpectedBundle
+            }
+
+            // 4. 新包的身份证：bundle id 必须是我们，版本必须是这次要装的
+            let info = NSDictionary(contentsOf: newApp.appendingPathComponent("Contents/Info.plist"))
+            guard (info?["CFBundleIdentifier"] as? String) == Bundle.main.bundleIdentifier else {
+                throw Failure.unexpectedBundle
+            }
+            let stagedVersion = info?["CFBundleShortVersionString"] as? String ?? ""
+            guard stagedVersion == release.version else {
+                throw Failure.versionMismatch(expected: release.version, actual: stagedVersion)
+            }
+
+            return Prepared(app: appURL, staged: newApp, work: work, version: release.version)
+        } catch {
+            try? FileManager.default.removeItem(at: work)
+            throw error
         }
-        // 签名文件只有几十字节，不报进度
-        try await download(signatureURL, to: signatureFile) { _ in }
-        onPhase(.verifying)
+    }
 
-        // 1. 签名（谁能签出这个包）—— 这是唯一不依赖 GitHub 的凭据
-        let signatureText = (try? String(contentsOf: signatureFile, encoding: .utf8)) ?? ""
-        try UpdateSigning.verify(fileURL: archive, signatureBase64: signatureText)
-
-        // 2. 摘要（传输是否损坏），两道都过才解压
-        if let expected = release.sha256 {
-            let actual = SHA256.hash(data: try Data(contentsOf: archive, options: .mappedIfSafe))
-                .map { String(format: "%02x", $0) }.joined()
-            guard actual == expected.lowercased() else { throw Failure.checksumMismatch }
-        }
-
-        // 3. 解压
-        let staged = work.appendingPathComponent("staged")
-        try FileManager.default.createDirectory(at: staged, withIntermediateDirectories: true)
-        try run("/usr/bin/ditto", ["-x", "-k", archive.path, staged.path])
-        guard let newApp = try? FileManager.default.contentsOfDirectory(at: staged, includingPropertiesForKeys: nil)
-            .first(where: { $0.pathExtension == "app" }), newApp.lastPathComponent == "Spacedown.app" else {
-            throw Failure.unexpectedBundle
-        }
-
-        // 4. 新包的身份证：bundle id 必须是我们，版本必须是这次要装的
-        let info = NSDictionary(contentsOf: newApp.appendingPathComponent("Contents/Info.plist"))
-        guard (info?["CFBundleIdentifier"] as? String) == Bundle.main.bundleIdentifier else {
-            throw Failure.unexpectedBundle
-        }
-        let stagedVersion = info?["CFBundleShortVersionString"] as? String ?? ""
-        guard stagedVersion == release.version else {
-            throw Failure.versionMismatch(expected: release.version, actual: stagedVersion)
-        }
-
-        // 5. 交给脚本，退出自己
-        onPhase(.installing)
-        try scheduleSwap(app: appURL, staged: newApp, work: work)
-        append("准备换包：\(appURL.path) ← \(newApp.path)（\(release.version)）")
+    /// 第二步：用户点了「重新启动」。换包脚本起来后我们退出，剩下的交给它。
+    func apply(_ prepared: Prepared) throws {
+        try scheduleSwap(app: prepared.app, staged: prepared.staged, work: prepared.work)
+        append("准备换包：\(prepared.app.path) ← \(prepared.staged.path)（\(prepared.version)）")
         NSApp.terminate(nil)
+    }
+
+    /// 用户选择「稍后」：把已经下载好的临时文件清掉。
+    func discard(_ prepared: Prepared) {
+        try? FileManager.default.removeItem(at: prepared.work)
     }
 
     // MARK: - 下载

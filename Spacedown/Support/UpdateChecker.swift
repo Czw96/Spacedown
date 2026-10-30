@@ -14,6 +14,8 @@ final class UpdateChecker {
     private static let releasesPage = "https://github.com/Czw96/homebrew-spacedown/releases"
     /// 正在显示的更新面板。不持有引用的话，窗口一失去焦点就可能被释放。
     private var prompt: UpdatePromptWindow?
+    /// 已下载校验完、等待用户点「重新启动」的包。
+    private var preparedUpdate: UpdateInstaller.Prepared?
 
     private static let lastCheckKey = "UpdateLastCheck"
     private static let interval: TimeInterval = 24 * 3600
@@ -106,8 +108,17 @@ final class UpdateChecker {
             self.startInstall(release, in: prompt)
         }
         prompt.onLater = { [weak self, weak prompt] in
+            if let prepared = self?.preparedUpdate {
+                UpdateInstaller.shared.discard(prepared)
+                self?.preparedUpdate = nil
+            }
             prompt?.orderOut(nil)
             self?.prompt = nil
+        }
+        prompt.onRestart = { [weak self] in
+            guard let prepared = self?.preparedUpdate else { return }
+            // apply 里会启动换包脚本并退出 App，走不到下一行
+            try? UpdateInstaller.shared.apply(prepared)
         }
         prompt.onCancel = {
             UpdateInstaller.shared.cancel()
@@ -116,21 +127,23 @@ final class UpdateChecker {
         prompt.show()
     }
 
-    /// 点「立即更新」之后的全过程。成功时 App 会自己退出，走不到 catch。
+    /// 点「立即更新」之后：先下载 + 校验，完成后停在「重新启动」，不擅自重启。
     private func startInstall(_ release: UpdateInstaller.Release, in prompt: UpdatePromptWindow) {
         prompt.beginProgress()
         Task { @MainActor in
             do {
-                try await UpdateInstaller.shared.install(release) { phase in
+                let prepared = try await UpdateInstaller.shared.prepare(release) { phase in
                     switch phase {
                     case .downloading(let fraction):
                         prompt.updateProgress(fraction, note: "正在下载…")
                     case .verifying:
-                        prompt.updateProgress(nil, note: "正在验签…")
-                    case .installing:
-                        prompt.updateProgress(nil, note: "正在安装，完成后自动重启…")
+                        prompt.updateProgress(nil, note: "正在校验更新包…")
+                    case .preparing:
+                        prompt.updateProgress(nil, note: "正在准备…")
                     }
                 }
+                self.preparedUpdate = prepared
+                prompt.showReady(version: release.version)
             } catch is CancellationError {
                 // 用户自己点的取消：回到初始态，让他能再点一次
                 UpdateInstaller.note("用户取消更新")

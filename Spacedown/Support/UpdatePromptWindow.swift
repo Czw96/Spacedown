@@ -19,6 +19,8 @@ final class UpdatePromptWindow: NSPanel {
     var onLater: (() -> Void)?
     /// 下载中途点「取消」。
     var onCancel: (() -> Void)?
+    /// 下载校验完成后点「重新启动」。
+    var onRestart: (() -> Void)?
 
     private let titleLabel = NSTextField(labelWithString: "")
     private let subtitleLabel = NSTextField(labelWithString: "")
@@ -31,6 +33,8 @@ final class UpdatePromptWindow: NSPanel {
     private let buttonRow = NSStackView()
     private let progressRow = NSStackView()
     private let actionArea = NSView()
+    /// 主按钮此刻是「立即更新」还是「重新启动」。
+    private var readyToRestart = false
     private let root = NSStackView()
 
     private static let width: CGFloat = 400
@@ -70,7 +74,7 @@ final class UpdatePromptWindow: NSPanel {
         subtitleLabel.stringValue = "当前 \(currentVersion)"
         subtitleLabel.font = .systemFont(ofSize: 12)
         subtitleLabel.textColor = .secondaryLabelColor
-        noteLabel.stringValue = "自动下载并验签，完成后会重启。"
+        noteLabel.stringValue = "更新包约 1 MB，下载后重启一次即可完成。"
         noteLabel.font = .systemFont(ofSize: 12)
         noteLabel.textColor = .secondaryLabelColor
         // 失败原因是完整句子（最长两行），必须折行；固定宽之后 label 才知道在哪断
@@ -100,11 +104,12 @@ final class UpdatePromptWindow: NSPanel {
         statusLabel.widthAnchor.constraint(equalToConstant: 36).isActive = true
 
         cancelButton.title = "取消"
-        cancelButton.bezelStyle = .inline
-        cancelButton.controlSize = .small
+        // 无边框 + 次要色：进度条右边那个胶囊状小标签不好看，也不像"操作"
+        cancelButton.isBordered = false
+        cancelButton.font = .systemFont(ofSize: 12)
+        cancelButton.contentTintColor = .secondaryLabelColor
         cancelButton.target = self
         cancelButton.action = #selector(cancel(_:))
-        cancelButton.keyEquivalent = "\u{1b}"
 
         progressRow.orientation = .horizontal
         progressRow.alignment = .centerY
@@ -182,6 +187,7 @@ final class UpdatePromptWindow: NSPanel {
     /// 进入"正在更新"状态：按钮让位给进度条。
     func beginProgress() {
         noteLabel.stringValue = "正在下载…"
+        readyToRestart = false
         updateButton.title = "立即更新"
         buttonRow.isHidden = true
         progressRow.isHidden = false
@@ -212,9 +218,23 @@ final class UpdatePromptWindow: NSPanel {
         }
     }
 
+    /// 下载与校验都完成了，等用户点「重新启动」。
+    func showReady(version: String) {
+        readyToRestart = true
+        noteLabel.stringValue = "已下载并校验完成，重启后即为 \(version)。"
+        progressRow.isHidden = true
+        buttonRow.isHidden = false
+        updateButton.isHidden = false
+        updateButton.title = "重新启动"
+        updateButton.keyEquivalent = "\r"
+        laterButton.title = "稍后"
+        laterButton.isHidden = false
+        resizeToFit()
+    }
+
     /// 取消后回到初始状态，让用户能再点一次。
     func reset() {
-        noteLabel.stringValue = "自动下载并验签，完成后会重启。"
+        noteLabel.stringValue = "更新包约 1 MB，下载后重启一次即可完成。"
         updateButton.title = "立即更新"
         progressBar.stopAnimation(nil)
         progressBar.isIndeterminate = false
@@ -253,7 +273,13 @@ final class UpdatePromptWindow: NSPanel {
 
     // MARK: - 内部
 
-    @objc private func install(_ sender: Any?) { onInstall?() }
+    @objc private func install(_ sender: Any?) {
+        if readyToRestart {
+            onRestart?()
+        } else {
+            onInstall?()
+        }
+    }
     @objc private func cancel(_ sender: Any?) {
         cancelButton.isHidden = true
         noteLabel.stringValue = "正在取消…"
