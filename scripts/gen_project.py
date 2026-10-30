@@ -59,7 +59,7 @@ SHAREDTHEME_RESOURCE = CORE + "/Sources/SharedTheme/theme.css"
 APP_SOURCES = files_under("Spacedown", (".swift",))
 APP_PLIST = "Spacedown/Resources/Info.plist"
 APP_ICON = "Spacedown/Resources/AppIcon.icns"          # CFBundleIconFile
-APP_RESOURCES = ["Spacedown/Resources/uninstall.sh"]
+APP_RESOURCES = ["Spacedown/Resources/uninstall.sh", "Spacedown/Resources/swap.sh"]
 
 EXT_SOURCES = files_under("QuickLookPreview", (".swift",))
 EXT_PLIST = "QuickLookPreview/Resources/Info.plist"
@@ -367,8 +367,10 @@ def main() -> None:
 
     appicon_ref = oid("ref:" + APP_ICON)
     appicon_bf = oid("bf:appicon")
-    uninstall_ref = oid("ref:" + APP_RESOURCES[0])
-    uninstall_bf = oid("bf:uninstall")
+    # 每个资源都单独建 build file —— 之前只给 uninstall.sh 开了后门，
+    # 新加的 swap.sh 因此只进了文件树、没进 Resources 构建阶段，bundle 里根本没有它。
+    resource_refs = {p: oid("ref:" + p) for p in APP_RESOURCES}
+    resource_bfs = {p: oid("bf:res:" + p) for p in APP_RESOURCES}
     theme_css_ref = oid("ref:" + SHAREDTHEME_RESOURCE)
     theme_css_bf = oid("bf:theme.css")
 
@@ -392,8 +394,10 @@ def main() -> None:
         theme_css_bf, theme_css_ref)
     bf += "\t\t%s /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = %s /* AppIcon.icns */; };\n" % (
         appicon_bf, appicon_ref)
-    bf += "\t\t%s /* uninstall.sh in Resources */ = {isa = PBXBuildFile; fileRef = %s /* uninstall.sh */; };\n" % (
-        uninstall_bf, uninstall_ref)
+    for p in APP_RESOURCES:
+        name = Path(p).name
+        bf += "\t\t%s /* %s in Resources */ = {isa = PBXBuildFile; fileRef = %s /* %s */; };\n" % (
+            resource_bfs[p], name, resource_refs[p], name)
 
     link_bfs = {}
     for label in ["libCcmarkGfm.a", "MarkdownKit.framework", "SharedTheme.framework",
@@ -644,8 +648,9 @@ def main() -> None:
                                    [(theme_css_bf, "theme.css in Resources")]),
         "Spacedown": files_phase(phases[("Spacedown", "Resources")],
                                  "PBXResourcesBuildPhase", "Resources",
-                                 [(appicon_bf, "AppIcon.icns in Resources"),
-                                  (uninstall_bf, "uninstall.sh in Resources")]),
+                                 [(appicon_bf, "AppIcon.icns in Resources")]
+                                 + [(resource_bfs[p], Path(p).name + " in Resources")
+                                    for p in APP_RESOURCES]),
         "QuickLookPreview": empty_phase(phases[("QuickLookPreview", "Resources")],
                                         "PBXResourcesBuildPhase", "Resources"),
     }

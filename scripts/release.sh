@@ -177,6 +177,20 @@ else
     [[ -f "$DMG" ]] || { echo "找不到 $DMG —— --skip-build 时 dmg 必须还在"; exit 1; }
 fi
 
+# ---------------------------------------------------------------- 更新包签名
+
+# 应用内自动更新要求 zip 带 Ed25519 签名（App 里烘焙了对应公钥，见
+# Spacedown/Support/UpdateSigning.swift）。私钥在仓库外，没有就跳过：
+# 别人 clone 也能打包，只是这个包不能自动更新，用户走手动下载。
+SIGNATURE="$ZIP.sig"
+if [[ -f "$HOME/.spacedown-signing/update-signing.key" ]]; then
+    echo "==> 签名更新包"
+    swift scripts/sign_update.swift --sign "$ZIP"
+else
+    echo "⚠️  没有更新签名私钥（~/.spacedown-signing/update-signing.key），跳过签名"
+    rm -f "$SIGNATURE"
+fi
+
 # ---------------------------------------------------------------- 发布
 
 if [[ $PUBLISH -eq 1 ]]; then
@@ -196,7 +210,7 @@ brew tap czw96/spacedown
 brew trust czw96/spacedown   # 第三方 tap 首次需要显式信任
 brew install --cask spacedown
 TXT
-    gh release create "v$VERSION" "$DMG" "$ZIP" \
+    gh release create "v$VERSION" "$DMG" "$ZIP" ${SIGNATURE:+"$SIGNATURE"} \
         --repo "$RELEASE_REPO" \
         --title "$APP_NAME $VERSION" \
         --notes-file "$NOTES"
