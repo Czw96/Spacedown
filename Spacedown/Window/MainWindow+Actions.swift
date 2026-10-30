@@ -19,8 +19,12 @@ extension MainWindow {
         for url in panel.urls { open(url) }
     }
 
-    @objc func closeCurrentTab(_ sender: Any?) {
-        // 只剩一个标签时 ⌘W 关窗口，和浏览器一致
+    /// 「关闭」的文档窗版本：还有别的标签就关标签，否则关窗口。
+    ///
+    /// 菜单项用的是这个自定义选择器，而不是标准的 `performClose:` —— 后者同时也是
+    /// **红灯按钮**的动作，绑上去会让点红灯变成"一次关一个标签"，与 Safari / Chrome 不一致。
+    /// 代价是设置窗当 key 时响应链到不了这里，由 `AppDelegate.closeWindowOrTab` 兜底。
+    @objc func closeWindowOrTab(_ sender: Any?) {
         if currentIndex >= 0 && tabs.count > 1 {
             closeTab(at: currentIndex)
         } else {

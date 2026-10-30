@@ -223,7 +223,7 @@ AppKit 实现（不是 SwiftUI —— 见 `docs/技术方案.md §7.1`）。一�
 | 动作 | 快捷键 |
 |---|---|
 | 打开文件… | <kbd>⌘</kbd> <kbd>O</kbd> |
-| 关闭标签（只剩一个时关窗口） | <kbd>⌘</kbd> <kbd>W</kbd> |
+| 关闭（文档窗里关标签，只剩一个时关窗口；设置窗里直接关窗） | <kbd>⌘</kbd> <kbd>W</kbd> |
 | 重新载入 | <kbd>⌘</kbd> <kbd>R</kbd> |
 | 下一个 / 上一个标签 | <kbd>⌃</kbd> <kbd>⇥</kbd> / <kbd>⌃</kbd> <kbd>⇧</kbd> <kbd>⇥</kbd> |
 | 同上的第二入口 | <kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>]</kbd> / <kbd>⌘</kbd> <kbd>⇧</kbd> <kbd>[</kbd> |

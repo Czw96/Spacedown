@@ -30,6 +30,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    /// ⌘W 的兜底：文档窗不是 key（比如设置窗在前）时，关掉当前 key window。
+    ///
+    /// 响应链是 keyWindow.firstResponder → … → keyWindow → keyWindow.delegate → NSApp → 本对象。
+    /// 文档窗为 key 时会被 `MainWindow.closeWindowOrTab` 先接住，所以这里只处理"其它窗口"。
+    /// 没有它的话，设置窗里按 ⌘W 会被无声丢弃 —— 菜单项找不到接收者，什么都不会发生。
+    @objc func closeWindowOrTab(_ sender: Any?) {
+        NSApp.keyWindow?.performClose(sender)
+    }
+
     /// 双击文件、拖到 Dock、「打开方式 → Spacedown」都走这里。
     func application(_ application: NSApplication, open urls: [URL]) {
         DebugLog.write("open urls=\(urls.count) \(urls.map(\.lastPathComponent))")

@@ -46,7 +46,9 @@ enum AppMenu {
     private static func fileMenu() -> NSMenuItem {
         menu("文件", items: [
             item("打开…", action: #selector(MainWindow.openDocument(_:)), key: "o"),
-            item("关闭标签", action: #selector(MainWindow.closeCurrentTab(_:)), key: "w"),
+            // 文档窗里是"关标签 / 最后一个时关窗"（MainWindow.closeWindowOrTab），
+            // 其它窗口（比如设置窗）当 key 时由 AppDelegate 的同名动作兜底关窗
+            item("关闭", action: #selector(MainWindow.closeWindowOrTab(_:)), key: "w"),
             item("重新载入", action: #selector(MainWindow.reloadDocument(_:)), key: "r"),
             .separator(),
             item("在 Finder 中显示", action: #selector(MainWindow.revealInFinder(_:)),
