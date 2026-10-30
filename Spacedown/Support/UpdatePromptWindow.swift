@@ -43,7 +43,11 @@ final class UpdatePromptWindow: NSPanel {
     private static let topInset: CGFloat = 16
     private static let actionHeight: CGFloat = 30
 
-    init(version: String, currentVersion: String) {
+    /// 初始说明（按真实下载体积生成；拿不到体积就不提大小）。
+    private let idleNote: String
+
+    init(version: String, currentVersion: String, downloadBytes: Int? = nil) {
+        idleNote = Self.idleNoteText(bytes: downloadBytes)
         // `.fullSizeContentView` 让 contentView 铺到标题栏下面。
         // 只用 `.titled` 时内容整体被推下 ~28pt，看起来就是"上面留了一大气白"。
         super.init(contentRect: NSRect(x: 0, y: 0, width: Self.width, height: 180),
@@ -74,7 +78,7 @@ final class UpdatePromptWindow: NSPanel {
         subtitleLabel.stringValue = "当前 \(currentVersion)"
         subtitleLabel.font = .systemFont(ofSize: 12)
         subtitleLabel.textColor = .secondaryLabelColor
-        noteLabel.stringValue = "更新包约 1 MB，下载后重启一次即可完成。"
+        noteLabel.stringValue = idleNote
         noteLabel.font = .systemFont(ofSize: 12)
         noteLabel.textColor = .secondaryLabelColor
         // 失败原因是完整句子（最长两行），必须折行；固定宽之后 label 才知道在哪断
@@ -234,7 +238,7 @@ final class UpdatePromptWindow: NSPanel {
 
     /// 取消后回到初始状态，让用户能再点一次。
     func reset() {
-        noteLabel.stringValue = "更新包约 1 MB，下载后重启一次即可完成。"
+        noteLabel.stringValue = idleNote
         updateButton.title = "立即更新"
         progressBar.stopAnimation(nil)
         progressBar.isIndeterminate = false
@@ -272,6 +276,19 @@ final class UpdatePromptWindow: NSPanel {
     }
 
     // MARK: - 内部
+
+    /// "更新包 988 KB，下载后重启一次即可完成。"
+    ///
+    /// 不用写死的"约 1 MB"：包一大就变成假话，而这种谎话没人会去改。
+    private static func idleNoteText(bytes: Int?) -> String {
+        guard let bytes, bytes > 0 else { return "下载后重启一次即可完成。" }
+        let formatter = ByteCountFormatter()
+        // 用二进制换算：1009930 字节显示成 "986 KB"，比 .file 的 "1 MB" 更接近实际
+        formatter.countStyle = .binary
+        formatter.allowedUnits = [.useKB, .useMB]
+        let size = formatter.string(fromByteCount: Int64(bytes))
+        return "更新包 \(size)，下载后重启一次即可完成。"
+    }
 
     @objc private func install(_ sender: Any?) {
         if readyToRestart {
