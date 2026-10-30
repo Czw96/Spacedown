@@ -104,16 +104,14 @@ final class UpdatePromptWindow: NSPanel {
         // 定宽 + 右对齐：百分比从 9% 跳到 100% 时进度条长度不要跟着变
         statusLabel.widthAnchor.constraint(equalToConstant: 40).isActive = true
 
-        // 用 ✕ 图标而不是「取消」两个字：文字会跟右边的百分比抢注意力，
-        // 而且看起来像一条链接。图标按钮是 macOS 下载类界面的通行做法。
-        cancelButton.isBordered = false
-        cancelButton.image = NSImage(systemSymbolName: "xmark", accessibilityDescription: "取消下载")
-        cancelButton.imagePosition = .imageOnly
-        cancelButton.contentTintColor = .secondaryLabelColor
-        cancelButton.toolTip = "取消下载"
-        cancelButton.setAccessibilityLabel("取消下载")
-        cancelButton.widthAnchor.constraint(equalToConstant: 16).isActive = true
-        cancelButton.heightAnchor.constraint(equalToConstant: 16).isActive = true
+        // 「取消更新」放在按钮行的固定位置（右下），而不是挂在进度条右边：
+        // 所有状态的动作都在同一处，面板不会因为多了个按钮就变形。
+        // 用描边次要样式，不跟「立即更新」抢注意力。
+        // 放在进度行最右：单占一行会让面板下半部分空一块
+        cancelButton.title = "取消更新"
+        cancelButton.bezelStyle = .rounded
+        cancelButton.controlSize = .mini      // 比进度条上的字略小，不喧宾夺主
+        cancelButton.font = .systemFont(ofSize: 11.5)
         cancelButton.target = self
         cancelButton.action = #selector(cancel(_:))
 
@@ -123,6 +121,7 @@ final class UpdatePromptWindow: NSPanel {
         progressRow.addArrangedSubview(progressBar)
         progressRow.addArrangedSubview(statusLabel)
         progressRow.addArrangedSubview(cancelButton)
+        progressRow.setCustomSpacing(10, after: statusLabel)
         progressRow.isHidden = true
 
         // 按钮行：靠右。用一根弹簧把按钮推到右边，别靠 stack 的 alignment。
@@ -146,16 +145,19 @@ final class UpdatePromptWindow: NSPanel {
         buttonRow.addArrangedSubview(laterButton)
         buttonRow.addArrangedSubview(updateButton)
 
-        for view in [buttonRow, progressRow] {
-            view.translatesAutoresizingMaskIntoConstraints = false
-            actionArea.addSubview(view)
-            NSLayoutConstraint.activate([
-                view.leadingAnchor.constraint(equalTo: actionArea.leadingAnchor),
-                view.trailingAnchor.constraint(equalTo: actionArea.trailingAnchor),
-                view.centerYAnchor.constraint(equalTo: actionArea.centerYAnchor),
-            ])
-        }
-        actionArea.heightAnchor.constraint(equalToConstant: Self.actionHeight).isActive = true
+        // 纵向排：下载时"进度条在上、取消按钮在下"，两者不能挤在同一行
+        let actionStack = NSStackView(views: [progressRow, buttonRow])
+        actionStack.orientation = .vertical
+        actionStack.alignment = .width      // 两行都撑满，进度条才能拉长
+        actionStack.spacing = 10
+        actionStack.translatesAutoresizingMaskIntoConstraints = false
+        actionArea.addSubview(actionStack)
+        NSLayoutConstraint.activate([
+            actionStack.leadingAnchor.constraint(equalTo: actionArea.leadingAnchor),
+            actionStack.trailingAnchor.constraint(equalTo: actionArea.trailingAnchor),
+            actionStack.topAnchor.constraint(equalTo: actionArea.topAnchor),
+            actionStack.bottomAnchor.constraint(equalTo: actionArea.bottomAnchor),
+        ])
 
         root.setViews([header, noteLabel, actionArea], in: .leading)
         root.orientation = .vertical
@@ -198,9 +200,10 @@ final class UpdatePromptWindow: NSPanel {
         updateButton.title = "立即更新"
         buttonRow.isHidden = true
         progressRow.isHidden = false
+        buttonRow.isHidden = true         // 下载中动作只有「取消更新」，它就在进度行右侧
         cancelButton.isHidden = false
-        updateButton.isHidden = true      // 下载中不显示「立即更新」，避免重复触发
-        laterButton.title = "稍后"
+        updateButton.isHidden = false     // 回到按钮行时仍是「立即更新」
+        resizeToFit()
         progressBar.isIndeterminate = false
         progressBar.doubleValue = 0
         statusLabel.stringValue = ""
@@ -220,7 +223,7 @@ final class UpdatePromptWindow: NSPanel {
             progressBar.isIndeterminate = true
             progressBar.startAnimation(nil)
             statusLabel.stringValue = ""
-            // 验签之后就要动磁盘了，这时候"取消"只会留下半成品，直接收掉
+            // 校验之后就要动磁盘了，这时候"取消"只会留下半成品，直接收掉
             cancelButton.isHidden = true
         }
     }
@@ -237,6 +240,7 @@ final class UpdatePromptWindow: NSPanel {
         updateButton.keyEquivalent = "\r"
         laterButton.title = "稍后"
         laterButton.isHidden = false
+        cancelButton.isHidden = true
         resizeToFit()
     }
 
@@ -252,6 +256,7 @@ final class UpdatePromptWindow: NSPanel {
         updateButton.keyEquivalent = "\r"
         laterButton.title = "稍后"
         laterButton.isHidden = false
+        cancelButton.isHidden = true
     }
 
     /// 失败：原地显示原因 + 「前往下载」，不另开一个弹窗。
@@ -266,6 +271,7 @@ final class UpdatePromptWindow: NSPanel {
         updateButton.title = "重试更新"
         updateButton.keyEquivalent = "\r"
         laterButton.title = "关闭"
+        cancelButton.isHidden = true
         resizeToFit()
     }
 
