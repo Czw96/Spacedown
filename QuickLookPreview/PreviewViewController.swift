@@ -28,6 +28,12 @@ final class PreviewViewController: NSViewController, @preconcurrency QLPreviewin
 
     private var webView: WKWebView!
     private var fileName = ""
+    /// 当前预览的文件。点「打开全文」时把它交给主 App；只缓存 URL，不缓存文件数据
+    /// （mapped Data 在安全作用域关掉后不该继续用）。
+    private var previewURL: URL?
+    /// 每次预览请求递增。异步渲染回来时比对，防止「上一份文件的 HTML」灌进新面板 ——
+    /// 在 Finder 里按方向键一路扫过去很容易触发。
+    private var generation: UInt64 = 0
     private var measurements = Measurements()
     private var startedAt: UInt64 = 0
     private var finished = false
@@ -39,7 +45,7 @@ final class PreviewViewController: NSViewController, @preconcurrency QLPreviewin
     /// 是否已经为这次预览重载过一次。只重试一次，避免"重载 → 又崩"死循环。
     private var didRecoverFromTermination = false
 
-    /// 打开外部链接用的 XPC 服务（服务端在 `LinkOpener/`，不在沙箱里）。
+    /// 打开链接 / 用主 App 打开文件用的 XPC 服务（服务端在 `LinkOpener/`，不在沙箱里）。
     private var linkOpener: LinkOpenerProtocol?
     /// XPC 连接必须自己持有 —— 代理对象不持有连接。
     private var linkOpenerConnection: NSXPCConnection?
@@ -79,7 +85,8 @@ final class PreviewViewController: NSViewController, @preconcurrency QLPreviewin
         PreviewWebViewPool.shared.recycleLater(webView)
     }
 
-    /// 连上"打开链接"用的 XPC 服务。失败不影响预览 —— 点链接时才会记日志并提示。
+    /// 连上"打开链接 / 用主 App 打开文件"用的 XPC 服务。失败不影响预览 ——
+    /// 真正要打开时才会记日志并提示。
     private func connectLinkOpener() {
         let connection = NSXPCConnection(serviceName: LinkOpenerEndpoint.serviceName)
         connection.remoteObjectInterface = NSXPCInterface(with: LinkOpenerProtocol.self)
@@ -91,7 +98,7 @@ final class PreviewViewController: NSViewController, @preconcurrency QLPreviewin
             DispatchQueue.main.async {
                 PreviewDiagnostics.logger.error("link_opener_unavailable \(error.localizedDescription, privacy: .public)")
                 // 连接失败时回执根本不会来，所以这里也要提示
-                self?.showToast("无法打开链接：" + error.localizedDescription)
+                self?.showToast("打开操作失败：" + error.localizedDescription)
             }
         } as? LinkOpenerProtocol
 
@@ -118,23 +125,32 @@ final class PreviewViewController: NSViewController, @preconcurrency QLPreviewin
         completion = completionHandler
         finished = false
         fileName = url.lastPathComponent
+        previewURL = url
         startedAt = PreviewDiagnostics.now()
+        generation &+= 1
+        let request = generation
 
         // 上一次请求的看门狗必须先撤掉：它捕获的 `self` 会再调 finish(nil)，
         // 而 `finished` 刚被重置成 false —— 不撤就会把这次请求提前结束。
         watchdog?.cancel()
         watchdog = nil
 
-        // 读文件 + 渲染在 512 KB 上限下要几十毫秒，挂在主线程会拖住面板动画
+        // 读文件 + 渲染在 64 KB 上限下只要几毫秒，但仍在后台做，别拖住面板动画
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             do {
                 let document = try PreviewDocument.load(at: url)
-                DispatchQueue.main.async { self?.present(document) }
+                DispatchQueue.main.async { [weak self] in
+                    guard let self, self.generation == request else { return }
+                    self.present(document)
+                }
             } catch {
                 PreviewDiagnostics.logger.error(
                     "render_failed file=\(url.lastPathComponent, privacy: .public) error=\(error.localizedDescription, privacy: .public)"
                 )
-                DispatchQueue.main.async { self?.finish(error) }
+                DispatchQueue.main.async { [weak self] in
+                    guard let self, self.generation == request else { return }
+                    self.finish(error)
+                }
             }
         }
     }
@@ -263,9 +279,43 @@ final class PreviewViewController: NSViewController, @preconcurrency QLPreviewin
                                didReceive message: WKScriptMessage) {
         if message.name == LinkInteraction.messageName {
             handleLink(message.body)
+        } else if message.name == OpenInAppInteraction.messageName {
+            openInApp()
         } else if message.name == ScrollProbe.messageName {
             handleProbe(message.body)
         }
+    }
+
+    /// 用户点了「在 Spacedown 中打开全文」：把文件交给主 App，预览面板不再自己渲染全文。
+    ///
+    /// 分工理由：QL 扩展的内存限额与看门狗都比主 App 紧，几百 KB 的全量排版容易把
+    /// 内容进程拖死；主 App 本来就是全量加载，还带文件监听、查找、标签。
+    /// 沙箱里不能自己调 `NSWorkspace`（SIGTRAP），所以走 `LinkOpener.xpc`。
+    private func openInApp() {
+        guard let url = previewURL else { return }
+        PreviewDiagnostics.logger.notice(
+            "open_in_app_requested file=\(self.fileName, privacy: .public)"
+        )
+        guard let service = linkOpener else {
+            PreviewDiagnostics.logger.error("open_in_app no_service")
+            restoreOpenButton()
+            showToast("无法打开：XPC 服务未就绪")
+            return
+        }
+        service.openInSpacedown(url) { [weak self] ok in
+            DispatchQueue.main.async {
+                guard let self else { return }
+                PreviewDiagnostics.logger.notice("open_in_app opened=\(ok)")
+                self.restoreOpenButton()
+                if !ok { self.showToast("无法在 Spacedown 中打开全文") }
+            }
+        }
+    }
+
+    /// 按钮被脚本禁用了，不恢复就永远停在「正在打开…」：成功时允许再点一次，
+    /// 失败时允许重试。原文案由脚本自己记在 `window.__sdOpenInAppLabel`。
+    private func restoreOpenButton() {
+        webView.evaluateJavaScript(OpenInAppInteraction.restoreScript)
     }
 
     private func handleLink(_ body: Any) {

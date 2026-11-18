@@ -7,9 +7,9 @@ public enum LinkOpenerEndpoint {
 
 /// 扩展与 `LinkOpener.xpc` 之间唯一的接口。这个文件同时编译进两个 target。
 ///
-/// 为什么非要有这个服务：沙箱里的扩展**不能**打开外部链接 ——
+/// 为什么非要有这个服务：沙箱里的扩展**不能**打开链接、也不能启动 App ——
 /// `NSWorkspace.shared.open` 在不沙箱时正常返回，加上 `app-sandbox` 之后
-/// 会让进程被 SIGTRAP 杀掉。所以"打开链接"必须交给一个不在沙箱里的独立进程。
+/// 会让进程被 SIGTRAP 杀掉。所以这类动作必须交给一个不在沙箱里的独立进程。
 @objc public protocol LinkOpenerProtocol {
 
     /// 把 URL 交给系统打开。
@@ -17,6 +17,12 @@ public enum LinkOpenerEndpoint {
     /// - Parameter reply: 是否成功。刻意用回传值而不是抛错：调用方拿到 `false`
     ///   只记一笔日志，没有任何可恢复动作。
     func open(_ url: URL, withReply reply: @escaping (Bool) -> Void)
+
+    /// 用 Spacedown 主 App 打开一个本地文件（预览页「打开全文」按钮的动作）。
+    ///
+    /// 服务侧只接 `file:` URL，且明确指定用**装着这个 XPC 服务的那个 .app** 打开，
+    /// 不交给系统默认处理器 —— 默认处理器可能是别的 Markdown 编辑器。
+    func openInSpacedown(_ url: URL, withReply reply: @escaping @Sendable (Bool) -> Void)
 
     /// 只回一个 `true`，用来确认连接本身是通的。
     ///

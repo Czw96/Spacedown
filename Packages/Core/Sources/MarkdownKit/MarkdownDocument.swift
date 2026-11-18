@@ -1,31 +1,53 @@
 import Foundation
 
-/// 读取待渲染的 Markdown，并施加体积上限。
+/// 读取待渲染的 Markdown。
 ///
-/// 上限针对的不是解析（cmark 吞吐很高），而是之后的 WebKit 排版 —— 排版成本大致随
-/// HTML 体积线性增长，超大文档会把首帧拖到无法接受。截断因此是唯一有效的缓解手段。
+/// 两端口径**故意不同**：
+/// - 主 App 是「坐下来读」，走 `full(contentsOf:)` 全量加载；
+/// - 空格预览是「扫一眼」，走 `previewBytes(_:)` 只渲染前 64 KB；
+///   要看全文就点提示条里的按钮，把文件交给主 App（见 `OpenInAppInteraction`）。
 ///
-/// 截断只有这一处实现：主 App 与 Quick Look 扩展都调它。两头各写一份的话，
-/// 同一个文件在两处的显示长度会不一致。
+/// 截断只有这一份实现。上限针对的不是解析（cmark 吞吐很高），而是之后的
+/// WebKit 排版 —— 排版成本随 HTML 体积线性增长（实测 ≈0.22 ms/KB HTML）。
 public enum MarkdownDocument {
 
-    /// 单份文档的字节上限。
-    public static let defaultMaxBytes = 512 * 1024
-
-    /// 读文件；超过上限时切在前 N 字节的最后一个换行处，并在正文前加一行说明。
+    /// 空格预览的首屏上限。
     ///
-    /// 切在换行上是为了不把某个块结构（表格、代码块）切成半截。
-    public static func bytes(contentsOf url: URL, maxBytes: Int = defaultMaxBytes) throws -> Data {
-        let data = try Data(contentsOf: url, options: .mappedIfSafe)
-        guard data.count > maxBytes else { return data }
+    /// 实测（WebViewBench，五轮中位数）：64 KB md → 97 KB HTML → nav2 **26.3 ms**，
+    /// 相对原 512 KB 的 155.5 ms 省 83%。再往下压到 32 KB 只多省 9 ms，却砍掉一半内容；
+    /// 往上到 128 KB 要多付 18 ms，换来的内容深度对「按空格扫一眼」没有意义。
+    /// 64 KB 约合 80 屏正文（版心 16px/1.72、面板 700px 高），远超一次预览的滚动深度。
+    public static let previewMaxBytes = 64 * 1024
 
-        var body = data.prefix(maxBytes)
+    /// 读全文。`mappedIfSafe` 下大文件不占物理内存，只有真正被渲染的部分才会被 touch。
+    public static func full(contentsOf url: URL) throws -> Data {
+        try Data(contentsOf: url, options: .mappedIfSafe)
+    }
+
+    /// 从全文切出预览片段。**唯一一份截断实现**。
+    ///
+    /// 切在最后一个换行，避免把表格、代码块切成半截。返回是否发生截断 ——
+    /// 调用方据此决定要不要挂「在 Spacedown 中打开全文」入口。
+    public static func previewBytes(
+        _ full: Data,
+        maxBytes: Int = previewMaxBytes
+    ) -> (rendered: Data, truncated: Bool) {
+        guard full.count > maxBytes else { return (full, false) }
+
+        var body = full.prefix(maxBytes)
         if let lastNewline = body.lastIndex(of: 0x0A) {
             body = body[..<lastNewline]
         }
 
-        var notice = Data("\n\n> 文件过大，已截断显示前 \(maxBytes / 1024) KB\n".utf8)
-        notice.append(body)
-        return notice
+        // 裸 HTML 按钮靠 cmark 的 CMARK_OPT_UNSAFE 保留；点击事件由原生注入的
+        // WKUserScript 委托处理（CSP 没有 script-src，内联 onclick 会被挡）。
+        // 用 class 而不是 data-*：DangerousURLFilter 的属性扫描表里含 `data`。
+        var rendered = Data("""
+
+        > 文件较大，已先显示前 \(maxBytes / 1024) KB。<button type="button" class="sd-open-in-app">在 Spacedown 中打开全文</button>
+
+        """.utf8)
+        rendered.append(body)
+        return (rendered, true)
     }
 }

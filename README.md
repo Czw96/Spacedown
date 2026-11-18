@@ -407,8 +407,8 @@ defaults delete cn.29dev.Spacedown DebugLayout             # 关掉
 | M2 | Quick Look 扩展做完整 | 🟨 **已由数据型改为视图型**（自建 viewport 尺寸 WKWebView + 实例复用 + `os_log` 埋点），已安装，待真机验收滚动 |
 | M3 | 主 App | ✅ **多标签 + LRU 池 + 主菜单 + 文件监听 + 缩放（2026-10-08）** |
 | M4 | 打磨 | 🟨 布局自检 ✅；图片内联 ✅（`SharedTheme/ImageInliner`，单张 ≤ 2 MB / 总计 ≤ 20 MB） |
-| M5 | 性能回归 | 🟨 滚动口径已建（`ScrollBench`）+ 归因见 `docs/性能分析.md §6`；固定 512 KB 截断 ✅（`MarkdownDocument`），自适应阈值未做 |
-| M6 | 签名公证 + dmg + Homebrew Cask | 🟨 dmg / Cask / tap 已跑通（`v1.0.2` 可 `brew install`）；**签名 + 公证待 Developer ID** |
+| M5 | 性能回归 | 🟨 滚动口径已建（`ScrollBench`）+ 归因见 `docs/性能分析.md §6`；**两端口径已分叉**：主 App 全量渲染，空格预览截 64 KB + 可点「在 Spacedown 中打开全文」（2026-11-18 实测定档，见技术方案 §11）；自适应阈值未做 |
+| M6 | 分发 | ✅ ad-hoc 签名 + dmg + Homebrew tap 已跑通（**无 Developer ID，不公证**）；自研 Ed25519 自更新 1.0.16→1.0.17 真机跑通 |
 
 ---
 
@@ -429,7 +429,7 @@ Spacedown/
 │   └── Resources/                Info.plist、AppIcon.icns、uninstall.sh、swap.sh
 ├── QuickLookPreview/             Quick Look 扩展 target（视图型）
 │   ├── PreviewViewController.swift   QLPreviewingController：交接、导航、链接、兜底
-│   ├── PreviewDocument.swift         读文件 → 截断 → 渲染 → 拼文档
+│   ├── PreviewDocument.swift         读文件 → 空格预览截断 / 全量 → 渲染 → 拼文档
 │   ├── PreviewWebViewPool.swift      实例复用（容量 1）
 │   ├── ScrollProbe.swift             滚动帧率探针
 │   ├── PreviewDiagnostics.swift      os_log 与 Debug 取证

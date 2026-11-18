@@ -23,6 +23,13 @@ final class MainWindow: NSObject, NSWindowDelegate {
     private static let cardRadius: CGFloat = 10
     private static let cardInset: CGFloat = 8
 
+    /// 标签数软上限：每个标签占一个 fd + DispatchSource，`FileWatcher.refresh()` 还要全量 diff。
+    /// 到顶时拒绝新标签并给提示，不是静默失败。
+    private static let maxTabs = 10
+    /// 批量打开（多选/拖放）会连续撞上限，去抖避免 Toast 反复重建闪烁。
+    /// 值对齐 `Toast.displayDuration`。
+    private var lastTabLimitToast = Date.distantPast
+
     private let barBackground = NSView()
     /// 内容宿主。用 `DropTargetView` 而不是裸 `NSView`：空窗口时的拖放落点就是它。
     /// 非 private：`MainWindow+Find.swift` 要把查找条浮在它上面。
@@ -101,6 +108,14 @@ final class MainWindow: NSObject, NSWindowDelegate {
         if let index = tabs.firstIndex(where: { $0.url == url }) {
             select(index)
             show()
+            return
+        }
+        guard tabs.count < Self.maxTabs else {
+            // 一次拖入/多选超过上限时只提示一次，否则会连续弹同一条 Toast。
+            if Date().timeIntervalSince(lastTabLimitToast) > 1.7 {
+                Toast.show("最多打开 \(Self.maxTabs) 个标签，请先关掉一个", in: webHost)
+                lastTabLimitToast = Date()
+            }
             return
         }
         tabs.append(DocumentTab(url: url))
@@ -388,7 +403,8 @@ final class MainWindow: NSObject, NSWindowDelegate {
         beginLoading(view)
 
         do {
-            let markdown = try MarkdownDocument.bytes(contentsOf: tab.url)
+            // 主 App 是「坐下来读」：全量加载，不截断。截断只属于空格预览。
+            let markdown = try MarkdownDocument.full(contentsOf: tab.url)
             let body = renderer.renderHTMLData(markdown)
             let html = SharedTheme.document(
                 body: body,
@@ -409,11 +425,8 @@ final class MainWindow: NSObject, NSWindowDelegate {
     /// 大文件被截到多少、渲染出多大 —— 光看源文件大小看不出来。
     private func logRender(markdown: Data, html: Data) {
         guard DebugLog.isEnabled else { return }
-        // 判据只能看正文有没有那条提示（它被拼在最前面）：截断会切在换行上，
-        // 结果略小于上限，拿字节数跟上限比会误判。
-        let truncated = markdown.prefix(64).range(of: Data("已截断显示前".utf8)) != nil
-        DebugLog.write("  render 解析输入=\(markdown.count / 1024)KB"
-            + " 截断=\(truncated ? "是" : "否") HTML=\(html.count / 1024)KB")
+        // 主 App 全量加载，不存在截断；空格预览的截断埋在扩展自己的 os_log 里。
+        DebugLog.write("  render 解析输入=\(markdown.count / 1024)KB HTML=\(html.count / 1024)KB")
     }
 
     private static func failureHTML(_ error: Error) -> String {

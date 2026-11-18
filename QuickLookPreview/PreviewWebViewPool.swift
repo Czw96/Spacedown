@@ -38,12 +38,19 @@ final class PreviewWebViewPool {
         }
 
         let controller = view.configuration.userContentController
-        for name in [ScrollProbe.messageName, LinkInteraction.messageName] {
+        for name in Self.messageNames {
             controller.removeScriptMessageHandler(forName: name)
             controller.add(handler, name: name)
         }
         return view
     }
+
+    /// 所有脚本消息名集中一处：注册与注销必须用同一份清单，漏一个就是强引用泄漏。
+    private static let messageNames = [
+        ScrollProbe.messageName,
+        LinkInteraction.messageName,
+        OpenInAppInteraction.messageName,
+    ]
 
     /// 面板退场后延迟回收，避免抽走正在显示的那一份。
     func recycleLater(_ view: WKWebView) {
@@ -56,7 +63,7 @@ final class PreviewWebViewPool {
 
             // 摘掉对旧控制器的强引用，否则每个用过的控制器都会跟着实例活到最后
             let controller = view.configuration.userContentController
-            for name in [ScrollProbe.messageName, LinkInteraction.messageName] {
+            for name in Self.messageNames {
                 controller.removeScriptMessageHandler(forName: name)
             }
 
@@ -79,6 +86,7 @@ final class PreviewWebViewPool {
         let configuration = WKWebViewConfiguration()
         configuration.userContentController.addUserScript(ScrollProbe.script)
         configuration.userContentController.addUserScript(LinkInteraction.userScript)
+        configuration.userContentController.addUserScript(OpenInAppInteraction.userScript)
 
         let view = WKWebView(frame: NSRect(x: 0, y: 0, width: 800, height: 600),
                              configuration: configuration)
