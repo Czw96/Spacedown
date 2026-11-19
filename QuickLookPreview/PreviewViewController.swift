@@ -286,7 +286,7 @@ final class PreviewViewController: NSViewController, @preconcurrency QLPreviewin
         }
     }
 
-    /// 用户点了「在 Spacedown 中打开全文」：把文件交给主 App，预览面板不再自己渲染全文。
+    /// 用户点了片段末尾的「加载更多」：把文件交给主 App，预览面板不再自己渲染全文。
     ///
     /// 分工理由：QL 扩展的内存限额与看门狗都比主 App 紧，几百 KB 的全量排版容易把
     /// 内容进程拖死；主 App 本来就是全量加载，还带文件监听、查找、标签。
@@ -307,7 +307,7 @@ final class PreviewViewController: NSViewController, @preconcurrency QLPreviewin
                 guard let self else { return }
                 PreviewDiagnostics.logger.notice("open_in_app opened=\(ok)")
                 self.restoreOpenButton()
-                if !ok { self.showToast("无法在 Spacedown 中打开全文") }
+                if !ok { self.showToast("无法打开全文，请重试") }
             }
         }
     }

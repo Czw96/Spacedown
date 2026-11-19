@@ -320,25 +320,36 @@ blockquote.alert-caution::before {
     color: var(--text);
 }
 
-/* 截断提示里的「在 Spacedown 中打开全文」。跟随 blockquote 的排版，
-   不做成悬浮大按钮 —— 它只是正文里的一处旁注，不该抢内容的视觉重心。 */
+/* 预览片段末尾的「加载更多」。放在正文之后、居中、不解释原因 ——
+   用户滚到底才需要「还有下文」这个信息，顶部横条只会把第一屏往下推。
+   不加分隔线，靠留白区分层次。 */
+.sd-more {
+    margin: 2.4em 0 1em;
+    text-align: center;
+}
 .sd-open-in-app {
     display: inline-block;
-    margin-left: 0.5em;
-    padding: 0.15em 0.7em;
+    padding: 0.45em 1.3em;
     font: inherit;
-    font-size: 0.85em;
+    font-size: 0.9em;
     font-weight: 600;
+    letter-spacing: 0.01em;
     color: var(--accent);
     background: var(--accent-soft);
     border: 1px solid var(--accent);
-    border-radius: 6px;
+    border-radius: 8px;
     cursor: pointer;
     -webkit-appearance: none;
     appearance: none;
+    transition: background-color .18s ease, color .18s ease, transform .18s ease;
 }
-.sd-open-in-app:hover { background: var(--accent); color: var(--bg); }
-.sd-open-in-app:disabled { opacity: 0.6; cursor: default; }
+.sd-open-in-app:hover {
+    background: var(--accent);
+    color: var(--bg);
+    transform: translateY(-1px);
+}
+.sd-open-in-app:active { transform: translateY(0); }
+.sd-open-in-app:disabled { opacity: 0.6; cursor: default; transform: none; }
 
 /* ---- 表格 ---- */
 
