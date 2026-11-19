@@ -57,7 +57,13 @@ final class PreviewViewController: NSViewController, @preconcurrency QLPreviewin
     // MARK: - 视图
 
     override func loadView() {
-        // 这里的尺寸不重要（Quick Look 会按面板重设），但 frame 不能是零：
+        // 面板尺寸：Quick Look 默认给 800×600，在 13" 屏上只占约六成宽。
+        // `preferredContentSize` 是视图型扩展影响窗口初始尺寸的**唯一**途径 ——
+        // 改 view.frame 或 xib 里的尺寸都会被系统按面板重设覆盖掉。
+        // 用户仍可拖边缘调整；关闭后重开会回到这个值（系统行为，不归我们管）。
+        preferredContentSize = Self.preferredPanelSize()
+
+        // 这里的初始尺寸不重要（Quick Look 会按面板重设），但 frame 不能是零：
         // WKWebView 在零尺寸下不排版。
         let container = NSView(frame: NSRect(x: 0, y: 0, width: 800, height: 600))
         container.wantsLayer = true
@@ -66,8 +72,18 @@ final class PreviewViewController: NSViewController, @preconcurrency QLPreviewin
         let web = PreviewWebViewPool.shared.take(handler: self)
         web.navigationDelegate = self
         web.frame = container.bounds
-        web.autoresizingMask = [.width, .height]
+        // 用四边约束而不是 autoresizingMask：设置 preferredContentSize 之后，
+        // 系统会在用户拉伸面板 / 进全屏时反复改容器尺寸，约束能保证 web view
+        // 始终等于面板尺寸（视图型的核心不变量），autoresizingMask 在旧系统上
+        // 有设置首选尺寸后失效的已知问题。
+        web.translatesAutoresizingMaskIntoConstraints = false
         container.addSubview(web)
+        NSLayoutConstraint.activate([
+            web.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            web.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            web.topAnchor.constraint(equalTo: container.topAnchor),
+            web.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+        ])
 
         webView = web
         view = container
@@ -78,6 +94,17 @@ final class PreviewViewController: NSViewController, @preconcurrency QLPreviewin
         }
         connectLinkOpener()
         PreviewDiagnostics.record("view_loaded")
+    }
+
+    /// 按主屏可用区域给一个比系统默认 800×600 更舒展的初始面板。
+    /// 用比例而不是写死尺寸：外接大屏时不该还是小窗，小屏上也不能顶到边。
+    private static func preferredPanelSize() -> NSSize {
+        // visibleFrame 已扣掉菜单栏与 Dock；取不到时按 13" 的逻辑分辨率兜底。
+        let screen = NSScreen.main?.visibleFrame.size
+            ?? NSSize(width: 1280, height: 800)
+        let width = min(1120, max(800, screen.width * 0.82))
+        let height = min(780, max(600, screen.height * 0.88))
+        return NSSize(width: width.rounded(), height: height.rounded())
     }
 
     override func viewWillDisappear() {
@@ -416,12 +443,14 @@ final class PreviewViewController: NSViewController, @preconcurrency QLPreviewin
             "scroll_h": \(PreviewDiagnostics.formatted(scrollHeight)), \
             "nodes": \(nodes), "dpr": \(ratio)
             """)
+            // 尺寸是诊断面板行为的关键证据，标 public 才能在 `log show` 里读到真值
+            // （os_log 默认把动态数字打成 <private>）。这些只是宽高与节点数，不敏感。
             PreviewDiagnostics.logger.notice("""
             geometry file=\(self.fileName, privacy: .public) \
-            view=\(PreviewDiagnostics.formatted(viewSize.width))x\(PreviewDiagnostics.formatted(viewSize.height)) \
-            web=\(PreviewDiagnostics.formatted(webSize.width))x\(PreviewDiagnostics.formatted(webSize.height)) \
-            inner=\(PreviewDiagnostics.formatted(innerHeight))px scroll=\(PreviewDiagnostics.formatted(scrollHeight))px \
-            nodes=\(nodes) dpr=\(ratio, privacy: .public)
+            view=\(PreviewDiagnostics.formatted(viewSize.width), privacy: .public)x\(PreviewDiagnostics.formatted(viewSize.height), privacy: .public) \
+            web=\(PreviewDiagnostics.formatted(webSize.width), privacy: .public)x\(PreviewDiagnostics.formatted(webSize.height), privacy: .public) \
+            inner=\(PreviewDiagnostics.formatted(innerHeight), privacy: .public)px scroll=\(PreviewDiagnostics.formatted(scrollHeight), privacy: .public)px \
+            nodes=\(nodes, privacy: .public) dpr=\(ratio, privacy: .public)
             """)
             self.logHostingChain()
         }
