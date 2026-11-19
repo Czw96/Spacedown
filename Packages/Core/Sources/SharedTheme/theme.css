@@ -322,34 +322,65 @@ blockquote.alert-caution::before {
 
 /* 预览片段末尾的「加载更多」。放在正文之后、居中、不解释原因 ——
    用户滚到底才需要「还有下文」这个信息，顶部横条只会把第一屏往下推。
-   不加分隔线，靠留白区分层次。 */
+   静态时只是次级文字 + 一枚细线箭头，不描边、不铺色块、不加分隔线：
+   全篇的层级靠字号与留白表达（见文件头），强调色只在 hover / focus 出现。 */
 .sd-more {
-    margin: 2.4em 0 1em;
+    margin: 3.8em 0 1.8em;
     text-align: center;
+    line-height: 1;
 }
 .sd-open-in-app {
-    display: inline-block;
-    padding: 0.45em 1.3em;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6em;
+    padding: 0.55em 1.1em;
     font: inherit;
-    font-size: 0.9em;
-    font-weight: 600;
-    letter-spacing: 0.01em;
-    color: var(--accent);
-    background: var(--accent-soft);
-    border: 1px solid var(--accent);
-    border-radius: 8px;
+    font-size: 0.82em;
+    font-weight: 400;
+    letter-spacing: 0.04em;
+    color: var(--text-2);
+    background: transparent;
+    border: 0;
+    border-radius: 999px;
     cursor: pointer;
     -webkit-appearance: none;
     appearance: none;
-    transition: background-color .18s ease, color .18s ease, transform .18s ease;
+    transition: color 220ms ease, background-color 220ms ease, transform 220ms ease;
 }
-.sd-open-in-app:hover {
-    background: var(--accent);
-    color: var(--bg);
+/* 向下的细线 chevron。纯 CSS 画，不引外部图片 —— CSP 只允许 img-src data:。 */
+.sd-open-in-app::after {
+    content: "";
+    width: 0.4em;
+    height: 0.4em;
+    border-right: 1.3px solid currentColor;
+    border-bottom: 1.3px solid currentColor;
+    transform: translateY(-0.16em) rotate(45deg);
+    opacity: 0.65;
+    transition: transform 220ms ease, opacity 220ms ease;
+}
+.sd-open-in-app:hover,
+.sd-open-in-app:focus-visible {
+    color: var(--accent);
+    background: var(--accent-soft);
     transform: translateY(-1px);
 }
+.sd-open-in-app:hover::after,
+.sd-open-in-app:focus-visible::after {
+    transform: translateY(-0.02em) rotate(45deg);
+    opacity: 1;
+}
 .sd-open-in-app:active { transform: translateY(0); }
-.sd-open-in-app:disabled { opacity: 0.6; cursor: default; transform: none; }
+.sd-open-in-app:disabled {
+    opacity: 0.5;
+    cursor: default;
+    transform: none;
+}
+.sd-open-in-app:disabled::after { opacity: 0.4; }
+
+@media (prefers-reduced-motion: reduce) {
+    .sd-open-in-app,
+    .sd-open-in-app::after { transition: none; }
+}
 
 /* ---- 表格 ---- */
 
