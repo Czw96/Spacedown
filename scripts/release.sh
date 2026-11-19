@@ -7,6 +7,7 @@
 #   scripts/release.sh --version 1.1.0 --publish        # 同时发 GitHub Release（到 tap 仓库）
 #   scripts/release.sh --version 1.1.0 --update-tap     # 同时把 Cask 提交进 tap 仓库
 #   scripts/release.sh --version 1.1.0 --skip-build --update-tap   # 只重推现有 Cask，不重新构建
+#   ... --publish --notes-file /tmp/notes.md            # 用自定义 Release 说明替代默认模板
 #
 # 公开发布前必须先有 Developer ID 证书，并把公证凭据存进钥匙串：
 #   xcrun notarytool store-credentials spacedown \
@@ -30,16 +31,18 @@ DERIVED="${DERIVED_PATH:-$HOME/Library/Caches/Spacedown/DerivedData}"
 APP="$DERIVED/Build/Products/Release/$APP_NAME.app"
 
 VERSION=""
+NOTES_FILE=""
 PUBLISH=0
 UPDATE_TAP=0
 SKIP_BUILD=0
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --version) VERSION="$2"; shift 2 ;;
+        --notes-file) NOTES_FILE="$2"; shift 2 ;;
         --publish) PUBLISH=1; shift ;;
         --update-tap) UPDATE_TAP=1; shift ;;
         --skip-build) SKIP_BUILD=1; shift ;;
-        -h|--help) sed -n '2,22p' "$0"; exit 0 ;;
+        -h|--help) sed -n '2,18p' "$0"; exit 0 ;;
         *) echo "未知参数：$1"; exit 1 ;;
     esac
 done
@@ -197,7 +200,12 @@ if [[ $PUBLISH -eq 1 ]]; then
     command -v gh >/dev/null || { echo "发布需要 gh（brew install gh）"; exit 1; }
     echo "==> 发布 GitHub Release v${VERSION}（仓库：${RELEASE_REPO}）"
     NOTES=$(mktemp)
-    cat > "$NOTES" <<TXT
+    if [[ -n "$NOTES_FILE" ]]; then
+        [[ -f "$NOTES_FILE" ]] || { echo "找不到 Release 说明：$NOTES_FILE"; exit 1; }
+        cp "$NOTES_FILE" "$NOTES"
+        echo "    使用自定义 Release 说明：$NOTES_FILE"
+    else
+        cat > "$NOTES" <<TXT
 macOS 13+ / Apple Silicon。源码仓库为私有，这里只放构建产物。
 
 **安装**
@@ -210,6 +218,7 @@ brew tap czw96/spacedown
 brew trust czw96/spacedown   # 第三方 tap 首次需要显式信任
 brew install --cask spacedown
 TXT
+    fi
     gh release create "v$VERSION" "$DMG" "$ZIP" ${SIGNATURE:+"$SIGNATURE"} \
         --repo "$RELEASE_REPO" \
         --title "$APP_NAME $VERSION" \
@@ -247,15 +256,15 @@ if [[ $UPDATE_TAP -eq 1 ]]; then
     fi
 fi
 
-# ---------------------------------------------------------------- 清理登记
+# ---------------------------------------------------------------- LaunchServices
 
-# xcodebuild 会把构建目录那份 App 也登记进 LaunchServices。两份副本会让 pkd 拿不准
-# 该用哪个 Quick Look 扩展（实测会退回别家扩展，空格预览直接失效）。打包完就注销它。
-LSREGISTER="/System/Library/Frameworks/CoreServices.framework/Frameworks/"
-LSREGISTER+="LaunchServices.framework/Support/lsregister"
-if [[ -x "$LSREGISTER" ]]; then
-    "$LSREGISTER" -u "$APP" >/dev/null 2>&1 || true
-    echo "==> 已注销构建目录的登记（避免与 /Applications 形成两份副本）"
+# ⚠️ 不要用 `lsregister -u "$APP"` 注销构建副本：实测它按 bundle ID 注销，会把
+# /Applications 里那份一起抹掉，Quick Look 接管随之中断（2026-11-19 踩过，见
+# Spacedown/QuickLook/QuickLookClaim.swift 的四步选举）。构建目录在 ~/Library/Caches，
+# Spotlight 不索引，不会出现两份可见副本；本机若空格预览回退，用 App 菜单
+#「显示 → 接管 Markdown 空格预览」重跑四步即可。
+if [[ -d "/Applications/$APP_NAME.app" ]]; then
+    echo "==> 未改动 LaunchServices 登记；空格预览若回退，请用 App 菜单重新接管"
 fi
 
 # ---------------------------------------------------------------- 汇总
