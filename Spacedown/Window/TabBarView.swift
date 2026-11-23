@@ -95,8 +95,12 @@ final class TabBarView: NSView {
         needsLayout = true
     }
 
-    func setZoomPercent(_ percent: Int) {
+    /// 缩放数字与两端的可用状态一起给：到边界继续按毫无反应，用户分不清是卡了还是到头，
+    /// 所以按不动时把对应那颗按钮变灰。
+    func setZoomState(percent: Int, canZoomIn: Bool, canZoomOut: Bool) {
         zoomLabel.stringValue = "\(percent)%"
+        zoomInButton.isEnabled = canZoomIn
+        zoomOutButton.isEnabled = canZoomOut
     }
 
     /// 布局自检用：第一个标签在窗口坐标系里的位置。

@@ -103,7 +103,13 @@ extension MainWindow {
     }
 
     func updateZoomLabel() {
-        tabBar.setZoomPercent(Int((currentTab?.zoom ?? 1) * 100))
+        let zoom = currentTab?.zoom ?? 1
+        // 比较用 CGFloat 而不是取整后的百分数：5.0 与 4.99 都显示 499%/500%，
+        // 但只有真到边界才该把按钮变灰。
+        tabBar.setZoomState(
+            percent: Int((zoom * 100).rounded()),
+            canZoomIn: zoom < Self.zoomRange.upperBound,
+            canZoomOut: zoom > Self.zoomRange.lowerBound)
     }
 
     // MARK: - 版心宽度

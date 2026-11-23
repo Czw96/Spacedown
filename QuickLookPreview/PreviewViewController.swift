@@ -65,9 +65,11 @@ final class PreviewViewController: NSViewController, @preconcurrency QLPreviewin
 
         // 这里的初始尺寸不重要（Quick Look 会按面板重设），但 frame 不能是零：
         // WKWebView 在零尺寸下不排版。
-        let container = NSView(frame: NSRect(x: 0, y: 0, width: 800, height: 600))
+        let container = PreviewContainerView(
+            frame: NSRect(x: 0, y: 0, width: 800, height: 600))
         container.wantsLayer = true
         container.layer?.backgroundColor = Palette.pageBackground.cgColor
+        container.onZoom = { [weak self] multiplier in self?.zoom(by: multiplier) }
 
         let web = PreviewWebViewPool.shared.take(handler: self)
         web.navigationDelegate = self
@@ -110,6 +112,20 @@ final class PreviewViewController: NSViewController, @preconcurrency QLPreviewin
     override func viewWillDisappear() {
         super.viewWillDisappear()
         PreviewWebViewPool.shared.recycleLater(webView)
+    }
+
+    /// 面板缩放：⌘+ / ⌘− / ⌘0。传入 `nil` 表示回到 100%。
+    ///
+    /// 与捏合走同一个 `magnification`（视觉放大），区间见
+    /// `PreviewWebViewPool.magnificationRange`。捏合不受我们管，可能已经把画面放到区间
+    /// 之上，所以上限取 `max(区间上限, 当前值)` —— 否则一按 ⌘− 就会先跳到 3 倍。
+    private func zoom(by multiplier: CGFloat?) {
+        guard let webView else { return }
+        let limits = PreviewWebViewPool.magnificationRange
+        let current = webView.magnification
+        let upper = max(limits.upperBound, current)
+        let target = multiplier.map { current * $0 } ?? limits.lowerBound
+        webView.magnification = min(max(target, limits.lowerBound), upper)
     }
 
     /// 连上"打开链接 / 用主 App 打开文件"用的 XPC 服务。失败不影响预览 ——
@@ -309,7 +325,9 @@ final class PreviewViewController: NSViewController, @preconcurrency QLPreviewin
         } else if message.name == OpenInAppInteraction.messageName {
             openInApp()
         } else if message.name == ScrollProbe.messageName {
+            #if DEBUG
             handleProbe(message.body)
+            #endif
         }
     }
 
@@ -358,6 +376,8 @@ final class PreviewViewController: NSViewController, @preconcurrency QLPreviewin
         }
     }
 
+    /// 滚动探针的回执。**只在 Debug 构建里存在**，与注入点同一条开关。
+    #if DEBUG
     private func handleProbe(_ body: Any) {
         guard let sample = ScrollProbe.Sample(body: body) else { return }
 
@@ -376,6 +396,7 @@ final class PreviewViewController: NSViewController, @preconcurrency QLPreviewin
         dropped=\(sample.dropped)
         """)
     }
+    #endif
 
     // MARK: - 诊断
 
@@ -524,5 +545,31 @@ final class PreviewViewController: NSViewController, @preconcurrency QLPreviewin
             label.centerYAnchor.constraint(equalTo: view.centerYAnchor),
             label.widthAnchor.constraint(lessThanOrEqualToConstant: 420),
         ])
+    }
+}
+
+/// 承载 web view 的容器：面板的缩放快捷键只能在这里拦。
+///
+/// Quick Look 面板由系统宿主进程提供，菜单不属于我们，`⌘+ / ⌘− / ⌘0` 在它的菜单里
+/// 没有任何对应项。命令键事件会先由窗口自上而下问一遍视图树（`performKeyEquivalent`），
+/// 没命中才轮到主菜单 —— 所以拦在这里就够了，不需要往宿主进程里伸手。
+private final class PreviewContainerView: NSView {
+
+    /// `nil` 表示回到 100%。
+    var onZoom: ((CGFloat?) -> Void)?
+
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        guard event.modifierFlags.contains(.command),
+              let key = event.charactersIgnoringModifiers else {
+            return super.performKeyEquivalent(with: event)
+        }
+        // `=` 是美式键盘上 ⌘+ 的实际键码，`+` 来自数字小键盘
+        switch key {
+        case "+", "=": onZoom?(1.1)
+        case "-", "_": onZoom?(1 / 1.1)
+        case "0": onZoom?(nil)
+        default: return super.performKeyEquivalent(with: event)
+        }
+        return true
     }
 }

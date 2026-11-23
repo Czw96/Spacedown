@@ -46,11 +46,15 @@ final class PreviewWebViewPool {
     }
 
     /// 所有脚本消息名集中一处：注册与注销必须用同一份清单，漏一个就是强引用泄漏。
-    private static let messageNames = [
-        ScrollProbe.messageName,
-        LinkInteraction.messageName,
-        OpenInAppInteraction.messageName,
-    ]
+    ///
+    /// 滚动探针只在 Debug 里存在（见 `makeView`）：取证工具不该跟着发行版出去。
+    private static let messageNames: [String] = {
+        var names = [LinkInteraction.messageName, OpenInAppInteraction.messageName]
+        #if DEBUG
+        names.insert(ScrollProbe.messageName, at: 0)
+        #endif
+        return names
+    }()
 
     /// 面板退场后延迟回收，避免抽走正在显示的那一份。
     func recycleLater(_ view: WKWebView) {
@@ -82,17 +86,26 @@ final class PreviewWebViewPool {
         idle = view
     }
 
+    /// 键盘缩放（⌘+/⌘−/⌘0）的区间。**上限 3 倍**：再大就只剩几个字，翻页比读更费劲。
+    static let magnificationRange: ClosedRange<CGFloat> = 1.0...3.0
+
     private static func makeView() -> WKWebView {
         let configuration = WKWebViewConfiguration()
+        // 滚动帧率探针是取证用的：发行版里每次滚动都要跑一段 rAF 采样、写一条日志，
+        // 对用户是纯开销，所以只在 Debug 构建里注入。
+        #if DEBUG
         configuration.userContentController.addUserScript(ScrollProbe.script)
+        #endif
         configuration.userContentController.addUserScript(LinkInteraction.userScript)
         configuration.userContentController.addUserScript(OpenInAppInteraction.userScript)
 
         let view = WKWebView(frame: NSRect(x: 0, y: 0, width: 800, height: 600),
                              configuration: configuration)
         view.underPageBackgroundColor = Palette.pageBackground
-        // 扩展里没有别的缩放入口，所以这里保留捏合缩放（视觉放大）。
-        // 主 App 不用它：那里会压出横向滚动条，见 MainWindow.setZoom。
+        // 预览面板的缩放（捏合与 ⌘+/⌘−）走 `magnification`，即视觉放大：面板宽度用户
+        // 自己可以拖，不需要像主 App 那样靠 `pageZoom` 重排来避免横向滚动条。
+        // `WKWebView` 没有 min/maxMagnification（那是 NSScrollView 的），捏合的上限只能
+        // 交给 WebKit；键盘缩放的区间由 `magnificationRange` 自己兜。
         view.allowsMagnification = true
         return view
     }
