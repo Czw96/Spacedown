@@ -8,8 +8,8 @@ import AppKit
 /// 所以做成一个面板：同一块区域里，先显示版本对比与两个按钮，点「立即更新」后
 /// **原地**把按钮换成进度条。
 ///
-/// 布局要点：按钮行与进度条共用一块**固定高度**的区域（`actionArea`），互相切换时
-/// 窗口不改变尺寸 —— 否则状态切换会带一次跳高。
+/// 布局要点：进度行只放进度条与百分比，所有按钮都落在按钮行。进度条本体只有 12pt 高，
+/// 让它跟 28pt 的按钮同行时，上下会各空出 8pt —— 看着就是"说明与进度条离得太远"。
 @MainActor
 final class UpdatePromptWindow: NSPanel {
 
@@ -41,7 +41,6 @@ final class UpdatePromptWindow: NSPanel {
     private static let inset: CGFloat = 20
     /// 顶部比左右多留一点：标题栏被透明化之后，太贴边会显得局促
     private static let topInset: CGFloat = 16
-    private static let actionHeight: CGFloat = 30
 
     init(version: String, currentVersion: String) {
         // `.fullSizeContentView` 让 contentView 铺到标题栏下面。
@@ -119,8 +118,6 @@ final class UpdatePromptWindow: NSPanel {
         progressRow.spacing = 8
         progressRow.addArrangedSubview(progressBar)
         progressRow.addArrangedSubview(statusLabel)
-        progressRow.addArrangedSubview(cancelButton)
-        progressRow.setCustomSpacing(10, after: statusLabel)
         progressRow.isHidden = true
 
         // 按钮行：靠右。用一根弹簧把按钮推到右边，别靠 stack 的 alignment。
@@ -141,8 +138,13 @@ final class UpdatePromptWindow: NSPanel {
         buttonRow.alignment = .centerY
         buttonRow.spacing = 10
         buttonRow.addArrangedSubview(spacer)
+        // 三个按钮共用这一行，同一时刻只露一个：初态「稍后 / 立即更新」，下载中「取消更新」。
+        // 挂在按钮行而不是进度条右边，一是进度条能整宽（比例更好读），二是所有动作始终
+        // 落在同一个位置，不会因为状态切换而换地方。
+        buttonRow.addArrangedSubview(cancelButton)
         buttonRow.addArrangedSubview(laterButton)
         buttonRow.addArrangedSubview(updateButton)
+        cancelButton.isHidden = true
 
         // 纵向排：下载时"进度条在上、取消按钮在下"，两者不能挤在同一行
         let actionStack = NSStackView(views: [progressRow, buttonRow])
@@ -162,6 +164,9 @@ final class UpdatePromptWindow: NSPanel {
         root.orientation = .vertical
         root.alignment = .leading
         root.spacing = 12
+        // 说明文字与进度条是一组，粘紧；松了就像两段不相干的内容（面板只有 400 宽，
+        // 20pt 的空档已经足够显眼）
+        root.setCustomSpacing(6, after: noteLabel)
         root.translatesAutoresizingMaskIntoConstraints = false
 
         let content = contentView!
@@ -191,17 +196,19 @@ final class UpdatePromptWindow: NSPanel {
         NSApp.activate(ignoringOtherApps: true)
     }
 
-    /// 进入「正在更新」状态：按钮行让位给进度条。
-    ///
-    /// 下载中唯一的动作是「取消更新」，而它就挂在进度行右侧，所以按钮行整行收起。
+    /// 进入「正在更新」状态：按钮行只剩「取消更新」，进度行整宽显示比例。
     func beginProgress() {
         noteLabel.isHidden = false
         noteLabel.stringValue = "正在下载…"
         readyToRestart = false
         updateButton.title = "立即更新"
-        buttonRow.isHidden = true
-        progressRow.isHidden = false
+        laterButton.isHidden = true
+        updateButton.isHidden = true
+        cancelButton.title = "取消更新"
         cancelButton.isHidden = false
+        cancelButton.isEnabled = true
+        buttonRow.isHidden = false
+        progressRow.isHidden = false
         progressBar.isIndeterminate = false
         progressBar.doubleValue = 0
         statusLabel.stringValue = ""
@@ -219,11 +226,15 @@ final class UpdatePromptWindow: NSPanel {
             progressBar.doubleValue = fraction
             statusLabel.stringValue = "\(Int((fraction * 100).rounded()))%"
         } else {
+            // 先归零再转起来：否则切到不确定态的那一帧里还留着上一个百分比，
+            // 看起来像"卡在 40%"
+            progressBar.doubleValue = 0
             progressBar.isIndeterminate = true
             progressBar.startAnimation(nil)
             statusLabel.stringValue = ""
-            // 校验之后就要动磁盘了，这时候"取消"只会留下半成品，直接收掉
-            cancelButton.isHidden = true
+            // 校验之后就要动磁盘了，这时候取消只会留下半成品 —— 禁掉而不是藏掉：
+            // 藏了按钮行就空了，面板会缩一截
+            cancelButton.isEnabled = false
         }
     }
 
@@ -240,6 +251,7 @@ final class UpdatePromptWindow: NSPanel {
         laterButton.title = "稍后"
         laterButton.isHidden = false
         cancelButton.isHidden = true
+        cancelButton.isEnabled = true
         resizeToFit()
     }
 
@@ -259,6 +271,7 @@ final class UpdatePromptWindow: NSPanel {
         laterButton.title = "稍后"
         laterButton.isHidden = false
         cancelButton.isHidden = true
+        cancelButton.isEnabled = true
         resizeToFit()
     }
 
@@ -274,7 +287,10 @@ final class UpdatePromptWindow: NSPanel {
         updateButton.title = "重试更新"
         updateButton.keyEquivalent = "\r"
         laterButton.title = "关闭"
+        // 下载中这两个按钮是藏着的，失败时要还原，否则「关闭」根本不存在
+        laterButton.isHidden = false
         cancelButton.isHidden = true
+        cancelButton.isEnabled = true
         resizeToFit()
     }
 
@@ -298,7 +314,8 @@ final class UpdatePromptWindow: NSPanel {
         }
     }
     @objc private func cancel(_ sender: Any?) {
-        cancelButton.isHidden = true
+        // 留着按钮但禁掉：直接隐藏会让整行按钮消失，面板跟着缩一截
+        cancelButton.isEnabled = false
         noteLabel.stringValue = "正在取消…"
         onCancel?()
     }
