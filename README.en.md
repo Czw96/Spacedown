@@ -9,11 +9,9 @@
   </p>
 
   <p>
-    <img alt="platform" src="https://img.shields.io/badge/macOS-13%2B-1a2a4a?style=flat-square">
-    <img alt="arch" src="https://img.shields.io/badge/Apple%20Silicon-arm64-1a2a4a?style=flat-square">
-    <img alt="version" src="https://img.shields.io/github/v/release/Czw96/homebrew-spacedown?label=version&color=6a3de8&style=flat-square">
-    <img alt="license" src="https://img.shields.io/badge/license-MIT-6a3de8?style=flat-square">
-    <img alt="AI" src="https://img.shields.io/badge/code-AI%20generated-8a8a8f?style=flat-square">
+    macOS 13+ · Apple Silicon · MIT ·
+    <a href="https://github.com/Czw96/homebrew-spacedown/releases/latest">v1.0.21</a> ·
+    AI-generated code
   </p>
 </div>
 
@@ -184,6 +182,8 @@ cd Packages/Core && swift build --disable-sandbox
 - **Release assets live elsewhere**: before the source was public, binaries went to
   [Czw96/homebrew-spacedown](https://github.com/Czw96/homebrew-spacedown) and the Cask points
   there, so this repository's Releases page is empty.
+- **Remote images are never loaded**: CSP allows `img-src data:` only — offline by design.
+  shields.io badges in READMEs are dropped rather than rendered as broken boxes.
 - **No iOS / iPadOS**: Quick Look extensions, `DispatchSource` and AppKit make this macOS-only.
 
 ## Troubleshooting

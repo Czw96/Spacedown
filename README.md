@@ -9,11 +9,9 @@
   </p>
 
   <p>
-    <img alt="platform" src="https://img.shields.io/badge/macOS-13%2B-1a2a4a?style=flat-square">
-    <img alt="arch" src="https://img.shields.io/badge/Apple%20Silicon-arm64-1a2a4a?style=flat-square">
-    <img alt="version" src="https://img.shields.io/github/v/release/Czw96/homebrew-spacedown?label=version&color=6a3de8&style=flat-square">
-    <img alt="license" src="https://img.shields.io/badge/license-MIT-6a3de8?style=flat-square">
-    <img alt="AI" src="https://img.shields.io/badge/code-AI%20generated-8a8a8f?style=flat-square">
+    macOS 13+ · Apple Silicon · MIT ·
+    <a href="https://github.com/Czw96/homebrew-spacedown/releases/latest">v1.0.21</a> ·
+    AI 生成代码
   </p>
 </div>
 
@@ -175,6 +173,8 @@ cd Packages/Core && swift build --disable-sandbox
 - **Release 资产在另一个仓库**：源码公开前二进制度放在公开的
   [Czw96/homebrew-spacedown](https://github.com/Czw96/homebrew-spacedown)，Cask 也指向那里，
   所以本仓库的 Releases 页面是空的。
+- **远程图片不会加载**：CSP 只允许 `img-src data:`，这是刻意不联网。GitHub 上常见的
+  shields 徽章在预览里不会显示成破图——它们被直接收掉了，正文里也不留空框。
 - **不打算支持 iOS / iPadOS**：Quick Look 扩展、`DispatchSource`、AppKit 决定了它只属于 macOS。
 
 ## 排错

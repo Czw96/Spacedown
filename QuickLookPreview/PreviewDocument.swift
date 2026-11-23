@@ -26,7 +26,15 @@ struct PreviewDocument {
     /// 图片是同目录的相对路径，光把全文 Data 留内存并不能绕开文件访问权。
     static func load(at url: URL) throws -> PreviewDocument {
         let scoped = url.startAccessingSecurityScopedResource()
-        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+        // Quick Look 只保证**文件**可读。图片若在子目录里（`docs/img/x.png`），能不能读到
+        // 取决于系统有没有顺带把所在目录也授权出去 —— 多要一次没有副作用（拿不到就返回
+        // false），但能让这类图片有机会内联，读不到则由 CSS 直接收掉（不留破图）。
+        let directory = url.deletingLastPathComponent()
+        let directoryScoped = directory.startAccessingSecurityScopedResource()
+        defer {
+            if directoryScoped { directory.stopAccessingSecurityScopedResource() }
+            if scoped { url.stopAccessingSecurityScopedResource() }
+        }
 
         let readStarted = PreviewDiagnostics.now()
         let full = try MarkdownDocument.full(contentsOf: url)
