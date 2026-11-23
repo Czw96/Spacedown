@@ -10,7 +10,7 @@
 
   <p>
     macOS 13+ · Apple Silicon · MIT ·
-    <a href="https://github.com/Czw96/homebrew-spacedown/releases/latest">v1.0.21</a> ·
+    <a href="https://github.com/Czw96/homebrew-spacedown/releases/latest">v1.0.22</a> ·
     AI-generated code
   </p>
 </div>

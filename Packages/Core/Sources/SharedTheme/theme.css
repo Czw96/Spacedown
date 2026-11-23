@@ -444,7 +444,9 @@ img {
     height: auto;
     margin: 0.4em 0 1.4em;
     border-radius: 8px;
-    border: 1px solid var(--hairline);
+    /* 不描边。原先那圈 1px 灰线是为了让白底截图在浅色主题下有个边界，但代价是每张图
+       都像被装进相框，而 GitHub 上同一张图并没有这个框 —— 统一按 GitHub 的观感来，
+       边界问题交给图片自己的内容去表达。 */
 }
 
 /* 内联成功的图片一律是 `data:` 开头（见 ImageInliner）。剩下的是两种必然失败的情况：
@@ -458,11 +460,10 @@ img:not([src^="data:"]) {
     display: none;
 }
 
-/* 居中容器里的图（项目图标、页首横幅）不是正文插图：不加描边，也别让圆角把图标
-   自带的圆角再切一刀。`[align]` 同时覆盖 `<div align>` 与 `<p align>` 两种写法，
-   这是 GitHub README 最常见的居中方式。 */
+/* 居中容器里的图（项目图标、页首横幅）不是正文插图：圆角会去切图标自带的圆角。
+   `[align]` 同时覆盖 `<div align>` 与 `<p align>` 两种写法，这是 GitHub README
+   最常见的居中方式。 */
 [align="center"] img {
-    border: none;
     border-radius: 0;
 }
 
