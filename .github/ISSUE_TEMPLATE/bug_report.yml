@@ -1,0 +1,64 @@
+name: Bug 报告 / Bug report
+description: 空格预览没生效、排版不对、崩溃、行为异常
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        先看一眼 README 的「排错」一节：**空格显示源码**这类问题九成是 Quick Look 接管没成功，
+        不是渲染 bug。日志命令：`/usr/bin/log stream --predicate 'subsystem == "cn.29dev.Spacedown"' --style compact`
+
+  - type: input
+    id: macos
+    attributes:
+      label: macOS 版本
+      placeholder: "例如 15.1 (24B83)，芯片 M2"
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Spacedown 版本
+      description: 菜单「Spacedown → 关于」或 `defaults read /Applications/Spacedown.app/Contents/Info.plist CFBundleShortVersionString`
+      placeholder: "例如 1.0.20"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: where
+    attributes:
+      label: 出问题的位置
+      options:
+        - 空格预览（Quick Look 扩展）
+        - 主 App 窗口
+        - 安装 / 更新
+        - 其他
+    validations:
+      required: true
+
+  - type: textarea
+    id: what
+    attributes:
+      label: 发生了什么
+      description: 期望看到什么、实际看到什么。有截图更好。
+    validations:
+      required: true
+
+  - type: textarea
+    id: sample
+    attributes:
+      label: 复现用的 Markdown 片段
+      description: 排版类问题请贴出触发它的最小片段（表格、提示块、裸 HTML、脚注等）。
+      render: markdown
+    validations:
+      required: false
+
+  - type: textarea
+    id: log
+    attributes:
+      label: 日志
+      description: 按几次空格后，贴上面那条 `log stream` 命令的输出（只需要 `cn.29dev.Spacedown` 这个 subsystem）。
+      render: text
+    validations:
+      required: false
