@@ -12,7 +12,7 @@ macOS Markdown 速览：Finder 空格键预览 + 只读多标签查看器。
 > | 空格预览的**选中权** | ✅ 有入口：菜单「显示 → 接管 Markdown 空格预览」（`QuickLookClaim`：登记 + `pluginkit` 选举 + 重建索引）。不必去系统设置里找——本机根本没有「快速查看」类目 |
 > | 预览里点链接 | 🟨 代码就位（单击复制、⌘/⌃ + 单击打开，走 `LinkOpener.xpc`），**仍缺一次人工点击验收** |
 >
-> 分发现状：**v1.0.19**（2026-11-23）已发布在 tap 仓库的 Release，`brew install --cask spacedown`
+> 分发现状：**v1.0.20**（2026-11-23）已发布在 tap 仓库的 Release，`brew install --cask spacedown`
 > 可直接装（见下面的「安装」）。`Distribution/build/` 只是本地打包的落地目录，跑完
 > `release.sh` 才有内容。
 
@@ -418,7 +418,7 @@ defaults delete cn.29dev.Spacedown DebugLayout             # 关掉
 | M3 | 主 App | ✅ **多标签 + LRU 池 + 主菜单 + 文件监听 + 缩放（2026-10-08）** |
 | M4 | 打磨 | 🟨 布局自检 ✅；图片内联 ✅（`SharedTheme/ImageInliner`，单张 ≤ 2 MB / 总计 ≤ 20 MB） |
 | M5 | 性能回归 | 🟨 滚动口径已建（`ScrollBench`）+ 归因见 `docs/性能分析.md §6`；**两端口径已分叉**：主 App 全量渲染，空格预览按完整块截 64 KB，片段末尾「加载更多」把文件交给主 App（2026-11-18 实测定档，2026-11-19 改为块边界截断）；自适应阈值未做 |
-| M6 | 分发 | ✅ ad-hoc 签名 + dmg + Homebrew tap 已跑通（**无 Developer ID，不公证**）；自研 Ed25519 自更新 1.0.16→1.0.17 真机跑通；**v1.0.19 已发布**（2026-11-23） |
+| M6 | 分发 | ✅ ad-hoc 签名 + dmg + Homebrew tap 已跑通（**无 Developer ID，不公证**）；自研 Ed25519 自更新 1.0.16→1.0.17 真机跑通；**v1.0.20 已发布**（2026-11-23） |
 
 ---
 
