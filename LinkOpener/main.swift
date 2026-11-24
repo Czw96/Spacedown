@@ -1,7 +1,7 @@
 import AppKit
 import Foundation
 
-/// 替沙箱里的扩展做两件被禁止的事：打开外部链接、用主 App 打开本地文件。
+/// 替沙箱里的扩展做三件被禁止的事：打开外部链接、用主 App 打开本地文件、代读图片。
 ///
 /// ## ⚠️ 它**刻意不带** `app-sandbox`
 ///
@@ -11,12 +11,20 @@ import Foundation
 /// ## 能力面收到最小
 ///
 /// - `open` 只放行 `http` / `https` / `mailto`，其余 scheme 一律拒绝；
-/// - `openInSpacedown` 只接 `file:`，且只把文件交给同一个 bundle 里的主 App。
+/// - `openInSpacedown` 只接 `file:`，且只把文件交给同一个 bundle 里的主 App；
+/// - `readImages` 只读 `root` 目录内、图片扩展名、单张 ≤ 2 MB 的普通文件。
 ///
-/// 两个口子都不接受"任意 URL 交给系统默认处理器"，塞进来也走不出去。
+/// 三个口子都不接受"任意 URL 交给系统默认处理器"或"读任意路径"，塞进来也走不出去。
 final class LinkOpenerService: NSObject, LinkOpenerProtocol {
 
     private static let allowedSchemes: Set<String> = ["http", "https", "mailto"]
+
+    /// 与 `ImageInliner` 的白名单保持一致 —— 那边认不出的扩展名，这里读出来也没用。
+    private static let imageExtensions: Set<String> = [
+        "png", "jpg", "jpeg", "gif", "webp", "avif", "heic", "bmp", "tif", "tiff", "ico", "svg",
+    ]
+    private static let maxBytesPerImage = 2 * 1024 * 1024
+    private static let maxBytesTotal = 20 * 1024 * 1024
 
     /// 从自身 bundle 往上找到装着这个 XPC 服务的 `.app`。
     ///
@@ -62,6 +70,36 @@ final class LinkOpenerService: NSObject, LinkOpenerProtocol {
     /// 无副作用的连通性探针（见协议里的说明）。
     func ping(withReply reply: @escaping (Bool) -> Void) {
         reply(true)
+    }
+
+    /// 代读图片。校验全部在服务侧做，调用方给什么路径都不相信。
+    ///
+    /// 解符号链接再比前缀，是为了挡 `sub/../../../etc/x.png` 和"目录内一个指向外部的符号
+    /// 链接"这两条路。`root` 自己也解一次，否则 `/tmp/x` 与 `/private/tmp/x` 会被判成
+    /// 不同目录（macOS 上 `/tmp` 就是个链接）。
+    func readImages(_ paths: [String], under root: String,
+                    withReply reply: @escaping ([String: Data]) -> Void) {
+        let rootURL = URL(fileURLWithPath: root).standardizedFileURL.resolvingSymlinksInPath()
+        let rootPrefix = rootURL.path.hasSuffix("/") ? rootURL.path : rootURL.path + "/"
+        var result: [String: Data] = [:]
+        var used = 0
+
+        for path in paths {
+            guard used < Self.maxBytesTotal else { break }
+            let url = URL(fileURLWithPath: path).standardizedFileURL.resolvingSymlinksInPath()
+            guard url.path.hasPrefix(rootPrefix) else { continue }
+            guard Self.imageExtensions.contains(url.pathExtension.lowercased()) else { continue }
+            guard let values = try? url.resourceValues(forKeys: [.isRegularFileKey, .fileSizeKey]),
+                  values.isRegularFile == true,
+                  let size = values.fileSize,
+                  size <= Self.maxBytesPerImage,
+                  size <= Self.maxBytesTotal - used else { continue }
+            guard let data = try? Data(contentsOf: url, options: .mappedIfSafe) else { continue }
+            used += data.count
+            // key 用请求原字符串：调用方按自己的写法回查，不必猜我们标准化成了什么
+            result[path] = data
+        }
+        reply(result)
     }
 }
 

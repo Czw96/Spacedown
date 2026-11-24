@@ -10,7 +10,7 @@
 
   <p>
     macOS 13+ · Apple Silicon · MIT ·
-    <a href="https://github.com/Czw96/homebrew-spacedown/releases/latest">v1.0.22</a> ·
+    <a href="https://github.com/Czw96/homebrew-spacedown/releases/latest">v1.0.23</a> ·
     AI-generated code
   </p>
 </div>
@@ -113,8 +113,9 @@ are in [`docs/构建与发布.md`](docs/构建与发布.md) (Chinese).
   button. The app itself has no cap.
 - **Remote images are never loaded**: CSP allows `img-src data:` only — offline by design.
   shields.io badges are dropped rather than rendered as broken boxes.
-- **Quick Look cannot read images in subdirectories**: the system only grants access to the
-  previewed file itself, so `docs/img/x.png` does not appear in Quick Look (the app is fine).
+- **Quick Look reads images through a non-sandboxed service**: the extension gets no access to
+  sibling files, so images are read by `LinkOpener.xpc` (limited to images inside the document's
+  directory, ≤ 2 MB each). If the read fails the image is simply not shown.
 - **Release assets live in another repository**:
   [Czw96/homebrew-spacedown](https://github.com/Czw96/homebrew-spacedown), which is also where
   the Cask points — so this repository's Releases page is empty.

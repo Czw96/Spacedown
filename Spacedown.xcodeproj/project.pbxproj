@@ -8,175 +8,164 @@
 
 
 /* Begin PBXBuildFile section */
-		000000000000000000000057 /* arena.c in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000002 /* arena.c */; };
-		000000000000000000000058 /* blocks.c in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000003 /* blocks.c */; };
-		000000000000000000000059 /* buffer.c in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000004 /* buffer.c */; };
-		00000000000000000000005A /* cmark.c in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000005 /* cmark.c */; };
-		00000000000000000000005B /* cmark_ctype.c in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000006 /* cmark_ctype.c */; };
-		00000000000000000000005C /* commonmark.c in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000007 /* commonmark.c */; };
-		00000000000000000000005D /* footnotes.c in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000008 /* footnotes.c */; };
-		00000000000000000000005E /* houdini_href_e.c in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000009 /* houdini_href_e.c */; };
-		00000000000000000000005F /* houdini_html_e.c in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000000A /* houdini_html_e.c */; };
-		000000000000000000000060 /* houdini_html_u.c in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000000B /* houdini_html_u.c */; };
-		000000000000000000000061 /* html.c in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000000C /* html.c */; };
-		000000000000000000000062 /* inlines.c in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000000D /* inlines.c */; };
-		000000000000000000000063 /* iterator.c in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000000E /* iterator.c */; };
-		000000000000000000000064 /* latex.c in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000000F /* latex.c */; };
-		000000000000000000000065 /* linked_list.c in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000010 /* linked_list.c */; };
-		000000000000000000000066 /* man.c in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000011 /* man.c */; };
-		000000000000000000000067 /* map.c in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000012 /* map.c */; };
-		000000000000000000000068 /* node.c in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000013 /* node.c */; };
-		000000000000000000000069 /* plaintext.c in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000014 /* plaintext.c */; };
-		00000000000000000000006A /* plugin.c in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000015 /* plugin.c */; };
-		00000000000000000000006B /* references.c in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000016 /* references.c */; };
-		00000000000000000000006C /* registry.c in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000017 /* registry.c */; };
-		00000000000000000000006D /* render.c in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000018 /* render.c */; };
-		00000000000000000000006E /* scanners.c in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000019 /* scanners.c */; };
-		00000000000000000000006F /* syntax_extension.c in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000001A /* syntax_extension.c */; };
-		000000000000000000000070 /* utf8.c in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000001B /* utf8.c */; };
-		000000000000000000000071 /* xml.c in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000001C /* xml.c */; };
-		000000000000000000000072 /* autolink.c in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000001D /* autolink.c */; };
-		000000000000000000000073 /* core-extensions.c in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000001E /* core-extensions.c */; };
-		000000000000000000000074 /* ext_scanners.c in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000001F /* ext_scanners.c */; };
-		000000000000000000000075 /* strikethrough.c in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000020 /* strikethrough.c */; };
-		000000000000000000000076 /* table.c in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000021 /* table.c */; };
-		000000000000000000000077 /* tagfilter.c in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000022 /* tagfilter.c */; };
-		000000000000000000000078 /* tasklist.c in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000023 /* tasklist.c */; };
-		000000000000000000000079 /* DangerousURLFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000024 /* DangerousURLFilter.swift */; };
-		00000000000000000000007A /* MarkdownDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000025 /* MarkdownDocument.swift */; };
-		00000000000000000000007B /* MarkdownRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000026 /* MarkdownRenderer.swift */; };
-		00000000000000000000007C /* DocumentRewriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000027 /* DocumentRewriter.swift */; };
-		00000000000000000000007D /* ImageInliner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000028 /* ImageInliner.swift */; };
-		00000000000000000000007E /* LinkInteraction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000029 /* LinkInteraction.swift */; };
-		00000000000000000000007F /* LinkPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000002A /* LinkPolicy.swift */; };
-		000000000000000000000080 /* Palette.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000002B /* Palette.swift */; };
-		000000000000000000000081 /* SharedTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000002C /* SharedTheme.swift */; };
-		000000000000000000000082 /* Toast.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000002D /* Toast.swift */; };
-		000000000000000000000083 /* WebViewDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000002E /* WebViewDocument.swift */; };
-		000000000000000000000084 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000002F /* AppDelegate.swift */; };
-		000000000000000000000085 /* AppMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000030 /* AppMenu.swift */; };
-		000000000000000000000086 /* SpacedownMain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000031 /* SpacedownMain.swift */; };
-		000000000000000000000087 /* DropTargetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000032 /* DropTargetView.swift */; };
-		000000000000000000000088 /* MarkdownDrop.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000033 /* MarkdownDrop.swift */; };
-		000000000000000000000089 /* SpacedownWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000034 /* SpacedownWebView.swift */; };
-		00000000000000000000008A /* WebViewPool.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000035 /* WebViewPool.swift */; };
-		00000000000000000000008B /* FileWatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000036 /* FileWatcher.swift */; };
-		00000000000000000000008C /* MarkdownFileType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000037 /* MarkdownFileType.swift */; };
-		00000000000000000000008D /* MeasureSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000038 /* MeasureSettings.swift */; };
-		00000000000000000000008E /* QuickLookClaim.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000039 /* QuickLookClaim.swift */; };
-		00000000000000000000008F /* QuickLookDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000003A /* QuickLookDiagnostics.swift */; };
-		000000000000000000000090 /* HoverLinkButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000003B /* HoverLinkButton.swift */; };
-		000000000000000000000091 /* SettingsWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000003C /* SettingsWindow.swift */; };
-		000000000000000000000092 /* Uninstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000003D /* Uninstaller.swift */; };
-		000000000000000000000093 /* AppInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000003E /* AppInfo.swift */; };
-		000000000000000000000094 /* DebugLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000003F /* DebugLog.swift */; };
-		000000000000000000000095 /* FileLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000040 /* FileLog.swift */; };
-		000000000000000000000096 /* ProcessRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000041 /* ProcessRunner.swift */; };
-		000000000000000000000097 /* UpdateChecker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000042 /* UpdateChecker.swift */; };
-		000000000000000000000098 /* UpdateInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000043 /* UpdateInstaller.swift */; };
-		000000000000000000000099 /* UpdatePromptWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000044 /* UpdatePromptWindow.swift */; };
-		00000000000000000000009A /* UpdateSigning.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000045 /* UpdateSigning.swift */; };
-		00000000000000000000009B /* DocumentTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000046 /* DocumentTab.swift */; };
-		00000000000000000000009C /* FindBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000047 /* FindBar.swift */; };
-		00000000000000000000009D /* MainWindow+Actions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000048 /* MainWindow+Actions.swift */; };
-		00000000000000000000009E /* MainWindow+Diagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000049 /* MainWindow+Diagnostics.swift */; };
-		00000000000000000000009F /* MainWindow+Find.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000004A /* MainWindow+Find.swift */; };
-		0000000000000000000000A0 /* MainWindow+WebKit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000004B /* MainWindow+WebKit.swift */; };
-		0000000000000000000000A1 /* MainWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000004C /* MainWindow.swift */; };
-		0000000000000000000000A2 /* SpacedownWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000004D /* SpacedownWindow.swift */; };
-		0000000000000000000000A3 /* TabBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000004E /* TabBarView.swift */; };
-		0000000000000000000000A4 /* TabItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000004F /* TabItemView.swift */; };
-		0000000000000000000000A5 /* PreviewDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000050 /* PreviewDiagnostics.swift */; };
-		0000000000000000000000A6 /* PreviewDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000051 /* PreviewDocument.swift */; };
-		0000000000000000000000A7 /* PreviewViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000052 /* PreviewViewController.swift */; };
-		0000000000000000000000A8 /* PreviewWebViewPool.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000053 /* PreviewWebViewPool.swift */; };
-		0000000000000000000000A9 /* ScrollProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000054 /* ScrollProbe.swift */; };
-		0000000000000000000000AA /* LinkOpenerProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000055 /* LinkOpenerProtocol.swift */; };
-		0000000000000000000000AB /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000056 /* main.swift */; };
-		0000000000000000000000B3 /* theme.css in Resources */ = {isa = PBXBuildFile; fileRef = 0000000000000000000000B2 /* theme.css */; };
-		0000000000000000000000AD /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 0000000000000000000000AC /* AppIcon.icns */; };
-		0000000000000000000000B0 /* uninstall.sh in Resources */ = {isa = PBXBuildFile; fileRef = 0000000000000000000000AE /* uninstall.sh */; };
-		0000000000000000000000B1 /* swap.sh in Resources */ = {isa = PBXBuildFile; fileRef = 0000000000000000000000AF /* swap.sh */; };
-		0000000000000000000000BA /* libCcmarkGfm.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 0000000000000000000000B4 /* libCcmarkGfm.a */; };
-		0000000000000000000000BB /* MarkdownKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0000000000000000000000B5 /* MarkdownKit.framework */; };
-		0000000000000000000000BC /* SharedTheme.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0000000000000000000000B6 /* SharedTheme.framework */; };
-		0000000000000000000000BD /* QuickLookPreview.appex in Frameworks */ = {isa = PBXBuildFile; fileRef = 0000000000000000000000B8 /* QuickLookPreview.appex */; };
-		0000000000000000000000BE /* MarkdownKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 0000000000000000000000B5 /* MarkdownKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy,); }; };
-		0000000000000000000000BF /* SharedTheme.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 0000000000000000000000B6 /* SharedTheme.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy,); }; };
-		0000000000000000000000C0 /* MarkdownKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 0000000000000000000000B5 /* MarkdownKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy,); }; };
-		0000000000000000000000C1 /* SharedTheme.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 0000000000000000000000B6 /* SharedTheme.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy,); }; };
-		0000000000000000000000C2 /* MarkdownKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0000000000000000000000B5 /* MarkdownKit.framework */; };
-		0000000000000000000000C3 /* SharedTheme.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0000000000000000000000B6 /* SharedTheme.framework */; };
-		0000000000000000000000C4 /* QuickLookPreview.appex in Embed Plug-ins */ = {isa = PBXBuildFile; fileRef = 0000000000000000000000B8 /* QuickLookPreview.appex */; };
-		0000000000000000000000C5 /* LinkOpener.xpc in Embed XPC Services */ = {isa = PBXBuildFile; fileRef = 0000000000000000000000B9 /* LinkOpener.xpc */; settings = {ATTRIBUTES = (CodeSignOnCopy,); }; };
-		0000000000000000000000C6 /* LinkOpenerProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000055 /* LinkOpenerProtocol.swift */; };
+		000000000000000000000058 /* arena.c in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000002 /* arena.c */; };
+		000000000000000000000059 /* blocks.c in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000003 /* blocks.c */; };
+		00000000000000000000005A /* buffer.c in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000004 /* buffer.c */; };
+		00000000000000000000005B /* cmark.c in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000005 /* cmark.c */; };
+		00000000000000000000005C /* cmark_ctype.c in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000006 /* cmark_ctype.c */; };
+		00000000000000000000005D /* commonmark.c in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000007 /* commonmark.c */; };
+		00000000000000000000005E /* footnotes.c in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000008 /* footnotes.c */; };
+		00000000000000000000005F /* houdini_href_e.c in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000009 /* houdini_href_e.c */; };
+		000000000000000000000060 /* houdini_html_e.c in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000000A /* houdini_html_e.c */; };
+		000000000000000000000061 /* houdini_html_u.c in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000000B /* houdini_html_u.c */; };
+		000000000000000000000062 /* html.c in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000000C /* html.c */; };
+		000000000000000000000063 /* inlines.c in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000000D /* inlines.c */; };
+		000000000000000000000064 /* iterator.c in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000000E /* iterator.c */; };
+		000000000000000000000065 /* latex.c in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000000F /* latex.c */; };
+		000000000000000000000066 /* linked_list.c in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000010 /* linked_list.c */; };
+		000000000000000000000067 /* man.c in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000011 /* man.c */; };
+		000000000000000000000068 /* map.c in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000012 /* map.c */; };
+		000000000000000000000069 /* node.c in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000013 /* node.c */; };
+		00000000000000000000006A /* plaintext.c in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000014 /* plaintext.c */; };
+		00000000000000000000006B /* plugin.c in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000015 /* plugin.c */; };
+		00000000000000000000006C /* references.c in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000016 /* references.c */; };
+		00000000000000000000006D /* registry.c in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000017 /* registry.c */; };
+		00000000000000000000006E /* render.c in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000018 /* render.c */; };
+		00000000000000000000006F /* scanners.c in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000019 /* scanners.c */; };
+		000000000000000000000070 /* syntax_extension.c in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000001A /* syntax_extension.c */; };
+		000000000000000000000071 /* utf8.c in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000001B /* utf8.c */; };
+		000000000000000000000072 /* xml.c in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000001C /* xml.c */; };
+		000000000000000000000073 /* autolink.c in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000001D /* autolink.c */; };
+		000000000000000000000074 /* core-extensions.c in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000001E /* core-extensions.c */; };
+		000000000000000000000075 /* ext_scanners.c in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000001F /* ext_scanners.c */; };
+		000000000000000000000076 /* strikethrough.c in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000020 /* strikethrough.c */; };
+		000000000000000000000077 /* table.c in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000021 /* table.c */; };
+		000000000000000000000078 /* tagfilter.c in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000022 /* tagfilter.c */; };
+		000000000000000000000079 /* tasklist.c in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000023 /* tasklist.c */; };
+		00000000000000000000007A /* DangerousURLFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000024 /* DangerousURLFilter.swift */; };
+		00000000000000000000007B /* MarkdownDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000025 /* MarkdownDocument.swift */; };
+		00000000000000000000007C /* MarkdownRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000026 /* MarkdownRenderer.swift */; };
+		00000000000000000000007D /* DocumentRewriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000027 /* DocumentRewriter.swift */; };
+		00000000000000000000007E /* ImageInliner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000028 /* ImageInliner.swift */; };
+		00000000000000000000007F /* LinkInteraction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000029 /* LinkInteraction.swift */; };
+		000000000000000000000080 /* LinkPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000002A /* LinkPolicy.swift */; };
+		000000000000000000000081 /* Palette.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000002B /* Palette.swift */; };
+		000000000000000000000082 /* SharedTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000002C /* SharedTheme.swift */; };
+		000000000000000000000083 /* Toast.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000002D /* Toast.swift */; };
+		000000000000000000000084 /* WebViewDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000002E /* WebViewDocument.swift */; };
+		000000000000000000000085 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000002F /* AppDelegate.swift */; };
+		000000000000000000000086 /* AppMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000030 /* AppMenu.swift */; };
+		000000000000000000000087 /* SpacedownMain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000031 /* SpacedownMain.swift */; };
+		000000000000000000000088 /* DropTargetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000032 /* DropTargetView.swift */; };
+		000000000000000000000089 /* MarkdownDrop.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000033 /* MarkdownDrop.swift */; };
+		00000000000000000000008A /* SpacedownWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000034 /* SpacedownWebView.swift */; };
+		00000000000000000000008B /* WebViewPool.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000035 /* WebViewPool.swift */; };
+		00000000000000000000008C /* FileWatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000036 /* FileWatcher.swift */; };
+		00000000000000000000008D /* MarkdownFileType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000037 /* MarkdownFileType.swift */; };
+		00000000000000000000008E /* MeasureSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000038 /* MeasureSettings.swift */; };
+		00000000000000000000008F /* QuickLookClaim.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000039 /* QuickLookClaim.swift */; };
+		000000000000000000000090 /* QuickLookDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000003A /* QuickLookDiagnostics.swift */; };
+		000000000000000000000091 /* HoverLinkButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000003B /* HoverLinkButton.swift */; };
+		000000000000000000000092 /* SettingsWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000003C /* SettingsWindow.swift */; };
+		000000000000000000000093 /* Uninstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000003D /* Uninstaller.swift */; };
+		000000000000000000000094 /* AppInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000003E /* AppInfo.swift */; };
+		000000000000000000000095 /* DebugLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000003F /* DebugLog.swift */; };
+		000000000000000000000096 /* FileLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000040 /* FileLog.swift */; };
+		000000000000000000000097 /* ProcessRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000041 /* ProcessRunner.swift */; };
+		000000000000000000000098 /* UpdateChecker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000042 /* UpdateChecker.swift */; };
+		000000000000000000000099 /* UpdateInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000043 /* UpdateInstaller.swift */; };
+		00000000000000000000009A /* UpdatePromptWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000044 /* UpdatePromptWindow.swift */; };
+		00000000000000000000009B /* UpdateSigning.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000045 /* UpdateSigning.swift */; };
+		00000000000000000000009C /* DocumentTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000046 /* DocumentTab.swift */; };
+		00000000000000000000009D /* FindBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000047 /* FindBar.swift */; };
+		00000000000000000000009E /* MainWindow+Actions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000048 /* MainWindow+Actions.swift */; };
+		00000000000000000000009F /* MainWindow+Diagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000049 /* MainWindow+Diagnostics.swift */; };
+		0000000000000000000000A0 /* MainWindow+Find.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000004A /* MainWindow+Find.swift */; };
+		0000000000000000000000A1 /* MainWindow+WebKit.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000004B /* MainWindow+WebKit.swift */; };
+		0000000000000000000000A2 /* MainWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000004C /* MainWindow.swift */; };
+		0000000000000000000000A3 /* SpacedownWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000004D /* SpacedownWindow.swift */; };
+		0000000000000000000000A4 /* TabBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000004E /* TabBarView.swift */; };
+		0000000000000000000000A5 /* TabItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00000000000000000000004F /* TabItemView.swift */; };
+		0000000000000000000000A6 /* ImageBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000050 /* ImageBridge.swift */; };
+		0000000000000000000000A7 /* PreviewDiagnostics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000051 /* PreviewDiagnostics.swift */; };
+		0000000000000000000000A8 /* PreviewDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000052 /* PreviewDocument.swift */; };
+		0000000000000000000000A9 /* PreviewViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000053 /* PreviewViewController.swift */; };
+		0000000000000000000000AA /* PreviewWebViewPool.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000054 /* PreviewWebViewPool.swift */; };
+		0000000000000000000000AB /* ScrollProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000055 /* ScrollProbe.swift */; };
+		0000000000000000000000AC /* LinkOpenerProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000056 /* LinkOpenerProtocol.swift */; };
+		0000000000000000000000AD /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000057 /* main.swift */; };
+		0000000000000000000000B5 /* theme.css in Resources */ = {isa = PBXBuildFile; fileRef = 0000000000000000000000B4 /* theme.css */; };
+		0000000000000000000000AF /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 0000000000000000000000AE /* AppIcon.icns */; };
+		0000000000000000000000B2 /* uninstall.sh in Resources */ = {isa = PBXBuildFile; fileRef = 0000000000000000000000B0 /* uninstall.sh */; };
+		0000000000000000000000B3 /* swap.sh in Resources */ = {isa = PBXBuildFile; fileRef = 0000000000000000000000B1 /* swap.sh */; };
+		0000000000000000000000BC /* libCcmarkGfm.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 0000000000000000000000B6 /* libCcmarkGfm.a */; };
+		0000000000000000000000BD /* MarkdownKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0000000000000000000000B7 /* MarkdownKit.framework */; };
+		0000000000000000000000BE /* SharedTheme.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0000000000000000000000B8 /* SharedTheme.framework */; };
+		0000000000000000000000BF /* QuickLookPreview.appex in Frameworks */ = {isa = PBXBuildFile; fileRef = 0000000000000000000000BA /* QuickLookPreview.appex */; };
+		0000000000000000000000C0 /* MarkdownKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 0000000000000000000000B7 /* MarkdownKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy,); }; };
+		0000000000000000000000C1 /* SharedTheme.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 0000000000000000000000B8 /* SharedTheme.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy,); }; };
+		0000000000000000000000C2 /* MarkdownKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 0000000000000000000000B7 /* MarkdownKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy,); }; };
+		0000000000000000000000C3 /* SharedTheme.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 0000000000000000000000B8 /* SharedTheme.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy,); }; };
+		0000000000000000000000C4 /* MarkdownKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0000000000000000000000B7 /* MarkdownKit.framework */; };
+		0000000000000000000000C5 /* SharedTheme.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0000000000000000000000B8 /* SharedTheme.framework */; };
+		0000000000000000000000C6 /* QuickLookPreview.appex in Embed Plug-ins */ = {isa = PBXBuildFile; fileRef = 0000000000000000000000BA /* QuickLookPreview.appex */; };
+		0000000000000000000000C7 /* LinkOpener.xpc in Embed XPC Services */ = {isa = PBXBuildFile; fileRef = 0000000000000000000000BB /* LinkOpener.xpc */; settings = {ATTRIBUTES = (CodeSignOnCopy,); }; };
+		0000000000000000000000C8 /* LinkOpenerProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000000000000000000056 /* LinkOpenerProtocol.swift */; };
 /* End PBXBuildFile section */
 
 
 /* Begin PBXContainerItemProxy section */
-		0000000000000000000000CD /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 000000000000000000000001 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 0000000000000000000000C7;
-			remoteInfo = CcmarkGfm;
-		};
 		0000000000000000000000CF /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 000000000000000000000001 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = 0000000000000000000000C8;
-			remoteInfo = MarkdownKit;
+			remoteGlobalIDString = 0000000000000000000000C9;
+			remoteInfo = CcmarkGfm;
 		};
 		0000000000000000000000D1 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 000000000000000000000001 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = 0000000000000000000000C9;
-			remoteInfo = SharedTheme;
+			remoteGlobalIDString = 0000000000000000000000CA;
+			remoteInfo = MarkdownKit;
 		};
 		0000000000000000000000D3 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 000000000000000000000001 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 0000000000000000000000CB;
-			remoteInfo = QuickLookPreview;
+			remoteInfo = SharedTheme;
 		};
 		0000000000000000000000D5 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 000000000000000000000001 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = 0000000000000000000000CC;
+			remoteGlobalIDString = 0000000000000000000000CD;
+			remoteInfo = QuickLookPreview;
+		};
+		0000000000000000000000D7 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 000000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 0000000000000000000000CE;
 			remoteInfo = LinkOpener;
 		};
 /* End PBXContainerItemProxy section */
 
 
 /* Begin PBXCopyFilesBuildPhase section */
-		0000000000000000000000D7 /* Embed Plug-ins */ = {
+		0000000000000000000000D9 /* Embed Plug-ins */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			name = "Embed Plug-ins";
 			files = (
-				0000000000000000000000C4 /* QuickLookPreview.appex in Embed Plug-ins */,
+				0000000000000000000000C6 /* QuickLookPreview.appex in Embed Plug-ins */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		0000000000000000000000D8 /* Embed Frameworks */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			name = "Embed Frameworks";
-			files = (
-				0000000000000000000000BE /* MarkdownKit.framework in Embed Frameworks */,
-				0000000000000000000000BF /* SharedTheme.framework in Embed Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		0000000000000000000000D9 /* Embed Frameworks */ = {
+		0000000000000000000000DA /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
@@ -188,14 +177,26 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		0000000000000000000000DA /* Embed XPC Services */ = {
+		0000000000000000000000DB /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			name = "Embed Frameworks";
+			files = (
+				0000000000000000000000C2 /* MarkdownKit.framework in Embed Frameworks */,
+				0000000000000000000000C3 /* SharedTheme.framework in Embed Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		0000000000000000000000DC /* Embed XPC Services */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = Contents/XPCServices;
 			dstSubfolderSpec = 1;
 			name = "Embed XPC Services";
 			files = (
-				0000000000000000000000C5 /* LinkOpener.xpc in Embed XPC Services */,
+				0000000000000000000000C7 /* LinkOpener.xpc in Embed XPC Services */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -203,47 +204,47 @@
 
 
 /* Begin PBXFrameworksBuildPhase section */
-		0000000000000000000000DC /* Frameworks */ = {
+		0000000000000000000000DE /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		0000000000000000000000DF /* Frameworks */ = {
+		0000000000000000000000E1 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0000000000000000000000BA /* libCcmarkGfm.a in Frameworks */,
+				0000000000000000000000BC /* libCcmarkGfm.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		0000000000000000000000E2 /* Frameworks */ = {
+		0000000000000000000000E4 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		0000000000000000000000E5 /* Frameworks */ = {
+		0000000000000000000000E7 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0000000000000000000000BB /* MarkdownKit.framework in Frameworks */,
-				0000000000000000000000BC /* SharedTheme.framework in Frameworks */,
+				0000000000000000000000BD /* MarkdownKit.framework in Frameworks */,
+				0000000000000000000000BE /* SharedTheme.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		0000000000000000000000E8 /* Frameworks */ = {
+		0000000000000000000000EA /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0000000000000000000000C2 /* MarkdownKit.framework in Frameworks */,
-				0000000000000000000000C3 /* SharedTheme.framework in Frameworks */,
+				0000000000000000000000C4 /* MarkdownKit.framework in Frameworks */,
+				0000000000000000000000C5 /* SharedTheme.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		0000000000000000000000EB /* Frameworks */ = {
+		0000000000000000000000ED /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -254,12 +255,12 @@
 
 
 /* Begin PBXFileReference section */
-		0000000000000000000000B4 /* libCcmarkGfm.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libCcmarkGfm.a; sourceTree = BUILT_PRODUCTS_DIR; };
-		0000000000000000000000B5 /* MarkdownKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = MarkdownKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		0000000000000000000000B6 /* SharedTheme.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = SharedTheme.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		0000000000000000000000B7 /* Spacedown.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Spacedown.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		0000000000000000000000B8 /* QuickLookPreview.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = QuickLookPreview.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-		0000000000000000000000B9 /* LinkOpener.xpc */ = {isa = PBXFileReference; explicitFileType = "wrapper.xpc-service"; includeInIndex = 0; path = LinkOpener.xpc; sourceTree = BUILT_PRODUCTS_DIR; };
+		0000000000000000000000B6 /* libCcmarkGfm.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libCcmarkGfm.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		0000000000000000000000B7 /* MarkdownKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = MarkdownKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		0000000000000000000000B8 /* SharedTheme.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = SharedTheme.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		0000000000000000000000B9 /* Spacedown.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Spacedown.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		0000000000000000000000BA /* QuickLookPreview.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = QuickLookPreview.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		0000000000000000000000BB /* LinkOpener.xpc */ = {isa = PBXFileReference; explicitFileType = "wrapper.xpc-service"; includeInIndex = 0; path = LinkOpener.xpc; sourceTree = BUILT_PRODUCTS_DIR; };
 		00000000000000000000001D /* autolink.c */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.c.c;
@@ -530,7 +531,7 @@
 			path = "WebViewDocument.swift";
 			sourceTree = "<group>";
 		};
-		0000000000000000000000B2 /* theme.css */ = {
+		0000000000000000000000B4 /* theme.css */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = text.css;
 			path = "theme.css";
@@ -608,25 +609,25 @@
 			path = "QuickLookDiagnostics.swift";
 			sourceTree = "<group>";
 		};
-		0000000000000000000000AC /* AppIcon.icns */ = {
+		0000000000000000000000AE /* AppIcon.icns */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = image.icns;
 			path = "AppIcon.icns";
 			sourceTree = "<group>";
 		};
-		0000000000000000000000F8 /* Info.plist */ = {
+		0000000000000000000000FA /* Info.plist */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = text.plist.xml;
 			path = "Info.plist";
 			sourceTree = "<group>";
 		};
-		0000000000000000000000AF /* swap.sh */ = {
+		0000000000000000000000B1 /* swap.sh */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = text.script.sh;
 			path = "swap.sh";
 			sourceTree = "<group>";
 		};
-		0000000000000000000000AE /* uninstall.sh */ = {
+		0000000000000000000000B0 /* uninstall.sh */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = text.script.sh;
 			path = "uninstall.sh";
@@ -758,61 +759,67 @@
 			path = "TabItemView.swift";
 			sourceTree = "<group>";
 		};
-		000000000000000000000050 /* PreviewDiagnostics.swift */ = {
+		000000000000000000000050 /* ImageBridge.swift */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = sourcecode.swift;
+			path = "ImageBridge.swift";
+			sourceTree = "<group>";
+		};
+		000000000000000000000051 /* PreviewDiagnostics.swift */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
 			path = "PreviewDiagnostics.swift";
 			sourceTree = "<group>";
 		};
-		000000000000000000000051 /* PreviewDocument.swift */ = {
+		000000000000000000000052 /* PreviewDocument.swift */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
 			path = "PreviewDocument.swift";
 			sourceTree = "<group>";
 		};
-		000000000000000000000052 /* PreviewViewController.swift */ = {
+		000000000000000000000053 /* PreviewViewController.swift */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
 			path = "PreviewViewController.swift";
 			sourceTree = "<group>";
 		};
-		000000000000000000000053 /* PreviewWebViewPool.swift */ = {
+		000000000000000000000054 /* PreviewWebViewPool.swift */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
 			path = "PreviewWebViewPool.swift";
 			sourceTree = "<group>";
 		};
-		000000000000000000000054 /* ScrollProbe.swift */ = {
+		000000000000000000000055 /* ScrollProbe.swift */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
 			path = "ScrollProbe.swift";
 			sourceTree = "<group>";
 		};
-		0000000000000000000000FF /* Info.plist */ = {
+		000000000000000000000101 /* Info.plist */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = text.plist.xml;
 			path = "Info.plist";
 			sourceTree = "<group>";
 		};
-		000000000000000000000100 /* QuickLookPreview.entitlements */ = {
+		000000000000000000000102 /* QuickLookPreview.entitlements */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = text.plist.entitlements;
 			path = "QuickLookPreview.entitlements";
 			sourceTree = "<group>";
 		};
-		000000000000000000000103 /* Info.plist */ = {
+		000000000000000000000105 /* Info.plist */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = text.plist.xml;
 			path = "Info.plist";
 			sourceTree = "<group>";
 		};
-		000000000000000000000055 /* LinkOpenerProtocol.swift */ = {
+		000000000000000000000056 /* LinkOpenerProtocol.swift */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
 			path = "LinkOpenerProtocol.swift";
 			sourceTree = "<group>";
 		};
-		000000000000000000000056 /* main.swift */ = {
+		000000000000000000000057 /* main.swift */ = {
 			isa = PBXFileReference;
 			lastKnownFileType = sourcecode.swift;
 			path = "main.swift";
@@ -822,7 +829,7 @@
 
 
 /* Begin PBXGroup section */
-		0000000000000000000000EF /* extensions */ = {
+		0000000000000000000000F1 /* extensions */ = {
 			isa = PBXGroup;
 			children = (
 				00000000000000000000001D /* autolink.c */,
@@ -836,7 +843,7 @@
 			path = "extensions";
 			sourceTree = "<group>";
 		};
-		0000000000000000000000F0 /* src */ = {
+		0000000000000000000000F2 /* src */ = {
 			isa = PBXGroup;
 			children = (
 				000000000000000000000002 /* arena.c */,
@@ -870,16 +877,16 @@
 			path = "src";
 			sourceTree = "<group>";
 		};
-		0000000000000000000000F1 /* Packages/Core/Sources/CcmarkGfm */ = {
+		0000000000000000000000F3 /* Packages/Core/Sources/CcmarkGfm */ = {
 			isa = PBXGroup;
 			children = (
-				0000000000000000000000EF /* extensions */,
-				0000000000000000000000F0 /* src */,
+				0000000000000000000000F1 /* extensions */,
+				0000000000000000000000F2 /* src */,
 			);
 			path = "Packages/Core/Sources/CcmarkGfm";
 			sourceTree = "<group>";
 		};
-		0000000000000000000000F2 /* Packages/Core/Sources/MarkdownKit */ = {
+		0000000000000000000000F4 /* Packages/Core/Sources/MarkdownKit */ = {
 			isa = PBXGroup;
 			children = (
 				000000000000000000000024 /* DangerousURLFilter.swift */,
@@ -889,7 +896,7 @@
 			path = "Packages/Core/Sources/MarkdownKit";
 			sourceTree = "<group>";
 		};
-		0000000000000000000000F3 /* Packages/Core/Sources/SharedTheme */ = {
+		0000000000000000000000F5 /* Packages/Core/Sources/SharedTheme */ = {
 			isa = PBXGroup;
 			children = (
 				000000000000000000000027 /* DocumentRewriter.swift */,
@@ -900,12 +907,12 @@
 				00000000000000000000002C /* SharedTheme.swift */,
 				00000000000000000000002D /* Toast.swift */,
 				00000000000000000000002E /* WebViewDocument.swift */,
-				0000000000000000000000B2 /* theme.css */,
+				0000000000000000000000B4 /* theme.css */,
 			);
 			path = "Packages/Core/Sources/SharedTheme";
 			sourceTree = "<group>";
 		};
-		0000000000000000000000F4 /* App */ = {
+		0000000000000000000000F6 /* App */ = {
 			isa = PBXGroup;
 			children = (
 				00000000000000000000002F /* AppDelegate.swift */,
@@ -915,7 +922,7 @@
 			path = "App";
 			sourceTree = "<group>";
 		};
-		0000000000000000000000F5 /* Content */ = {
+		0000000000000000000000F7 /* Content */ = {
 			isa = PBXGroup;
 			children = (
 				000000000000000000000032 /* DropTargetView.swift */,
@@ -926,7 +933,7 @@
 			path = "Content";
 			sourceTree = "<group>";
 		};
-		0000000000000000000000F6 /* Document */ = {
+		0000000000000000000000F8 /* Document */ = {
 			isa = PBXGroup;
 			children = (
 				000000000000000000000036 /* FileWatcher.swift */,
@@ -936,7 +943,7 @@
 			path = "Document";
 			sourceTree = "<group>";
 		};
-		0000000000000000000000F7 /* QuickLook */ = {
+		0000000000000000000000F9 /* QuickLook */ = {
 			isa = PBXGroup;
 			children = (
 				000000000000000000000039 /* QuickLookClaim.swift */,
@@ -945,18 +952,18 @@
 			path = "QuickLook";
 			sourceTree = "<group>";
 		};
-		0000000000000000000000F9 /* Resources */ = {
+		0000000000000000000000FB /* Resources */ = {
 			isa = PBXGroup;
 			children = (
-				0000000000000000000000AC /* AppIcon.icns */,
-				0000000000000000000000F8 /* Info.plist */,
-				0000000000000000000000AF /* swap.sh */,
-				0000000000000000000000AE /* uninstall.sh */,
+				0000000000000000000000AE /* AppIcon.icns */,
+				0000000000000000000000FA /* Info.plist */,
+				0000000000000000000000B1 /* swap.sh */,
+				0000000000000000000000B0 /* uninstall.sh */,
 			);
 			path = "Resources";
 			sourceTree = "<group>";
 		};
-		0000000000000000000000FA /* Settings */ = {
+		0000000000000000000000FC /* Settings */ = {
 			isa = PBXGroup;
 			children = (
 				00000000000000000000003B /* HoverLinkButton.swift */,
@@ -966,7 +973,7 @@
 			path = "Settings";
 			sourceTree = "<group>";
 		};
-		0000000000000000000000FB /* Support */ = {
+		0000000000000000000000FD /* Support */ = {
 			isa = PBXGroup;
 			children = (
 				00000000000000000000003E /* AppInfo.swift */,
@@ -977,7 +984,7 @@
 			path = "Support";
 			sourceTree = "<group>";
 		};
-		0000000000000000000000FC /* Update */ = {
+		0000000000000000000000FE /* Update */ = {
 			isa = PBXGroup;
 			children = (
 				000000000000000000000042 /* UpdateChecker.swift */,
@@ -988,7 +995,7 @@
 			path = "Update";
 			sourceTree = "<group>";
 		};
-		0000000000000000000000FD /* Window */ = {
+		0000000000000000000000FF /* Window */ = {
 			isa = PBXGroup;
 			children = (
 				000000000000000000000046 /* DocumentTab.swift */,
@@ -1005,77 +1012,78 @@
 			path = "Window";
 			sourceTree = "<group>";
 		};
-		0000000000000000000000FE /* Spacedown */ = {
+		000000000000000000000100 /* Spacedown */ = {
 			isa = PBXGroup;
 			children = (
-				0000000000000000000000F4 /* App */,
-				0000000000000000000000F5 /* Content */,
-				0000000000000000000000F6 /* Document */,
-				0000000000000000000000F7 /* QuickLook */,
-				0000000000000000000000F9 /* Resources */,
-				0000000000000000000000FA /* Settings */,
-				0000000000000000000000FB /* Support */,
-				0000000000000000000000FC /* Update */,
-				0000000000000000000000FD /* Window */,
+				0000000000000000000000F6 /* App */,
+				0000000000000000000000F7 /* Content */,
+				0000000000000000000000F8 /* Document */,
+				0000000000000000000000F9 /* QuickLook */,
+				0000000000000000000000FB /* Resources */,
+				0000000000000000000000FC /* Settings */,
+				0000000000000000000000FD /* Support */,
+				0000000000000000000000FE /* Update */,
+				0000000000000000000000FF /* Window */,
 			);
 			path = "Spacedown";
 			sourceTree = "<group>";
 		};
-		000000000000000000000101 /* Resources */ = {
+		000000000000000000000103 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
-				0000000000000000000000FF /* Info.plist */,
-				000000000000000000000100 /* QuickLookPreview.entitlements */,
+				000000000000000000000101 /* Info.plist */,
+				000000000000000000000102 /* QuickLookPreview.entitlements */,
 			);
 			path = "Resources";
 			sourceTree = "<group>";
 		};
-		000000000000000000000102 /* QuickLookPreview */ = {
+		000000000000000000000104 /* QuickLookPreview */ = {
 			isa = PBXGroup;
 			children = (
-				000000000000000000000050 /* PreviewDiagnostics.swift */,
-				000000000000000000000051 /* PreviewDocument.swift */,
-				000000000000000000000052 /* PreviewViewController.swift */,
-				000000000000000000000053 /* PreviewWebViewPool.swift */,
-				000000000000000000000054 /* ScrollProbe.swift */,
-				000000000000000000000101 /* Resources */,
+				000000000000000000000050 /* ImageBridge.swift */,
+				000000000000000000000051 /* PreviewDiagnostics.swift */,
+				000000000000000000000052 /* PreviewDocument.swift */,
+				000000000000000000000053 /* PreviewViewController.swift */,
+				000000000000000000000054 /* PreviewWebViewPool.swift */,
+				000000000000000000000055 /* ScrollProbe.swift */,
+				000000000000000000000103 /* Resources */,
 			);
 			path = "QuickLookPreview";
 			sourceTree = "<group>";
 		};
-		000000000000000000000104 /* LinkOpener */ = {
+		000000000000000000000106 /* LinkOpener */ = {
 			isa = PBXGroup;
 			children = (
-				000000000000000000000103 /* Info.plist */,
-				000000000000000000000055 /* LinkOpenerProtocol.swift */,
-				000000000000000000000056 /* main.swift */,
+				000000000000000000000105 /* Info.plist */,
+				000000000000000000000056 /* LinkOpenerProtocol.swift */,
+				000000000000000000000057 /* main.swift */,
 			);
 			path = "LinkOpener";
 			sourceTree = "<group>";
 		};
-		0000000000000000000000ED /* Products */ = {
+		0000000000000000000000EF /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				0000000000000000000000B4 /* libCcmarkGfm.a */,
-				0000000000000000000000B5 /* MarkdownKit.framework */,
-				0000000000000000000000B6 /* SharedTheme.framework */,
-				0000000000000000000000B7 /* Spacedown.app */,
-				0000000000000000000000B8 /* QuickLookPreview.appex */,
-				0000000000000000000000B9 /* LinkOpener.xpc */,
+				0000000000000000000000B6 /* libCcmarkGfm.a */,
+				0000000000000000000000B7 /* MarkdownKit.framework */,
+				0000000000000000000000B8 /* SharedTheme.framework */,
+				0000000000000000000000B9 /* Spacedown.app */,
+				0000000000000000000000BA /* QuickLookPreview.appex */,
+				0000000000000000000000BB /* LinkOpener.xpc */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		0000000000000000000000EE /* Group */ = {
+		0000000000000000000000F0 /* Group */ = {
 			isa = PBXGroup;
 			children = (
-				0000000000000000000000F1 /* CcmarkGfm */,
-				0000000000000000000000F2 /* MarkdownKit */,
-				0000000000000000000000F3 /* SharedTheme */,
-				0000000000000000000000FE /* Spacedown */,
-				000000000000000000000102 /* QuickLookPreview */,
-				000000000000000000000104 /* LinkOpener */,
-				0000000000000000000000ED /* Products */,
+				0000000000000000000000F3 /* CcmarkGfm */,
+				0000000000000000000000F4 /* MarkdownKit */,
+				0000000000000000000000F5 /* SharedTheme */,
+				000000000000000000000100 /* Spacedown */,
+				000000000000000000000104 /* QuickLookPreview */,
+				000000000000000000000106 /* LinkOpener */,
+				0000000000000000000000EF /* Products */,
 			);
 			sourceTree = "<group>";
 		};
@@ -1083,12 +1091,12 @@
 
 
 /* Begin PBXNativeTarget section */
-		0000000000000000000000C7 /* CcmarkGfm */ = {
+		0000000000000000000000C9 /* CcmarkGfm */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 000000000000000000000105 /* Build configuration list for PBXNativeTarget "CcmarkGfm" */;
+			buildConfigurationList = 000000000000000000000107 /* Build configuration list for PBXNativeTarget "CcmarkGfm" */;
 			buildPhases = (
-				0000000000000000000000DB,
-				0000000000000000000000DC,
+				0000000000000000000000DD,
+				0000000000000000000000DE,
 			);
 			buildRules = (
 			);
@@ -1096,34 +1104,34 @@
 			);
 			name = CcmarkGfm;
 			productName = CcmarkGfm;
-			productReference = 0000000000000000000000B4 /* libCcmarkGfm.a */;
+			productReference = 0000000000000000000000B6 /* libCcmarkGfm.a */;
 			productType = "com.apple.product-type.library.static";
 		};
-		0000000000000000000000C8 /* MarkdownKit */ = {
+		0000000000000000000000CA /* MarkdownKit */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 000000000000000000000106 /* Build configuration list for PBXNativeTarget "MarkdownKit" */;
+			buildConfigurationList = 000000000000000000000108 /* Build configuration list for PBXNativeTarget "MarkdownKit" */;
 			buildPhases = (
-				0000000000000000000000DE,
-				0000000000000000000000DF,
 				0000000000000000000000E0,
+				0000000000000000000000E1,
+				0000000000000000000000E2,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				0000000000000000000000CE /* PBXTargetDependency */,
+				0000000000000000000000D0 /* PBXTargetDependency */,
 			);
 			name = MarkdownKit;
 			productName = MarkdownKit;
-			productReference = 0000000000000000000000B5 /* MarkdownKit.framework */;
+			productReference = 0000000000000000000000B7 /* MarkdownKit.framework */;
 			productType = "com.apple.product-type.framework";
 		};
-		0000000000000000000000C9 /* SharedTheme */ = {
+		0000000000000000000000CB /* SharedTheme */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 000000000000000000000107 /* Build configuration list for PBXNativeTarget "SharedTheme" */;
+			buildConfigurationList = 000000000000000000000109 /* Build configuration list for PBXNativeTarget "SharedTheme" */;
 			buildPhases = (
-				0000000000000000000000E1,
-				0000000000000000000000E2,
 				0000000000000000000000E3,
+				0000000000000000000000E4,
+				0000000000000000000000E5,
 			);
 			buildRules = (
 			);
@@ -1131,59 +1139,59 @@
 			);
 			name = SharedTheme;
 			productName = SharedTheme;
-			productReference = 0000000000000000000000B6 /* SharedTheme.framework */;
+			productReference = 0000000000000000000000B8 /* SharedTheme.framework */;
 			productType = "com.apple.product-type.framework";
 		};
-		0000000000000000000000CA /* Spacedown */ = {
+		0000000000000000000000CC /* Spacedown */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 000000000000000000000108 /* Build configuration list for PBXNativeTarget "Spacedown" */;
+			buildConfigurationList = 00000000000000000000010A /* Build configuration list for PBXNativeTarget "Spacedown" */;
 			buildPhases = (
-				0000000000000000000000E4,
-				0000000000000000000000E5,
 				0000000000000000000000E6,
-				0000000000000000000000D7,
-				0000000000000000000000D8,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				0000000000000000000000D0 /* PBXTargetDependency */,
-				0000000000000000000000D2 /* PBXTargetDependency */,
-				0000000000000000000000D4 /* PBXTargetDependency */,
-			);
-			name = Spacedown;
-			productName = Spacedown;
-			productReference = 0000000000000000000000B7 /* Spacedown.app */;
-			productType = "com.apple.product-type.application";
-		};
-		0000000000000000000000CB /* QuickLookPreview */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 000000000000000000000109 /* Build configuration list for PBXNativeTarget "QuickLookPreview" */;
-			buildPhases = (
 				0000000000000000000000E7,
 				0000000000000000000000E8,
-				0000000000000000000000E9,
 				0000000000000000000000D9,
 				0000000000000000000000DA,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				0000000000000000000000D0 /* PBXTargetDependency */,
 				0000000000000000000000D2 /* PBXTargetDependency */,
+				0000000000000000000000D4 /* PBXTargetDependency */,
 				0000000000000000000000D6 /* PBXTargetDependency */,
+			);
+			name = Spacedown;
+			productName = Spacedown;
+			productReference = 0000000000000000000000B9 /* Spacedown.app */;
+			productType = "com.apple.product-type.application";
+		};
+		0000000000000000000000CD /* QuickLookPreview */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 00000000000000000000010B /* Build configuration list for PBXNativeTarget "QuickLookPreview" */;
+			buildPhases = (
+				0000000000000000000000E9,
+				0000000000000000000000EA,
+				0000000000000000000000EB,
+				0000000000000000000000DB,
+				0000000000000000000000DC,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				0000000000000000000000D2 /* PBXTargetDependency */,
+				0000000000000000000000D4 /* PBXTargetDependency */,
+				0000000000000000000000D8 /* PBXTargetDependency */,
 			);
 			name = QuickLookPreview;
 			productName = QuickLookPreview;
-			productReference = 0000000000000000000000B8 /* QuickLookPreview.appex */;
+			productReference = 0000000000000000000000BA /* QuickLookPreview.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
-		0000000000000000000000CC /* LinkOpener */ = {
+		0000000000000000000000CE /* LinkOpener */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 00000000000000000000010A /* Build configuration list for PBXNativeTarget "LinkOpener" */;
+			buildConfigurationList = 00000000000000000000010C /* Build configuration list for PBXNativeTarget "LinkOpener" */;
 			buildPhases = (
-				0000000000000000000000EA,
-				0000000000000000000000EB,
+				0000000000000000000000EC,
+				0000000000000000000000ED,
 			);
 			buildRules = (
 			);
@@ -1191,7 +1199,7 @@
 			);
 			name = LinkOpener;
 			productName = LinkOpener;
-			productReference = 0000000000000000000000B9 /* LinkOpener.xpc */;
+			productReference = 0000000000000000000000BB /* LinkOpener.xpc */;
 			productType = "com.apple.product-type.xpc-service";
 		};
 /* End PBXNativeTarget section */
@@ -1204,12 +1212,6 @@
 				BuildIndependentTargetsInParallel = 1;
 				LastUpgradeCheck = 2700;
 				TargetAttributes = {
-					0000000000000000000000C7 = {
-						CreatedOnToolsVersion = 27.0;
-					};
-					0000000000000000000000C8 = {
-						CreatedOnToolsVersion = 27.0;
-					};
 					0000000000000000000000C9 = {
 						CreatedOnToolsVersion = 27.0;
 					};
@@ -1222,9 +1224,15 @@
 					0000000000000000000000CC = {
 						CreatedOnToolsVersion = 27.0;
 					};
+					0000000000000000000000CD = {
+						CreatedOnToolsVersion = 27.0;
+					};
+					0000000000000000000000CE = {
+						CreatedOnToolsVersion = 27.0;
+					};
 				};
 			};
-			buildConfigurationList = 00000000000000000000010B /* Build configuration list for PBXProject "Spacedown" */;
+			buildConfigurationList = 00000000000000000000010D /* Build configuration list for PBXProject "Spacedown" */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -1232,56 +1240,56 @@
 				en,
 				Base,
 			);
-			mainGroup = 0000000000000000000000EE;
-			productRefGroup = 0000000000000000000000ED /* Products */;
+			mainGroup = 0000000000000000000000F0;
+			productRefGroup = 0000000000000000000000EF /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				0000000000000000000000C7 /* CcmarkGfm */,
-				0000000000000000000000C8 /* MarkdownKit */,
-				0000000000000000000000C9 /* SharedTheme */,
-				0000000000000000000000CA /* Spacedown */,
-				0000000000000000000000CB /* QuickLookPreview */,
-				0000000000000000000000CC /* LinkOpener */,
+				0000000000000000000000C9 /* CcmarkGfm */,
+				0000000000000000000000CA /* MarkdownKit */,
+				0000000000000000000000CB /* SharedTheme */,
+				0000000000000000000000CC /* Spacedown */,
+				0000000000000000000000CD /* QuickLookPreview */,
+				0000000000000000000000CE /* LinkOpener */,
 			);
 		};
 /* End PBXProject section */
 
 
 /* Begin PBXResourcesBuildPhase section */
-		0000000000000000000000DD /* Resources */ = {
+		0000000000000000000000DF /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		0000000000000000000000E0 /* Resources */ = {
+		0000000000000000000000E2 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		0000000000000000000000E3 /* Resources */ = {
+		0000000000000000000000E5 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0000000000000000000000B3 /* theme.css in Resources */,
+				0000000000000000000000B5 /* theme.css in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		0000000000000000000000E6 /* Resources */ = {
+		0000000000000000000000E8 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0000000000000000000000AD /* AppIcon.icns in Resources */,
-				0000000000000000000000B0 /* uninstall.sh in Resources */,
-				0000000000000000000000B1 /* swap.sh in Resources */,
+				0000000000000000000000AF /* AppIcon.icns in Resources */,
+				0000000000000000000000B2 /* uninstall.sh in Resources */,
+				0000000000000000000000B3 /* swap.sh in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		0000000000000000000000E9 /* Resources */ = {
+		0000000000000000000000EB /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -1292,131 +1300,132 @@
 
 
 /* Begin PBXSourcesBuildPhase section */
-		0000000000000000000000DB /* Sources */ = {
+		0000000000000000000000DD /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				000000000000000000000057 /* arena.c in Sources */,
-				000000000000000000000058 /* blocks.c in Sources */,
-				000000000000000000000059 /* buffer.c in Sources */,
-				00000000000000000000005A /* cmark.c in Sources */,
-				00000000000000000000005B /* cmark_ctype.c in Sources */,
-				00000000000000000000005C /* commonmark.c in Sources */,
-				00000000000000000000005D /* footnotes.c in Sources */,
-				00000000000000000000005E /* houdini_href_e.c in Sources */,
-				00000000000000000000005F /* houdini_html_e.c in Sources */,
-				000000000000000000000060 /* houdini_html_u.c in Sources */,
-				000000000000000000000061 /* html.c in Sources */,
-				000000000000000000000062 /* inlines.c in Sources */,
-				000000000000000000000063 /* iterator.c in Sources */,
-				000000000000000000000064 /* latex.c in Sources */,
-				000000000000000000000065 /* linked_list.c in Sources */,
-				000000000000000000000066 /* man.c in Sources */,
-				000000000000000000000067 /* map.c in Sources */,
-				000000000000000000000068 /* node.c in Sources */,
-				000000000000000000000069 /* plaintext.c in Sources */,
-				00000000000000000000006A /* plugin.c in Sources */,
-				00000000000000000000006B /* references.c in Sources */,
-				00000000000000000000006C /* registry.c in Sources */,
-				00000000000000000000006D /* render.c in Sources */,
-				00000000000000000000006E /* scanners.c in Sources */,
-				00000000000000000000006F /* syntax_extension.c in Sources */,
-				000000000000000000000070 /* utf8.c in Sources */,
-				000000000000000000000071 /* xml.c in Sources */,
-				000000000000000000000072 /* autolink.c in Sources */,
-				000000000000000000000073 /* core-extensions.c in Sources */,
-				000000000000000000000074 /* ext_scanners.c in Sources */,
-				000000000000000000000075 /* strikethrough.c in Sources */,
-				000000000000000000000076 /* table.c in Sources */,
-				000000000000000000000077 /* tagfilter.c in Sources */,
-				000000000000000000000078 /* tasklist.c in Sources */,
+				000000000000000000000058 /* arena.c in Sources */,
+				000000000000000000000059 /* blocks.c in Sources */,
+				00000000000000000000005A /* buffer.c in Sources */,
+				00000000000000000000005B /* cmark.c in Sources */,
+				00000000000000000000005C /* cmark_ctype.c in Sources */,
+				00000000000000000000005D /* commonmark.c in Sources */,
+				00000000000000000000005E /* footnotes.c in Sources */,
+				00000000000000000000005F /* houdini_href_e.c in Sources */,
+				000000000000000000000060 /* houdini_html_e.c in Sources */,
+				000000000000000000000061 /* houdini_html_u.c in Sources */,
+				000000000000000000000062 /* html.c in Sources */,
+				000000000000000000000063 /* inlines.c in Sources */,
+				000000000000000000000064 /* iterator.c in Sources */,
+				000000000000000000000065 /* latex.c in Sources */,
+				000000000000000000000066 /* linked_list.c in Sources */,
+				000000000000000000000067 /* man.c in Sources */,
+				000000000000000000000068 /* map.c in Sources */,
+				000000000000000000000069 /* node.c in Sources */,
+				00000000000000000000006A /* plaintext.c in Sources */,
+				00000000000000000000006B /* plugin.c in Sources */,
+				00000000000000000000006C /* references.c in Sources */,
+				00000000000000000000006D /* registry.c in Sources */,
+				00000000000000000000006E /* render.c in Sources */,
+				00000000000000000000006F /* scanners.c in Sources */,
+				000000000000000000000070 /* syntax_extension.c in Sources */,
+				000000000000000000000071 /* utf8.c in Sources */,
+				000000000000000000000072 /* xml.c in Sources */,
+				000000000000000000000073 /* autolink.c in Sources */,
+				000000000000000000000074 /* core-extensions.c in Sources */,
+				000000000000000000000075 /* ext_scanners.c in Sources */,
+				000000000000000000000076 /* strikethrough.c in Sources */,
+				000000000000000000000077 /* table.c in Sources */,
+				000000000000000000000078 /* tagfilter.c in Sources */,
+				000000000000000000000079 /* tasklist.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		0000000000000000000000DE /* Sources */ = {
+		0000000000000000000000E0 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				000000000000000000000079 /* DangerousURLFilter.swift in Sources */,
-				00000000000000000000007A /* MarkdownDocument.swift in Sources */,
-				00000000000000000000007B /* MarkdownRenderer.swift in Sources */,
+				00000000000000000000007A /* DangerousURLFilter.swift in Sources */,
+				00000000000000000000007B /* MarkdownDocument.swift in Sources */,
+				00000000000000000000007C /* MarkdownRenderer.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		0000000000000000000000E1 /* Sources */ = {
+		0000000000000000000000E3 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				00000000000000000000007C /* DocumentRewriter.swift in Sources */,
-				00000000000000000000007D /* ImageInliner.swift in Sources */,
-				00000000000000000000007E /* LinkInteraction.swift in Sources */,
-				00000000000000000000007F /* LinkPolicy.swift in Sources */,
-				000000000000000000000080 /* Palette.swift in Sources */,
-				000000000000000000000081 /* SharedTheme.swift in Sources */,
-				000000000000000000000082 /* Toast.swift in Sources */,
-				000000000000000000000083 /* WebViewDocument.swift in Sources */,
+				00000000000000000000007D /* DocumentRewriter.swift in Sources */,
+				00000000000000000000007E /* ImageInliner.swift in Sources */,
+				00000000000000000000007F /* LinkInteraction.swift in Sources */,
+				000000000000000000000080 /* LinkPolicy.swift in Sources */,
+				000000000000000000000081 /* Palette.swift in Sources */,
+				000000000000000000000082 /* SharedTheme.swift in Sources */,
+				000000000000000000000083 /* Toast.swift in Sources */,
+				000000000000000000000084 /* WebViewDocument.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		0000000000000000000000E4 /* Sources */ = {
+		0000000000000000000000E6 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				000000000000000000000084 /* AppDelegate.swift in Sources */,
-				000000000000000000000085 /* AppMenu.swift in Sources */,
-				000000000000000000000086 /* SpacedownMain.swift in Sources */,
-				000000000000000000000087 /* DropTargetView.swift in Sources */,
-				000000000000000000000088 /* MarkdownDrop.swift in Sources */,
-				000000000000000000000089 /* SpacedownWebView.swift in Sources */,
-				00000000000000000000008A /* WebViewPool.swift in Sources */,
-				00000000000000000000008B /* FileWatcher.swift in Sources */,
-				00000000000000000000008C /* MarkdownFileType.swift in Sources */,
-				00000000000000000000008D /* MeasureSettings.swift in Sources */,
-				00000000000000000000008E /* QuickLookClaim.swift in Sources */,
-				00000000000000000000008F /* QuickLookDiagnostics.swift in Sources */,
-				000000000000000000000090 /* HoverLinkButton.swift in Sources */,
-				000000000000000000000091 /* SettingsWindow.swift in Sources */,
-				000000000000000000000092 /* Uninstaller.swift in Sources */,
-				000000000000000000000093 /* AppInfo.swift in Sources */,
-				000000000000000000000094 /* DebugLog.swift in Sources */,
-				000000000000000000000095 /* FileLog.swift in Sources */,
-				000000000000000000000096 /* ProcessRunner.swift in Sources */,
-				000000000000000000000097 /* UpdateChecker.swift in Sources */,
-				000000000000000000000098 /* UpdateInstaller.swift in Sources */,
-				000000000000000000000099 /* UpdatePromptWindow.swift in Sources */,
-				00000000000000000000009A /* UpdateSigning.swift in Sources */,
-				00000000000000000000009B /* DocumentTab.swift in Sources */,
-				00000000000000000000009C /* FindBar.swift in Sources */,
-				00000000000000000000009D /* MainWindow+Actions.swift in Sources */,
-				00000000000000000000009E /* MainWindow+Diagnostics.swift in Sources */,
-				00000000000000000000009F /* MainWindow+Find.swift in Sources */,
-				0000000000000000000000A0 /* MainWindow+WebKit.swift in Sources */,
-				0000000000000000000000A1 /* MainWindow.swift in Sources */,
-				0000000000000000000000A2 /* SpacedownWindow.swift in Sources */,
-				0000000000000000000000A3 /* TabBarView.swift in Sources */,
-				0000000000000000000000A4 /* TabItemView.swift in Sources */,
+				000000000000000000000085 /* AppDelegate.swift in Sources */,
+				000000000000000000000086 /* AppMenu.swift in Sources */,
+				000000000000000000000087 /* SpacedownMain.swift in Sources */,
+				000000000000000000000088 /* DropTargetView.swift in Sources */,
+				000000000000000000000089 /* MarkdownDrop.swift in Sources */,
+				00000000000000000000008A /* SpacedownWebView.swift in Sources */,
+				00000000000000000000008B /* WebViewPool.swift in Sources */,
+				00000000000000000000008C /* FileWatcher.swift in Sources */,
+				00000000000000000000008D /* MarkdownFileType.swift in Sources */,
+				00000000000000000000008E /* MeasureSettings.swift in Sources */,
+				00000000000000000000008F /* QuickLookClaim.swift in Sources */,
+				000000000000000000000090 /* QuickLookDiagnostics.swift in Sources */,
+				000000000000000000000091 /* HoverLinkButton.swift in Sources */,
+				000000000000000000000092 /* SettingsWindow.swift in Sources */,
+				000000000000000000000093 /* Uninstaller.swift in Sources */,
+				000000000000000000000094 /* AppInfo.swift in Sources */,
+				000000000000000000000095 /* DebugLog.swift in Sources */,
+				000000000000000000000096 /* FileLog.swift in Sources */,
+				000000000000000000000097 /* ProcessRunner.swift in Sources */,
+				000000000000000000000098 /* UpdateChecker.swift in Sources */,
+				000000000000000000000099 /* UpdateInstaller.swift in Sources */,
+				00000000000000000000009A /* UpdatePromptWindow.swift in Sources */,
+				00000000000000000000009B /* UpdateSigning.swift in Sources */,
+				00000000000000000000009C /* DocumentTab.swift in Sources */,
+				00000000000000000000009D /* FindBar.swift in Sources */,
+				00000000000000000000009E /* MainWindow+Actions.swift in Sources */,
+				00000000000000000000009F /* MainWindow+Diagnostics.swift in Sources */,
+				0000000000000000000000A0 /* MainWindow+Find.swift in Sources */,
+				0000000000000000000000A1 /* MainWindow+WebKit.swift in Sources */,
+				0000000000000000000000A2 /* MainWindow.swift in Sources */,
+				0000000000000000000000A3 /* SpacedownWindow.swift in Sources */,
+				0000000000000000000000A4 /* TabBarView.swift in Sources */,
+				0000000000000000000000A5 /* TabItemView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		0000000000000000000000E7 /* Sources */ = {
+		0000000000000000000000E9 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0000000000000000000000A5 /* PreviewDiagnostics.swift in Sources */,
-				0000000000000000000000A6 /* PreviewDocument.swift in Sources */,
-				0000000000000000000000A7 /* PreviewViewController.swift in Sources */,
-				0000000000000000000000A8 /* PreviewWebViewPool.swift in Sources */,
-				0000000000000000000000A9 /* ScrollProbe.swift in Sources */,
-				0000000000000000000000C6 /* LinkOpenerProtocol.swift in Sources */,
+				0000000000000000000000A6 /* ImageBridge.swift in Sources */,
+				0000000000000000000000A7 /* PreviewDiagnostics.swift in Sources */,
+				0000000000000000000000A8 /* PreviewDocument.swift in Sources */,
+				0000000000000000000000A9 /* PreviewViewController.swift in Sources */,
+				0000000000000000000000AA /* PreviewWebViewPool.swift in Sources */,
+				0000000000000000000000AB /* ScrollProbe.swift in Sources */,
+				0000000000000000000000C8 /* LinkOpenerProtocol.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		0000000000000000000000EA /* Sources */ = {
+		0000000000000000000000EC /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0000000000000000000000AA /* LinkOpenerProtocol.swift in Sources */,
-				0000000000000000000000AB /* main.swift in Sources */,
+				0000000000000000000000AC /* LinkOpenerProtocol.swift in Sources */,
+				0000000000000000000000AD /* main.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1424,36 +1433,36 @@
 
 
 /* Begin PBXTargetDependency section */
-		0000000000000000000000CE /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 0000000000000000000000C7 /* CcmarkGfm */;
-			targetProxy = 0000000000000000000000CD /* PBXContainerItemProxy */;
-		};
 		0000000000000000000000D0 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 0000000000000000000000C8 /* MarkdownKit */;
+			target = 0000000000000000000000C9 /* CcmarkGfm */;
 			targetProxy = 0000000000000000000000CF /* PBXContainerItemProxy */;
 		};
 		0000000000000000000000D2 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 0000000000000000000000C9 /* SharedTheme */;
+			target = 0000000000000000000000CA /* MarkdownKit */;
 			targetProxy = 0000000000000000000000D1 /* PBXContainerItemProxy */;
 		};
 		0000000000000000000000D4 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 0000000000000000000000CB /* QuickLookPreview */;
+			target = 0000000000000000000000CB /* SharedTheme */;
 			targetProxy = 0000000000000000000000D3 /* PBXContainerItemProxy */;
 		};
 		0000000000000000000000D6 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 0000000000000000000000CC /* LinkOpener */;
+			target = 0000000000000000000000CD /* QuickLookPreview */;
 			targetProxy = 0000000000000000000000D5 /* PBXContainerItemProxy */;
+		};
+		0000000000000000000000D8 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 0000000000000000000000CE /* LinkOpener */;
+			targetProxy = 0000000000000000000000D7 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
 
 /* Begin XCBuildConfiguration section */
-		00000000000000000000010C /* Debug */ = {
+		00000000000000000000010E /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -1479,7 +1488,7 @@
 			};
 			name = Debug;
 		};
-		00000000000000000000010D /* Release */ = {
+		00000000000000000000010F /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -1502,50 +1511,6 @@
 			};
 			name = Release;
 		};
-		00000000000000000000010E /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_IDENTITY = "-";
-				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 1;
-				DEFINES_MODULE = YES;
-				ENABLE_HARDENED_RUNTIME = NO;
-				EXECUTABLE_EXTENSION = a;
-				HEADER_SEARCH_PATHS = (
-					"$(SRCROOT)/Packages/Core/Sources/CcmarkGfm/src",
-					"$(SRCROOT)/Packages/Core/Sources/CcmarkGfm/include",
-					"$(SRCROOT)/Packages/Core/Sources/CcmarkGfm/extensions",
-				);
-				MARKETING_VERSION = 1.0.22;
-				MODULEMAP_FILE = "$(SRCROOT)/Packages/Core/XcodeSupport/CcmarkGfm/module.modulemap";
-				OTHER_CFLAGS = ("-O3", "-mcpu=apple-m1",);
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-			};
-			name = Debug;
-		};
-		00000000000000000000010F /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_IDENTITY = "-";
-				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 1;
-				DEFINES_MODULE = YES;
-				ENABLE_HARDENED_RUNTIME = NO;
-				EXECUTABLE_EXTENSION = a;
-				HEADER_SEARCH_PATHS = (
-					"$(SRCROOT)/Packages/Core/Sources/CcmarkGfm/src",
-					"$(SRCROOT)/Packages/Core/Sources/CcmarkGfm/include",
-					"$(SRCROOT)/Packages/Core/Sources/CcmarkGfm/extensions",
-				);
-				MARKETING_VERSION = 1.0.22;
-				MODULEMAP_FILE = "$(SRCROOT)/Packages/Core/XcodeSupport/CcmarkGfm/module.modulemap";
-				OTHER_CFLAGS = ("-O3", "-mcpu=apple-m1",);
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-			};
-			name = Release;
-		};
 		000000000000000000000110 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -1553,12 +1518,16 @@
 				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 1;
 				DEFINES_MODULE = YES;
-				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				ENABLE_HARDENED_RUNTIME = NO;
-				GENERATE_INFOPLIST_FILE = YES;
-				LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", "@loader_path/Frameworks",);
-				MARKETING_VERSION = 1.0.22;
-				PRODUCT_BUNDLE_IDENTIFIER = cn.29dev.Spacedown.MarkdownKit;
+				EXECUTABLE_EXTENSION = a;
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/Packages/Core/Sources/CcmarkGfm/src",
+					"$(SRCROOT)/Packages/Core/Sources/CcmarkGfm/include",
+					"$(SRCROOT)/Packages/Core/Sources/CcmarkGfm/extensions",
+				);
+				MARKETING_VERSION = 1.0.23;
+				MODULEMAP_FILE = "$(SRCROOT)/Packages/Core/XcodeSupport/CcmarkGfm/module.modulemap";
+				OTHER_CFLAGS = ("-O3", "-mcpu=apple-m1",);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 			};
@@ -1571,12 +1540,16 @@
 				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 1;
 				DEFINES_MODULE = YES;
-				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				ENABLE_HARDENED_RUNTIME = NO;
-				GENERATE_INFOPLIST_FILE = YES;
-				LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", "@loader_path/Frameworks",);
-				MARKETING_VERSION = 1.0.22;
-				PRODUCT_BUNDLE_IDENTIFIER = cn.29dev.Spacedown.MarkdownKit;
+				EXECUTABLE_EXTENSION = a;
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/Packages/Core/Sources/CcmarkGfm/src",
+					"$(SRCROOT)/Packages/Core/Sources/CcmarkGfm/include",
+					"$(SRCROOT)/Packages/Core/Sources/CcmarkGfm/extensions",
+				);
+				MARKETING_VERSION = 1.0.23;
+				MODULEMAP_FILE = "$(SRCROOT)/Packages/Core/XcodeSupport/CcmarkGfm/module.modulemap";
+				OTHER_CFLAGS = ("-O3", "-mcpu=apple-m1",);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 			};
@@ -1593,8 +1566,8 @@
 				ENABLE_HARDENED_RUNTIME = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", "@loader_path/Frameworks",);
-				MARKETING_VERSION = 1.0.22;
-				PRODUCT_BUNDLE_IDENTIFIER = cn.29dev.Spacedown.SharedTheme;
+				MARKETING_VERSION = 1.0.23;
+				PRODUCT_BUNDLE_IDENTIFIER = cn.29dev.Spacedown.MarkdownKit;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 			};
@@ -1611,8 +1584,8 @@
 				ENABLE_HARDENED_RUNTIME = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", "@loader_path/Frameworks",);
-				MARKETING_VERSION = 1.0.22;
-				PRODUCT_BUNDLE_IDENTIFIER = cn.29dev.Spacedown.SharedTheme;
+				MARKETING_VERSION = 1.0.23;
+				PRODUCT_BUNDLE_IDENTIFIER = cn.29dev.Spacedown.MarkdownKit;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 			};
@@ -1624,14 +1597,15 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
 				ENABLE_HARDENED_RUNTIME = NO;
-				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = Spacedown/Resources/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/../Frameworks",);
-				MARKETING_VERSION = 1.0.22;
-				PRODUCT_BUNDLE_IDENTIFIER = cn.29dev.Spacedown;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", "@loader_path/Frameworks",);
+				MARKETING_VERSION = 1.0.23;
+				PRODUCT_BUNDLE_IDENTIFIER = cn.29dev.Spacedown.SharedTheme;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = NO;
+				SKIP_INSTALL = YES;
 			};
 			name = Debug;
 		};
@@ -1641,18 +1615,53 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				ENABLE_HARDENED_RUNTIME = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/Frameworks", "@loader_path/Frameworks",);
+				MARKETING_VERSION = 1.0.23;
+				PRODUCT_BUNDLE_IDENTIFIER = cn.29dev.Spacedown.SharedTheme;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+			};
+			name = Release;
+		};
+		000000000000000000000116 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_HARDENED_RUNTIME = NO;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Spacedown/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/../Frameworks",);
-				MARKETING_VERSION = 1.0.22;
+				MARKETING_VERSION = 1.0.23;
+				PRODUCT_BUNDLE_IDENTIFIER = cn.29dev.Spacedown;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = NO;
+			};
+			name = Debug;
+		};
+		000000000000000000000117 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_HARDENED_RUNTIME = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Spacedown/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = ("$(inherited)", "@executable_path/../Frameworks",);
+				MARKETING_VERSION = 1.0.23;
 				PRODUCT_BUNDLE_IDENTIFIER = cn.29dev.Spacedown;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = NO;
 			};
 			name = Release;
 		};
-		000000000000000000000116 /* Debug */ = {
+		000000000000000000000118 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = QuickLookPreview/Resources/QuickLookPreview.entitlements;
@@ -1667,7 +1676,7 @@
 					"@executable_path/../Frameworks",
 					"@executable_path/../../../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.22;
+				MARKETING_VERSION = 1.0.23;
 				PRODUCT_BUNDLE_IDENTIFIER = cn.29dev.Spacedown.QuickLookPreview;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -1675,7 +1684,7 @@
 			};
 			name = Debug;
 		};
-		000000000000000000000117 /* Release */ = {
+		000000000000000000000119 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = QuickLookPreview/Resources/QuickLookPreview.entitlements;
@@ -1690,7 +1699,7 @@
 					"@executable_path/../Frameworks",
 					"@executable_path/../../../../Frameworks",
 				);
-				MARKETING_VERSION = 1.0.22;
+				MARKETING_VERSION = 1.0.23;
 				PRODUCT_BUNDLE_IDENTIFIER = cn.29dev.Spacedown.QuickLookPreview;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -1698,7 +1707,7 @@
 			};
 			name = Release;
 		};
-		000000000000000000000118 /* Debug */ = {
+		00000000000000000000011A /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_IDENTITY = "-";
@@ -1708,7 +1717,7 @@
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = LinkOpener/Info.plist;
 				MACH_O_TYPE = mh_execute;
-				MARKETING_VERSION = 1.0.22;
+				MARKETING_VERSION = 1.0.23;
 				PRODUCT_BUNDLE_IDENTIFIER = cn.29dev.Spacedown.LinkOpener;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -1716,7 +1725,7 @@
 			};
 			name = Debug;
 		};
-		000000000000000000000119 /* Release */ = {
+		00000000000000000000011B /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_IDENTITY = "-";
@@ -1726,7 +1735,7 @@
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = LinkOpener/Info.plist;
 				MACH_O_TYPE = mh_execute;
-				MARKETING_VERSION = 1.0.22;
+				MARKETING_VERSION = 1.0.23;
 				PRODUCT_BUNDLE_IDENTIFIER = cn.29dev.Spacedown.LinkOpener;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -1738,16 +1747,7 @@
 
 
 /* Begin XCConfigurationList section */
-		00000000000000000000010B /* Build configuration list for PBXProject "Spacedown" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				00000000000000000000010C /* Debug */,
-				00000000000000000000010D /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		000000000000000000000105 /* Build configuration list for PBXNativeTarget "CcmarkGfm" */ = {
+		00000000000000000000010D /* Build configuration list for PBXProject "Spacedown" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				00000000000000000000010E /* Debug */,
@@ -1756,7 +1756,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		000000000000000000000106 /* Build configuration list for PBXNativeTarget "MarkdownKit" */ = {
+		000000000000000000000107 /* Build configuration list for PBXNativeTarget "CcmarkGfm" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				000000000000000000000110 /* Debug */,
@@ -1765,7 +1765,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		000000000000000000000107 /* Build configuration list for PBXNativeTarget "SharedTheme" */ = {
+		000000000000000000000108 /* Build configuration list for PBXNativeTarget "MarkdownKit" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				000000000000000000000112 /* Debug */,
@@ -1774,7 +1774,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		000000000000000000000108 /* Build configuration list for PBXNativeTarget "Spacedown" */ = {
+		000000000000000000000109 /* Build configuration list for PBXNativeTarget "SharedTheme" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				000000000000000000000114 /* Debug */,
@@ -1783,7 +1783,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		000000000000000000000109 /* Build configuration list for PBXNativeTarget "QuickLookPreview" */ = {
+		00000000000000000000010A /* Build configuration list for PBXNativeTarget "Spacedown" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				000000000000000000000116 /* Debug */,
@@ -1792,11 +1792,20 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		00000000000000000000010A /* Build configuration list for PBXNativeTarget "LinkOpener" */ = {
+		00000000000000000000010B /* Build configuration list for PBXNativeTarget "QuickLookPreview" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				000000000000000000000118 /* Debug */,
 				000000000000000000000119 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		00000000000000000000010C /* Build configuration list for PBXNativeTarget "LinkOpener" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				00000000000000000000011A /* Debug */,
+				00000000000000000000011B /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

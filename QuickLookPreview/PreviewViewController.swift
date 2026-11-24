@@ -178,10 +178,14 @@ final class PreviewViewController: NSViewController, @preconcurrency QLPreviewin
         watchdog?.cancel()
         watchdog = nil
 
-        // 读文件 + 渲染在 64 KB 上限下只要几毫秒，但仍在后台做，别拖住面板动画
+        // 读文件 + 渲染在 64 KB 上限下只要几毫秒，但仍在后台做，别拖住面板动画。
+        // 代理对象可以跨线程：XPC 连接本身是线程安全的，图就在这股后台线程上取。
+        nonisolated(unsafe) let service = linkOpener
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             do {
-                let document = try PreviewDocument.load(at: url)
+                let document = try PreviewDocument.load(at: url) { paths, root in
+                    ImageBridge.fetch(paths, under: root, via: service)
+                }
                 DispatchQueue.main.async { [weak self] in
                     guard let self, self.generation == request else { return }
                     self.present(document)

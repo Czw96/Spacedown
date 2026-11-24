@@ -29,4 +29,19 @@ public enum LinkOpenerEndpoint {
     /// 不用 `open` 自检是因为那会真的弹出浏览器；诊断"链接点不开"时必须能区分
     /// XPC 没连上还是服务侧打不开。
     func ping(withReply reply: @escaping (Bool) -> Void)
+
+    /// 代读一批本地图片，供渲染时内联成 base64。
+    ///
+    /// 为什么需要它：Quick Look **只**把「被预览的那个文件」的读权限授给扩展，
+    /// 同目录的兄弟文件也读不到（2026-11-24 实测：三张同目录图片一次都没读出来，
+    /// `wrap` 只花了 0.56 ms）。所以图片字节只能由这个不在沙箱里的服务代读。
+    ///
+    /// 能力面收得很紧，任何一条不满足就不出现在回执里：
+    /// - 必须落在 `root` 目录**之内**（先解符号链接再判断前缀，防 `..` 与链接逃逸）；
+    /// - 必须是普通文件，扩展名在图片白名单内；
+    /// - 单张 ≤ 2 MB、一次总量 ≤ 20 MB（与渲染侧 `ImageInliner` 的上限一致）。
+    ///
+    /// 回执的 key 是**请求时传进来的那个字符串**，调用方可以直接对回原路径。
+    func readImages(_ paths: [String], under root: String,
+                    withReply reply: @escaping ([String: Data]) -> Void)
 }

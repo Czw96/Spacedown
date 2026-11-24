@@ -14,7 +14,7 @@ import os
 ///
 /// 走的是与 `DocumentRewriter` 相同的策略：先扫一遍，没有 `<img>` 就直接返回原
 /// `Data`，正常文档的额外代价只是一次字节比较。
-enum ImageInliner {
+public enum ImageInliner {
 
     private static let logger = Logger(subsystem: "cn.29dev.Spacedown", category: "image")
 
@@ -65,7 +65,7 @@ enum ImageInliner {
     /// - Parameters:
     ///   - html: `MarkdownRenderer` 产出的片段（此时 `<img>` 还没被包进外壳）。
     ///   - baseDirectory: Markdown 文件所在目录，相对路径以它为基准。
-    static func rewrite(_ html: Data, baseDirectory: URL) -> Data {
+    static func rewrite(_ html: Data, baseDirectory: URL, preloaded: [URL: Data] = [:]) -> Data {
         guard let firstTag = nextImageTag(in: html, from: html.startIndex) else { return html }
 
         var output = Data()
@@ -99,7 +99,8 @@ enum ImageInliner {
             if let cached = resolved[key] {
                 replacement = cached
             } else {
-                replacement = inlineSource(key, baseDirectory: baseDirectory, budget: &budget)
+                replacement = inlineSource(key, baseDirectory: baseDirectory,
+                                           preloaded: preloaded, budget: &budget)
                 resolved[key] = replacement
             }
 
@@ -121,7 +122,12 @@ enum ImageInliner {
     /// 把一个 `src` 值解析成 data URI；不该内联时返回原值。
     ///
     /// 返回原值等于维持现状（web view 里显示成坏图），占位符只用于「文件在、但太大」。
-    private static func inlineSource(_ source: String, baseDirectory: URL, budget: inout Int) -> String {
+    ///
+    /// - Parameter preloaded: 已经拿到手的字节，按**标准化后的绝对路径**为键。
+    ///   Quick Look 扩展读不到任何兄弟文件，图片由非沙箱的 XPC 服务代读后从这里送进来；
+    ///   命中就不再碰文件系统。主 App 传空字典，走原来的磁盘读取。
+    private static func inlineSource(_ source: String, baseDirectory: URL,
+                                     preloaded: [URL: Data], budget: inout Int) -> String {
         guard isRelativePath(source) else { return source }
         guard let path = localPath(for: source, baseDirectory: baseDirectory) else { return source }
 
@@ -129,6 +135,14 @@ enum ImageInliner {
         let extensionName = path.pathExtension.lowercased()
         guard let known = mimeTypes[extensionName] else { return source }
         mime = known
+
+        if let data = preloaded[path.standardizedFileURL] {
+            guard data.count <= maxBytesPerImage, data.count <= budget else {
+                return oversizePlaceholder
+            }
+            budget -= data.count
+            return "data:\(mime);base64," + data.base64EncodedString()
+        }
 
         guard let values = try? path.resourceValues(forKeys: [.isRegularFileKey, .fileSizeKey]),
               values.isRegularFile == true else {
@@ -190,6 +204,28 @@ enum ImageInliner {
     }
 
     // MARK: - 字节扫描
+
+    /// 扫出 HTML 里所有「相对路径 + 认识的图片扩展名」的绝对路径，去重后返回。
+    ///
+    /// 给跨沙箱代读用：Quick Look 扩展先问一句「这篇文档要哪些图」，把这些路径一次性
+    /// 交给 XPC 服务读回来，而不是为每张图各发一次 IPC。
+    public static func imagePaths(in html: Data, baseDirectory: URL) -> [URL] {
+        var seen = Set<URL>()
+        var result: [URL] = []
+        var cursor = html.startIndex
+        while let tagStart = nextImageTag(in: html, from: cursor) {
+            guard let tagEnd = endOfTag(in: html, from: tagStart) else { break }
+            defer { cursor = html.index(after: tagEnd) }
+            guard let source = sourceRange(in: html, tagStart..<tagEnd) else { continue }
+            let value = String(decoding: html[source], as: UTF8.self)
+            guard isRelativePath(value),
+                  let path = localPath(for: value, baseDirectory: baseDirectory),
+                  mimeTypes[path.pathExtension.lowercased()] != nil else { continue }
+            let absolute = path.standardizedFileURL
+            if seen.insert(absolute).inserted { result.append(absolute) }
+        }
+        return result
+    }
 
     private static let imageOpen = Array("<img".utf8)
 

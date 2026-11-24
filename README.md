@@ -10,7 +10,7 @@
 
   <p>
     macOS 13+ · Apple Silicon · MIT ·
-    <a href="https://github.com/Czw96/homebrew-spacedown/releases/latest">v1.0.22</a> ·
+    <a href="https://github.com/Czw96/homebrew-spacedown/releases/latest">v1.0.23</a> ·
     AI 生成代码
   </p>
 </div>
@@ -106,8 +106,8 @@ brew uninstall --cask --zap spacedown # 卸载：偏好、沙箱容器、缓存�
 - **预览上限 64 KB**：超过按完整块截断并给「加载更多」。主 App 不设上限。
 - **远程图片不加载**：CSP 只允许 `img-src data:`，这是刻意不联网。GitHub 上常见的 shields
   徽章在预览里直接不显示，也不留空框。
-- **空格预览读不到子目录图片**：系统只给被预览文件本身的读权限，`docs/img/x.png` 这类图在空格里
-  出不来（主 App 正常）。
+- **空格预览的图片靠非沙箱服务代读**：Quick Look 不给扩展任何兄弟文件的读权限，所以图片由
+  `LinkOpener.xpc` 代读（只限文档所在目录内、单张 ≤ 2 MB 的图片）。读不到就不显示，不留破图。
 - **Release 资产在另一个仓库**：[Czw96/homebrew-spacedown](https://github.com/Czw96/homebrew-spacedown)，
   Cask 也指向那里，所以本仓库的 Releases 页面是空的。
 - **不做 iOS / iPadOS**：Quick Look 扩展、`DispatchSource`、AppKit 决定了它只属于 macOS。

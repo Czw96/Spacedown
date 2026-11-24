@@ -69,14 +69,19 @@ public enum SharedTheme {
     ///     同一份文件也要重新生成 HTML。
     ///   - baseDirectory: Markdown 文件所在目录。给了它才会把相对路径图片内联成
     ///     base64（见 `ImageInliner`）；不给则图片保持相对地址，等于不显示。
+    ///   - imageData: 已经拿到手的图片字节，键是标准化后的绝对路径。
+    ///     Quick Look 扩展拿不到兄弟文件的读权限，图片由非沙箱的 XPC 服务代读后塞进来；
+    ///     主 App 不传，走磁盘。
     public static func document(
         body: Data,
         measurePercent: Int = fullMeasurePercent,
-        baseDirectory: URL? = nil
+        baseDirectory: URL? = nil,
+        imageData: [URL: Data] = [:]
     ) -> Data {
         var content = DocumentRewriter.process(body)
         if let baseDirectory {
-            content = ImageInliner.rewrite(content, baseDirectory: baseDirectory)
+            content = ImageInliner.rewrite(content, baseDirectory: baseDirectory,
+                                           preloaded: imageData)
         }
 
         var document = Data()
