@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="docs/img/icon.png" width="120" alt="Spacedown 图标">
+  <img src="icon.png" width="120" alt="Spacedown 图标">
   <h1>Spacedown</h1>
   <p><b>在 Finder 里按一下空格，Markdown 就是排版好的样子。</b><br>
   原生渲染 · Quick Look 扩展 · 只读多标签查看器</p>
@@ -15,7 +15,7 @@
   </p>
 </div>
 
-![Spacedown 渲染 Markdown 的样子](docs/img/preview-light.png)
+![Spacedown 渲染 Markdown 的样子](preview-light.png)
 
 > [!NOTE]
 > **本项目由 AI 编码助手实现**（代码、文档、设计脚本、发版脚本），人类负责需求、方案取舍与真机验收。
@@ -52,7 +52,7 @@ Spacedown 做两件事：
 | **链接** | 单击复制地址，⌘/⌃ + 单击用默认浏览器打开（跨沙箱走 XPC） |
 | **自更新** | Ed25519 自签校验 + 换包脚本，没有 Developer ID 也能安全升级 |
 
-![深色外观](docs/img/preview-dark.png)
+![深色外观](preview-dark.png)
 
 ## 安装
 

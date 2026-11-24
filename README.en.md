@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="docs/img/icon.png" width="120" alt="Spacedown icon">
+  <img src="icon.png" width="120" alt="Spacedown icon">
   <h1>Spacedown</h1>
   <p><b>Press space on a Markdown file in Finder — see it rendered.</b><br>
   Native rendering · Quick Look extension · read-only multi-tab viewer</p>
@@ -15,7 +15,7 @@
   </p>
 </div>
 
-![How Spacedown renders Markdown](docs/img/preview-light.png)
+![How Spacedown renders Markdown](preview-light.png)
 
 > [!NOTE]
 > **This project is implemented by an AI coding assistant** (code, docs, design and release
@@ -56,7 +56,7 @@ highlighting, no network access.
 | **Links** | Click copies the URL, ⌘/⌃ + click opens it in your browser (via XPC, out of the sandbox) |
 | **Self-update** | Ed25519 self-signing plus a swap script — safe upgrades without a Developer ID |
 
-![Dark appearance](docs/img/preview-dark.png)
+![Dark appearance](preview-dark.png)
 
 ## Install
 
