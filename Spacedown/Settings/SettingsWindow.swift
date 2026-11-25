@@ -154,20 +154,39 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
     private func refreshStatus() {
         guard let type = UTType(MarkdownFileType.preferredUTI) else { return }
         let current = NSWorkspace.shared.urlForApplication(toOpen: type)
-        let isUs = current?.standardizedFileURL == Bundle.main.bundleURL.standardizedFileURL
+        let selfURL = Bundle.main.bundleURL.standardizedFileURL
 
         statusLabel.textColor = .secondaryLabelColor
-        if isUs {
+        if current?.standardizedFileURL == selfURL {
             statusLabel.stringValue = "双击 .md 使用 Spacedown 打开。"
             setDefaultButton.title = "已是默认打开方式"
             setDefaultButton.isEnabled = false
-        } else {
-            // 显式说出是谁在接管 —— 这就是那个循环依赖的解药
-            let name = current.map(Self.displayName(of:)) ?? "未知应用"
-            statusLabel.stringValue = "双击 .md 现在会用「\(name)」打开。"
-            setDefaultButton.title = "设为 .md 默认打开方式"
-            setDefaultButton.isEnabled = true
+            return
         }
+
+        // 另一个**同 bundle ID 的副本**抢走了默认打开方式：构建目录、回收站里那份都算。
+        // 这是"点了没反应"的真凶 —— 设置其实成功了，但指向的不是正在运行的这一份，
+        // 于是界面看起来毫无变化。必须点名道姓，否则用户会一直点。
+        if let current, Self.sameBundleIdentifier(current, selfURL) {
+            statusLabel.textColor = .systemOrange
+            statusLabel.stringValue = "默认打开方式指向了另一份 Spacedown（\(current.path)）。"
+                + "删掉那一份再点一次即可。"
+            setDefaultButton.title = "重试"
+            setDefaultButton.isEnabled = true
+            return
+        }
+
+        // 显式说出是谁在接管 —— 这就是那个循环依赖的解药
+        let name = current.map(Self.displayName(of:)) ?? "未知应用"
+        statusLabel.stringValue = "双击 .md 现在会用「\(name)」打开。"
+        setDefaultButton.title = "设为 .md 默认打开方式"
+        setDefaultButton.isEnabled = true
+    }
+
+    private static func sameBundleIdentifier(_ lhs: URL, _ rhs: URL) -> Bool {
+        guard let a = Bundle(url: lhs)?.bundleIdentifier,
+              let b = Bundle(url: rhs)?.bundleIdentifier else { return false }
+        return a == b
     }
 
     /// App 的显示名。`displayName(atPath:)` 给的是「Spacedown.app」，这里要的是「Spacedown」。
@@ -187,7 +206,9 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
 
     @objc private func setAsDefault(_ sender: Any) {
         guard let type = UTType(MarkdownFileType.preferredUTI) else { return }
+        // 立即给反馈：系统回调要等几百毫秒，按钮一直亮着会被当成"没反应"
         setDefaultButton.isEnabled = false
+        setDefaultButton.title = "正在设置…"
         NSWorkspace.shared.setDefaultApplication(at: Bundle.main.bundleURL, toOpen: type) { [weak self] error in
             Task { @MainActor in
                 guard let self else { return }
@@ -197,6 +218,7 @@ final class SettingsWindow: NSObject, NSWindowDelegate {
                         + "也可以在 Finder 里右键 .md → 显示简介 → 打开方式手动改。"
                     self.statusLabel.textColor = .systemRed
                     self.setDefaultButton.isEnabled = true
+                    self.setDefaultButton.title = "重试"
                 } else {
                     self.refreshStatus()
                 }
