@@ -28,7 +28,6 @@ Double-click and you get a read-only tabbed window for several documents at once
 - **Tabbed, read-only window** — drop files in, they reload when changed, measure and zoom adjustable.
 - **Native and small** — a 3 MB AppKit app with no embedded browser framework; first frame usually
   a couple hundred milliseconds.
-- **Quiet** — no telemetry, no network, no update nags. Updates only install after you agree.
 
 ![Dark appearance](preview-dark.png)
 
