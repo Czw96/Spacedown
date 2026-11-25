@@ -2,16 +2,15 @@ import AppKit
 
 /// 检查新版本。
 ///
-/// 数据源是公开发布仓库的 `releases/latest`（源码仓库是私有的，那里没有可匿名读取的
-/// Release）。只做**检测与提示**：真正的替换交给安装方式（dmg / brew），
+/// 数据源是本仓库的 `releases/latest`。只做**检测与提示**：真正的替换交给安装方式（dmg），
 /// 避免在没有签名的前提下自己重写 Sparkle 那套原子替换逻辑。
 @MainActor
 final class UpdateChecker {
 
     static let shared = UpdateChecker()
 
-    nonisolated private static let feed = URL(string: "https://api.github.com/repos/Czw96/homebrew-spacedown/releases/latest")!
-    private static let releasesPage = "https://github.com/Czw96/homebrew-spacedown/releases"
+    nonisolated private static let feed = URL(string: "https://api.github.com/repos/Czw96/Spacedown/releases/latest")!
+    private static let releasesPage = "https://github.com/Czw96/Spacedown/releases"
     /// 正在显示的更新面板。不持有引用的话，窗口一失去焦点就可能被释放。
     private var prompt: UpdatePromptWindow?
     /// 已下载校验完、等待用户点「重新启动」的包。

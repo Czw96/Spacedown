@@ -7,7 +7,7 @@
   </p>
   <p>
     macOS 13+ · Apple Silicon · MIT ·
-    <a href="https://github.com/Czw96/homebrew-spacedown/releases/latest">v1.0.23</a>
+    <a href="https://github.com/Czw96/Spacedown/releases/latest">v1.0.23</a>
   </p>
 </div>
 
@@ -33,14 +33,8 @@ Double-click and you get a read-only tabbed window for several documents at once
 
 ## Install
 
-```bash
-brew tap czw96/spacedown
-brew trust czw96/spacedown
-brew install --cask spacedown
-```
-
-Or download the `.dmg` from the [latest release](https://github.com/Czw96/homebrew-spacedown/releases/latest)
-and drag it into Applications.
+Download the `.dmg` from the [latest release](https://github.com/Czw96/Spacedown/releases/latest),
+open it, and drag Spacedown into Applications.
 
 > [!IMPORTANT]
 > Two one-time steps after installing: **allow the first launch** in System Settings → Privacy &

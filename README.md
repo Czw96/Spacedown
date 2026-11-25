@@ -7,7 +7,7 @@
   </p>
   <p>
     macOS 13+ · Apple Silicon · MIT ·
-    <a href="https://github.com/Czw96/homebrew-spacedown/releases/latest">v1.0.23</a>
+    <a href="https://github.com/Czw96/Spacedown/releases/latest">v1.0.23</a>
   </p>
 </div>
 
@@ -32,14 +32,8 @@ Spacedown 接管这一步：Finder 里选中 `.md` 按空格，出来的是排�
 
 ## 安装
 
-```bash
-brew tap czw96/spacedown
-brew trust czw96/spacedown
-brew install --cask spacedown
-```
-
-也可以从 [最新 Release](https://github.com/Czw96/homebrew-spacedown/releases/latest) 下载 `.dmg`，
-拖进「应用程序」。
+从 [最新 Release](https://github.com/Czw96/Spacedown/releases/latest) 下载 `.dmg`，双击挂载，
+把 Spacedown 拖进「应用程序」。
 
 > [!IMPORTANT]
 > 装完还有两步，各一次：**首次打开**在「系统设置 → 隐私与安全性」里允许（应用未公证）；
