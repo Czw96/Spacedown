@@ -26,8 +26,8 @@ Double-click and you get a read-only tabbed window for several documents at once
 - **Space, and it's there** — no window to open, no network needed.
 - **Looks like GitHub** — tables, task lists, code blocks, `> [!NOTE]` callouts, strikethrough.
 - **Tabbed, read-only window** — drop files in, they reload when changed, measure and zoom adjustable.
-- **Native and small** — a 3 MB AppKit app with no embedded browser framework; first frame usually
-  a couple hundred milliseconds.
+- **Native and small** — a 3 MB Swift + AppKit app that renders through the system WebKit instead of
+  shipping a browser framework; first frame usually a couple hundred milliseconds.
 
 ![Dark appearance](preview-dark.png)
 
