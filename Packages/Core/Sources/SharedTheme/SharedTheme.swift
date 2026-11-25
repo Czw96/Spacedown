@@ -27,8 +27,11 @@ public enum SharedTheme {
 
     /// `<!doctype>` 到 `<div class="content">`。
     ///
-    /// CSP 只额外放行 `data:` 图片与内联样式：文档是单文件自包含的（CSS 内联、
-    /// 图片在渲染期已是 base64），不需要任何远程资源与脚本。
+    /// CSP 放行内联样式、`data:` 图片与 **https 远程图片**：本地图片在渲染期已内联成
+    /// base64，远程图片交给 WebKit 自己去取（与浏览器行为一致，用户按空格看到的就是
+    /// 文档本来的样子）。其余一律不放行 —— 没有 `script-src`，也没有 `connect-src`，
+    /// 所以文档里的脚本与 fetch 依然跑不起来；只放 `https:` 是因为 `http:` 图片会带来
+    /// 明文的中间人篡改面，而现在的图床基本都是 https。
     ///
     /// `form-action` 与 `base-uri` **不继承** `default-src`，必须单独写：前者挡住
     /// 裸 HTML 里的 `<form action="https://…">` 把内容提交出去，后者挡住 `<base href>`
@@ -40,7 +43,7 @@ public enum SharedTheme {
         <html lang="zh">
         <head>
         <meta charset="utf-8">
-        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'unsafe-inline'; form-action 'none'; base-uri 'none'">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data: https:; style-src 'unsafe-inline'; form-action 'none'; base-uri 'none'">
         <style>
         """#.utf8))
         prefix.append(css)

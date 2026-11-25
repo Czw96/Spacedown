@@ -23,7 +23,7 @@ Double-click and you get a read-only tabbed window for several documents at once
 
 ## What's good about it
 
-- **Space, and it's there** — no window to open, no network needed.
+- **Space, and it's there** — no window to open.
 - **Looks like GitHub** — tables, task lists, code blocks, `> [!NOTE]` callouts, strikethrough.
 - **Tabbed, read-only window** — drop files in, they reload when changed, measure and zoom adjustable.
 - **Native and small** — a 3 MB Swift + AppKit app that renders through the system WebKit instead of
@@ -64,7 +64,6 @@ Quick Look zooms too, with ⌘+ / ⌘−.
 
 - Apple Silicon only (no Intel build).
 - Read-only: no editing or saving.
-- Remote images are never loaded (offline by design), so shields.io badges don’t show in previews.
 
 ## FAQ
 
@@ -73,8 +72,9 @@ other Markdown preview extension is competing (WPS does).
 
 **Double-clicking a `.md` doesn’t render?** Use “Set as default .md handler” in Settings.
 
-**Images missing?** Remote images are skipped by design; local images must live under the same
-directory as the document.
+**Images missing?** Local images must live under the same directory as the document. Remote
+images load only over `https`, and previewing a document with remote images does send requests to
+those servers (same as a browser).
 
 ## Build from source
 
