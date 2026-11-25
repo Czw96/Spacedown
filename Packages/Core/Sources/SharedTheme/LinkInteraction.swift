@@ -66,26 +66,38 @@ public enum LinkInteraction {
 
     /// 页面内注入的点击拦截脚本。
     ///
-    /// 只接管 `http(s)` / `mailto`；站内锚点（`#…`）放行，让页面自己跳。
+    /// 只接管 `http(s)` / `mailto`（复制或打开）与 `#锚点`（自己滚过去）。
+    /// 锚点不走 WebKit 的 fragment 导航：页面是用 `loadHTMLString` 装的，base 是
+    /// `about:blank`，靠原生跳转不稳；`scrollIntoView` 更确定，还能顺手加平滑滚动。
     public static let script = """
     (function () {
         if (window.__sdLinkBound) { return; }
         window.__sdLinkBound = true;
-        function hrefOf(a) {
-            var href = a && a.getAttribute ? (a.getAttribute('href') || '') : '';
-            return /^(https?:|mailto:)/i.test(href) ? href : null;
-        }
         function anchorFrom(e) {
             var el = e.target;
             return (el && el.closest) ? el.closest('a[href]') : null;
         }
         document.addEventListener('click', function (e) {
-            var href = hrefOf(anchorFrom(e));
-            if (!href) { return; }
+            var a = anchorFrom(e);
+            if (!a) { return; }
+            var raw = a.getAttribute('href') || '';
+
+            // 页内锚点：目标存在就自己滚，目标不存在就什么也不做（不弹、不复制）
+            if (raw.charAt(0) === '#') {
+                var id = raw.slice(1);
+                try { id = decodeURIComponent(id); } catch (_) {}
+                var target = id ? document.getElementById(id) : null;
+                if (!target) { return; }
+                e.preventDefault();
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                return;
+            }
+
+            if (!/^(https?:|mailto:)/i.test(raw)) { return; }
             e.preventDefault();
             var open = e.metaKey || e.ctrlKey;
             window.webkit.messageHandlers.\(messageName).postMessage({
-                type: open ? 'open' : 'copy', url: href
+                type: open ? 'open' : 'copy', url: raw
             });
         }, true);
     })();

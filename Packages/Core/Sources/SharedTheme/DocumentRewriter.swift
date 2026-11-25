@@ -11,7 +11,97 @@ import Foundation
 enum DocumentRewriter {
 
     static func process(_ body: Data) -> Data {
-        markingAlerts(in: wrappingTables(in: body))
+        addingHeadingIDs(in: markingAlerts(in: wrappingTables(in: body)))
+    }
+
+    // MARK: - 标题锚点
+
+    /// 给每个标题补 `id`，让 `[说明](#说明)` 这类页内锚点真的能跳。
+    ///
+    /// cmark-gfm **不生成**标题 id（GitHub 是在渲染之后另做一遍），所以在这之前
+    /// 所有 `#锚点` 都是死链：点了没反应，因为目标元素根本不存在。
+    ///
+    /// slug 规则对齐 GitHub：小写、空白转 `-`、丢掉标点、保留中日韩等字母、重名依次加
+    /// `-1`、`-2`。刻意不追求 100% 一致（GitHub 的标点表有几百个字符），常见标题一致即可。
+    private static func addingHeadingIDs(in body: Data) -> Data {
+        let html = String(decoding: body, as: UTF8.self)
+        guard html.contains("<h") else { return body }
+        guard let regex = try? NSRegularExpression(
+            pattern: "<h([1-6])>(.*?)</h\\1>",
+            options: [.dotMatchesLineSeparators]
+        ) else { return body }
+
+        let full = NSRange(html.startIndex..<html.endIndex, in: html)
+        let matches = regex.matches(in: html, range: full)
+        guard !matches.isEmpty else { return body }
+
+        // 先按文档顺序算出每个标题的新写法（重名编号才跟 GitHub 一致），再从后往前替换：
+        // 反向替换时，后面的偏移变化不会影响前面的 range。
+        var used: [String: Int] = [:]
+        var edits: [(range: Range<String.Index>, text: String)] = []
+        for match in matches {
+            guard let whole = Range(match.range, in: html),
+                  let inner = Range(match.range(at: 2), in: html) else { continue }
+            let text = plainText(String(html[inner]))
+            guard !text.isEmpty, let slug = uniqueSlug(for: text, used: &used) else { continue }
+
+            let heading = String(html[whole])
+            guard let openEnd = heading.firstIndex(of: ">") else { continue }
+            let openTag = heading[..<openEnd]                       // `<h2`
+            let rest = heading[heading.index(after: openEnd)...]    // `AI 实现说明</h2>`
+            edits.append((whole, "\(openTag) id=\"\(slug)\">\(rest)"))
+        }
+        guard !edits.isEmpty else { return body }
+
+        var result = html
+        for edit in edits.reversed() {
+            result.replaceSubrange(edit.range, with: edit.text)
+        }
+        return Data(result.utf8)
+    }
+
+    /// 去掉行内标签（`<a>`、`<code>`…）与常见实体，留下纯文本。
+    private static func plainText(_ html: String) -> String {
+        var text = html
+        if let tag = try? NSRegularExpression(pattern: "<[^>]+>") {
+            let range = NSRange(text.startIndex..<text.endIndex, in: text)
+            text = tag.stringByReplacingMatches(in: text, range: range, withTemplate: "")
+        }
+        return text
+            .replacingOccurrences(of: "&amp;", with: "&")
+            .replacingOccurrences(of: "&lt;", with: "<")
+            .replacingOccurrences(of: "&gt;", with: ">")
+            .replacingOccurrences(of: "&quot;", with: "\"")
+            .replacingOccurrences(of: "&#39;", with: "'")
+    }
+
+    /// GitHub 风格的 slug：小写、空白转 `-`、只留字母/数字/`-`/`_`。
+    private static func uniqueSlug(for text: String, used: inout [String: Int]) -> String? {
+        var slug = ""
+        var pendingDash = false
+        for character in text.lowercased() {
+            if character.isWhitespace {
+                pendingDash = !slug.isEmpty
+                continue
+            }
+            guard character.isLetter || character.isNumber
+                    || character == "-" || character == "_" else {
+                // 标点、emoji 一律丢掉（GitHub 也是丢，只是它有一张更细的表）
+                continue
+            }
+            if pendingDash, !slug.hasSuffix("-") { slug.append("-") }
+            pendingDash = false
+            slug.append(character)
+        }
+        while slug.hasSuffix("-") { slug.removeLast() }
+        guard !slug.isEmpty else { return nil }
+
+        if let count = used[slug] {
+            used[slug] = count + 1
+            return "\(slug)-\(count)"
+        }
+        used[slug] = 1
+        return slug
     }
 
     // MARK: - 表格
