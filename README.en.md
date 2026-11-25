@@ -64,8 +64,6 @@ Quick Look zooms too, with ⌘+ / ⌘−.
 
 - Apple Silicon only (no Intel build).
 - Read-only: no editing or saving.
-- Quick Look renders the first 64 KB only; the rest comes with a “load more” button that hands the
-  file to the app.
 - Remote images are never loaded (offline by design), so shields.io badges don’t show in previews.
 
 ## FAQ
