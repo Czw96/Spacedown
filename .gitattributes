@@ -1,0 +1,7 @@
+# GitHub 的语言统计按字节算，vendored 的 cmark-gfm 会把仓库显示成「C 项目」。
+# 它确实是 C 写的，但不是这个项目的代码 —— 标成 vendored 后语言栏才反映实际情况。
+Packages/Core/Sources/CcmarkGfm/** linguist-vendored
+
+# 文档与设计稿不参与语言统计
+docs/** linguist-documentation
+design/** linguist-documentation
