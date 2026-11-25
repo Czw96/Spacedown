@@ -29,8 +29,6 @@ Double-click and you get a read-only tabbed window for several documents at once
 - **Native and small** — a 3 MB Swift + AppKit app that renders through the system WebKit instead of
   shipping a browser framework; first frame usually a couple hundred milliseconds.
 
-![Dark appearance](preview-dark.png)
-
 ## Install
 
 Download the `.dmg` from the [latest release](https://github.com/Czw96/Spacedown/releases/latest),

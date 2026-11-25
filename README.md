@@ -28,8 +28,6 @@ Spacedown 接管这一步：Finder 里选中 `.md` 按空格，出来的是排�
 - **多标签只读窗口** —— 拖入文件即开，外部改动自动刷新，版心与字号可调。
 - **原生且轻** —— Swift + AppKit 写的 3 MB 应用，排版走系统 WebKit 而不是自带浏览器框架，首帧通常一两百毫秒。
 
-![深色外观](preview-dark.png)
-
 ## 安装
 
 从 [最新 Release](https://github.com/Czw96/Spacedown/releases/latest) 下载 `.dmg`，双击挂载，
