@@ -11,8 +11,6 @@
   </p>
 </div>
 
-![Spacedown 渲染 Markdown 的样子](preview-light.png)
-
 ## 为什么用它
 
 macOS 自带的空格预览把 `.md` 当纯文本看：等宽字体、`#` 原样显示、表格散成一堆竖线。

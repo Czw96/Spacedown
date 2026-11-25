@@ -11,8 +11,6 @@
   </p>
 </div>
 
-![How Spacedown renders Markdown](preview-light.png)
-
 ## Why
 
 macOS Quick Look treats `.md` as plain text: monospaced font, literal `#`, tables flattened into
